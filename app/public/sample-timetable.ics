@@ -1,0 +1,65 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//University Portal//Class Schedule//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Fall 2026 Class Schedule
+
+BEGIN:VEVENT
+UID:class-cs330-2026@university.edu
+SUMMARY:CS 330: Operating Systems
+LOCATION:Room 204, Prof. Adams
+DTSTART;TZID=America/New_York:20260901T093000
+DTEND;TZID=America/New_York:20260901T110000
+RRULE:FREQ=WEEKLY;BYDAY=MO,WE;UNTIL=20261215T235959Z
+DESCRIPTION:Undergraduate Operating Systems lecture
+END:VEVENT
+
+BEGIN:VEVENT
+UID:class-phys150-2026@university.edu
+SUMMARY:PHYS 150 Lab
+LOCATION:Lab B, TA: Chen
+DTSTART;TZID=America/New_York:20260902T150000
+DTEND;TZID=America/New_York:20260902T180000
+RRULE:FREQ=WEEKLY;BYDAY=WE;UNTIL=20261215T235959Z
+DESCRIPTION:Physics laboratory experiment session. Overlaps Wednesday dining shift.
+END:VEVENT
+
+BEGIN:VEVENT
+UID:class-math305-2026@university.edu
+SUMMARY:MATH 305: Probability & Statistics
+LOCATION:Hall A, Prof. Williams
+DTSTART;TZID=America/New_York:20260901T110000
+DTEND;TZID=America/New_York:20260901T123000
+RRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20261215T235959Z
+DESCRIPTION:Foundations of probability and statistical modeling
+END:VEVENT
+
+BEGIN:VEVENT
+UID:class-eng302-2026@university.edu
+SUMMARY:ENG 302: Technical Communications
+LOCATION:Room 102
+DTSTART;TZID=America/New_York:20260904T100000
+DTEND;TZID=America/New_York:20260904T113000
+RRULE:FREQ=WEEKLY;BYDAY=FR;UNTIL=20261215T235959Z
+DESCRIPTION:Professional technical writing for computer scientists
+END:VEVENT
+
+BEGIN:VEVENT
+UID:career-fair-2026@university.edu
+SUMMARY:Fall STEM Career & Internship Fair
+LOCATION:Student Union Center
+DTSTART;VALUE=DATE:20261014
+DTEND;VALUE=DATE:20261015
+DESCRIPTION:All-day recruitment fair for campus employers.
+END:VEVENT
+
+BEGIN:VEVENT
+UID:capstone-info-2026@university.edu
+SUMMARY:Senior Capstone Info Session
+LOCATION:Auditorium C
+DTSTART;TZID=America/New_York:20260908T180000
+DESCRIPTION:Department briefing session without declared end time.
+END:VEVENT
+
+END:VCALENDAR

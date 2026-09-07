@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+/* Inter font variable set by Next.js layout */
+:root {
+  --font-inter: 'Inter', sans-serif;
+  --color-class: #3b82f6;
+  --color-class-bg: rgba(30, 58, 138, 0.4);
+  --color-class-border: rgba(96, 165, 250, 0.6);
+  --color-shift: #10b981;
+  --color-shift-bg: rgba(6, 78, 59, 0.4);
+  --color-shift-border: rgba(52, 211, 153, 0.6);
+  --color-conflict: #ef4444;
+  --color-conflict-bg: rgba(127, 29, 29, 0.65);
+  --color-conflict-border: #f87171;
+}
+
+/* 
+  FIX: selection styles moved here from component (Tailwind v4 dropped
+  arbitrary `selection:` variants — they must be in global CSS).
+*/
+::selection {
+  background-color: rgb(99 102 241 / 0.3); /* indigo-500 at 30% */
+  color: inherit;
+}
+
+body {
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
