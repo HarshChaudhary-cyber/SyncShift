@@ -123,6 +123,25 @@ export interface IcsPreviewResponse {
   unmatched: unknown[];
 }
 
+/** Extended preview item returned by /import/file for non-ICS formats. */
+export interface FilePreviewItem {
+  temp_id?: string;
+  title: string;
+  day_of_week: number; // 0=Mon … 6=Sun; -1 if unparseable
+  start_time: string;  // "HH:MM" or "" if unparseable
+  end_time: string;    // "HH:MM" or ""
+  location?: string | null;
+  confidence: 'high' | 'low';
+  source_line?: string;
+  course_code?: string;
+  notes?: string;
+}
+
+export interface FilePreviewResponse {
+  preview: FilePreviewItem[];
+  message?: string; // set when preview is empty
+}
+
 export interface IcsConfirmPayload {
   preview_blocks: {
     title: string;
@@ -220,5 +239,15 @@ export const api = {
   },
   confirmIcs: (payload: IcsConfirmPayload): Promise<IcsConfirmResponse> => {
     return request<IcsConfirmResponse>('/import/ics/confirm', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  /** Upload any supported file (PDF/DOCX/PPTX/TXT/CSV/image/ICS) for timetable parsing. */
+  previewFile: async (file: File): Promise<FilePreviewResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request<FilePreviewResponse>('/import/file', { method: 'POST', body: formData });
+  },
+  /** Confirm and save blocks returned by previewFile. */
+  confirmFile: (payload: IcsConfirmPayload): Promise<IcsConfirmResponse> => {
+    return request<IcsConfirmResponse>('/import/file/confirm', { method: 'POST', body: JSON.stringify(payload) });
   },
 };

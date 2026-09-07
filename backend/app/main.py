@@ -10,6 +10,7 @@ from app.routers import (
     blocks_router,
     conflicts_router,
     courses_router,
+    file_import_router,
     import_router,
     week_router,
 )
@@ -113,6 +114,7 @@ app.include_router(blocks_router, prefix=settings.API_V1_STR)
 app.include_router(conflicts_router, prefix=settings.API_V1_STR)
 app.include_router(week_router, prefix=settings.API_V1_STR)
 app.include_router(import_router, prefix=settings.API_V1_STR)
+app.include_router(file_import_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/health", tags=["Health"])

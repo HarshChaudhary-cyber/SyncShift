@@ -16,3 +16,10 @@ python-dateutil>=2.9.0
 pytest>=8.3.0
 httpx>=0.27.0
 
+# Multi-format timetable import
+pdfplumber>=0.11.0
+python-docx>=1.1.0
+python-pptx>=0.6.23
+pytesseract>=0.3.13
+Pillow>=10.0.0
+

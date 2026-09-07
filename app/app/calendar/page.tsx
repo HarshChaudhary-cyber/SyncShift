@@ -197,7 +197,7 @@ function CalendarContent() {
               onClick={() => setImportOpen(true)}
               className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg text-xs font-medium text-neutral-200 transition cursor-pointer"
             >
-              📅 Import Timetable
+              📁 Import Timetable
             </button>
 
             {/* Add class */}
@@ -266,7 +266,7 @@ function CalendarContent() {
             <h2 className="text-lg font-semibold text-white">Your schedule is empty this week</h2>
             <p className="text-sm text-neutral-400 max-w-xs">
               Add a class or shift to get started, or import your university timetable from a{' '}
-              <span className="font-mono text-neutral-300">.ics</span> file.
+              <span className="font-mono text-neutral-300">.ics</span>, PDF, DOCX, image, and more.
             </p>
             <div className="flex gap-3 pt-1">
               <button
@@ -285,7 +285,7 @@ function CalendarContent() {
                 onClick={() => setImportOpen(true)}
                 className="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-neutral-200 text-sm font-semibold rounded-lg transition cursor-pointer"
               >
-                📅 Import .ics
+                📁 Import Timetable
               </button>
             </div>
           </div>

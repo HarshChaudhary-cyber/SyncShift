@@ -4,6 +4,7 @@ from app.routers.blocks import router as blocks_router
 from app.routers.conflicts import router as conflicts_router
 from app.routers.week import router as week_router
 from app.routers.import_ics import router as import_router
+from app.routers.import_file import router as file_import_router
 
 __all__ = [
     "auth_router",
@@ -12,4 +13,5 @@ __all__ = [
     "conflicts_router",
     "week_router",
     "import_router",
+    "file_import_router",
 ]
