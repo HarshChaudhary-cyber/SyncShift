@@ -434,8 +434,9 @@ export default function Home() {
             persistBlocksLocally(next);
             return next;
           });
-        } catch (err: any) {
-          if (err.name === 'AbortError') return;
+        } catch (err: unknown) {
+          const error = err as { name?: string };
+          if (error?.name === 'AbortError') return;
 
           console.error(`[handleBlockMove] Failed to persist block #${blockId}:`, err);
 

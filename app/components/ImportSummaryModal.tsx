@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { TimeBlock } from './CalendarWeekView';
 import type { ReviewItem, Section } from '@/lib/icsParser';
 
@@ -283,7 +283,7 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                These events could not be placed onto the weekly timetable automatically (e.g. all-day event, missing lecture hours). You can add them manually with "+ Add Class".
+                These events could not be placed onto the weekly timetable automatically (e.g. all-day event, missing lecture hours). You can add them manually with &quot;+ Add Class&quot;.
               </p>
               <div className="space-y-1.5 max-h-40 overflow-y-auto">
                 {reviewItems.map((item) => (

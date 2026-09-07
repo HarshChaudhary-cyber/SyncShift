@@ -71,33 +71,62 @@
 
 ## Setup Instructions
 
+### Quick Start (Launch Both Services)
+
+- **Windows**: Double-click or run `start.bat` (launches backend and frontend in separate terminals).
+- **macOS / Linux**: Run `./start.sh` (launches backend and frontend concurrently).
+
+---
+
+### Manual Setup
+
+#### 1. Backend (FastAPI)
+
 ```bash
-# 1️⃣ Clone the repo
-git clone https://github.com/your‑username/syncshift.git && cd syncshift
+cd backend
 
-# 2️⃣ Copy env template & edit as needed
-cp .env.example .env
-# (set DATABASE_URL, SECRET_KEY, etc.)
+# Create & activate virtual environment
+python -m venv .venv
 
-# 3️⃣ Build & start containers (API + DB + optional Next dev server)
-docker compose up --build
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+source .venv/bin/activate
 
-# 4️⃣ Apply database migrations
-docker compose exec api alembic upgrade head
+# Install dependencies
+pip install -r requirements.txt
 
-# 5️⃣ Front‑end (in another terminal) – optional if you prefer hot‑reload dev server
-cd frontend
-npm install
-npm run dev   # http://localhost:3000
+# Start backend server (http://127.0.0.1:8000)
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-**Running Tests**
-```bash
-# API tests
-docker compose exec api pytest
+> **Note**: Interactive Swagger API docs are available at `http://127.0.0.1:8000/docs`.
 
-# Front‑end tests
-cd frontend && npm test
+#### 2. Frontend (Next.js)
+
+```bash
+cd app
+
+# Install dependencies
+npm install
+
+# Start Next.js development server (http://localhost:3000)
+npm run dev
+```
+
+---
+
+### Running Tests & Linting
+
+```bash
+# Backend unit & integration tests (Pytest)
+cd backend
+pytest
+
+# Frontend code quality & type check
+cd app
+npm run lint
+npm run build
 ```
 
 ---
