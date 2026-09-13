@@ -22,10 +22,22 @@ export function useBlocks() {
     error,
     addBlock: (payload: BlockCreatePayload) => addBlock(payload),
     updateBlock: (id: number, payload: BlockUpdatePayload) => updateBlock(id, payload),
-    deleteBlock: (id: number) => deleteBlock(id),
-    moveBlock: (id: number, dayOfWeek: number, startTime: string, endTime: string) =>
-      moveBlock(id, dayOfWeek, startTime, endTime),
-    resizeBlock: (id: number, endTime: string) => resizeBlock(id, endTime),
+    deleteBlock: (id: number, scope?: 'this' | 'future' | 'all', occurrenceDate?: string) =>
+      deleteBlock(id, scope, occurrenceDate),
+    moveBlock: (
+      id: number,
+      dayOfWeek: number,
+      startTime: string,
+      endTime: string,
+      occurrenceDate?: string,
+      scope?: 'this' | 'future' | 'all'
+    ) => moveBlock(id, dayOfWeek, startTime, endTime, occurrenceDate, scope),
+    resizeBlock: (
+      id: number,
+      endTime: string,
+      occurrenceDate?: string,
+      scope?: 'this' | 'future' | 'all'
+    ) => resizeBlock(id, endTime, occurrenceDate, scope),
     refreshBlocks: refreshWeek,
   };
 }

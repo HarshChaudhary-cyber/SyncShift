@@ -23,10 +23,10 @@ export function showToast(message: string, type: ToastType = 'info', durationMs 
   toast.setAttribute('role', 'alert');
   toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl text-xs sm:text-sm font-medium transition-all duration-300 transform -translate-y-2 opacity-0 ${
     type === 'error'
-      ? 'bg-rose-950/95 text-rose-100 border-rose-600 shadow-rose-950/50 backdrop-blur-md'
+      ? 'bg-rose-50 dark:bg-rose-950/95 text-rose-800 dark:text-rose-100 border-rose-300 dark:border-rose-600 shadow-lg dark:shadow-rose-950/50 backdrop-blur-md'
       : type === 'success'
-      ? 'bg-emerald-950/95 text-emerald-100 border-emerald-600 shadow-emerald-950/50 backdrop-blur-md'
-      : 'bg-zinc-900/95 text-zinc-100 border-zinc-700 shadow-black/50 backdrop-blur-md'
+      ? 'bg-emerald-50 dark:bg-emerald-950/95 text-emerald-800 dark:text-emerald-100 border-emerald-300 dark:border-emerald-600 shadow-lg dark:shadow-emerald-950/50 backdrop-blur-md'
+      : 'bg-white dark:bg-zinc-900/95 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-700 shadow-lg dark:shadow-black/50 backdrop-blur-md'
   }`;
 
   const icon = type === 'error' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️';

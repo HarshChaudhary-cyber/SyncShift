@@ -4,6 +4,8 @@ import React, { useEffect, useId, useReducer, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { TimeBlock, BlockType, BlockStatus } from './CalendarWeekView';
 import { findConflictsFor, calculateDurationMinutes } from '@/lib/schedule';
+import TimePicker from '@/components/ui/TimePicker';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -123,12 +125,12 @@ function validate(state: FormState): FormErrors {
 // ---------------------------------------------------------------------------
 
 const inputBase =
-  'w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 ' +
-  'px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 ' +
+  'w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-input)] ' +
+  'px-3 py-2 text-base sm:text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] ' +
   'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors';
 
 const inputError =
-  '!border-rose-500 dark:!border-rose-500 focus:!ring-rose-500';
+  '!border-rose-500 focus:!ring-rose-500';
 
 interface FieldProps {
   label: string;
@@ -260,12 +262,12 @@ export function BlockFormModal({
   return (
     // Backdrop
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Backdrop blur */}
       <motion.div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-[var(--modal-overlay)] backdrop-blur-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -278,35 +280,35 @@ export function BlockFormModal({
         role="dialog"
         aria-modal="true"
         aria-label={isEdit ? 'Edit block' : 'Add new block'}
-        className="relative w-full max-w-md rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-2xl shadow-black/30 overflow-hidden"
+        className="relative w-full h-full sm:h-auto sm:max-w-md rounded-none sm:rounded-2xl border-0 sm:border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-primary)] shadow-2xl shadow-black/30 flex flex-col max-h-full sm:max-h-[90vh] overflow-hidden"
         initial={{ opacity: 0, y: 20, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 16, scale: 0.97 }}
         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-zinc-100 dark:border-zinc-800">
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[var(--border-color)] shrink-0">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">
             {isEdit ? 'Edit block' : 'New block'}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors p-1 rounded-md"
+            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-1.5 rounded-md cursor-pointer"
             aria-label="Close"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="px-5 py-4 space-y-3.5">
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col flex-1 min-h-0">
+          <div className="px-4 sm:px-5 py-3.5 sm:py-4 space-y-3.5 flex-1 overflow-y-auto">
 
             {/* ── Type toggle ──────────────────────────────────────────── */}
-            <div className="flex rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden text-xs font-medium">
+            <div className="flex rounded-lg border border-[var(--border-color)] overflow-hidden text-xs font-medium">
               {(['class', 'shift'] as const).map((t) => (
                 <button
                   key={t}
@@ -324,23 +326,23 @@ export function BlockFormModal({
             </div>
 
             {/* ── What-If Sandbox / Status Selector ────────────────────── */}
-            <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/70 text-xs">
+            <div className="flex items-center justify-between p-2 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs">
               <div>
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                <span className="font-medium text-[var(--text-primary)]">
                   Mode
                 </span>
-                <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                <p className="text-[10px] text-[var(--text-muted)]">
                   {form.status === 'enrolled' ? 'Active in your schedule' : 'Sandbox preview (doesn’t lock hours)'}
                 </p>
               </div>
-              <div className="flex rounded-md border border-zinc-200 dark:border-zinc-700 overflow-hidden text-[11px] font-medium">
+              <div className="flex rounded-md border border-[var(--border-color)] overflow-hidden text-[11px] font-medium">
                 <button
                   type="button"
                   onClick={() => dispatch({ field: 'status', value: 'enrolled' })}
                   className={`px-2.5 py-1 transition-colors ${
                     form.status === 'enrolled'
-                      ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-950 font-semibold'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                      ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] font-semibold'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--border-color)]'
                   }`}
                 >
                   Enrolled
@@ -351,7 +353,7 @@ export function BlockFormModal({
                   className={`px-2.5 py-1 transition-colors ${
                     form.status === 'tentative'
                       ? 'bg-amber-500 text-white font-semibold'
-                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--border-color)]'
                   }`}
                 >
                   What-If
@@ -389,36 +391,31 @@ export function BlockFormModal({
 
             {/* ── Day ──────────────────────────────────────────────────── */}
             <Field label="Day of week" htmlFor={`${uid}-day`}>
-              <select
+              <CustomSelect
                 id={`${uid}-day`}
+                options={days.map((d) => ({ value: d, label: d }))}
                 value={form.day}
-                onChange={(e) => dispatch({ field: 'day', value: e.target.value })}
-                className={`${inputBase} cursor-pointer`}
-              >
-                {days.map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
+                onChange={(val) => dispatch({ field: 'day', value: String(val) })}
+                size="sm"
+              />
             </Field>
 
             {/* ── Time row ─────────────────────────────────────────────── */}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Start time" error={errors.startTime} htmlFor={`${uid}-start`}>
-                <input
+                <TimePicker
                   id={`${uid}-start`}
-                  type="time"
                   value={form.startTime}
-                  onChange={(e) => dispatch({ field: 'startTime', value: e.target.value })}
-                  className={`${inputBase} ${errors.startTime ? inputError : ''}`}
+                  onChange={(val) => dispatch({ field: 'startTime', value: val })}
+                  error={Boolean(errors.startTime)}
                 />
               </Field>
               <Field label="End time" error={errors.endTime} htmlFor={`${uid}-end`}>
-                <input
+                <TimePicker
                   id={`${uid}-end`}
-                  type="time"
                   value={form.endTime}
-                  onChange={(e) => dispatch({ field: 'endTime', value: e.target.value })}
-                  className={`${inputBase} ${errors.endTime ? inputError : ''}`}
+                  onChange={(val) => dispatch({ field: 'endTime', value: val })}
+                  error={Boolean(errors.endTime)}
                 />
               </Field>
             </div>
@@ -521,7 +518,7 @@ export function BlockFormModal({
           </div>
 
           {/* ── Footer ─────────────────────────────────────────────────── */}
-          <div className="flex items-center justify-between px-5 py-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--border-color)] bg-[var(--bg-secondary)]">
             {/* Delete button (edit mode only) */}
             {isEdit ? (
               showDeleteConfirm ? (
@@ -539,7 +536,7 @@ export function BlockFormModal({
                   <button
                     type="button"
                     onClick={() => setShowDeleteConfirm(false)}
-                    className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                   >
                     Cancel
                   </button>
@@ -562,13 +559,13 @@ export function BlockFormModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3.5 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                className="px-3.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 text-xs font-medium rounded-lg bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-950 shadow-sm transition-all active:scale-[0.98]"
+                className="px-4 py-1.5 text-xs font-medium rounded-lg bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] text-white shadow-sm transition-all active:scale-[0.98]"
               >
                 {isEdit ? 'Save changes' : 'Add block'}
               </button>

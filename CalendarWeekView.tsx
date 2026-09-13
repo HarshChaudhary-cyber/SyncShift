@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useMemo } from 'react';
 
 export type BlockType = 'class' | 'shift' | 'conflict';
@@ -10,15 +12,29 @@ export interface TimeBlock {
   type: BlockType;
   label: string;
   subLabel?: string;    // Optional: room, supervisor, notes, etc.
+  courseCode?: string;
+  repeatsWeekly?: boolean;
+  isImported?: boolean;
+  status?: string;
+  durationMinutes?: number;
+  isOvernight?: boolean;
+  hourlyWage?: number;
+  isRecurring?: boolean;
+  specificDate?: string;
+  conflictMetadata?: any;
+  [key: string]: any;
 }
 
 export interface CalendarWeekViewProps {
-  blocks: TimeBlock[];
+  blocks?: TimeBlock[];
   startHour?: number;    // Earliest hour displayed (default: 7 -> 7:00 AM)
   endHour?: number;      // Latest hour displayed (default: 22 -> 10:00 PM)
   days?: string[];       // Days to display (default: Mon - Sun)
   onBlockClick?: (block: TimeBlock) => void;
+  onBlockMove?: (blockId: string | number, newStartTime: string, newEndTime: string, newDay?: string) => void;
+  onBlockResize?: (blockId: string | number, newEndTime: string) => void;
   className?: string;
+  [key: string]: any;
 }
 
 const DEFAULT_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -26,13 +42,14 @@ const DEFAULT_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'S
 /**
  * Normalizes day input (number, short name, full name) to full day name
  */
-function normalizeDay(day: string | number): string {
+function normalizeDay(day: string | number | undefined | null): string {
+  if (day === undefined || day === null) return 'Monday';
   if (typeof day === 'number') {
     // 0 = Sunday, 1 = Monday, ... 6 = Saturday (standard JS getDay order)
     const dayMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    return dayMap[day % 7] || 'Monday';
+    return dayMap[((day % 7) + 7) % 7] || 'Monday';
   }
-  const clean = day.trim().toLowerCase();
+  const clean = String(day).trim().toLowerCase();
   if (clean.startsWith('mon')) return 'Monday';
   if (clean.startsWith('tue')) return 'Tuesday';
   if (clean.startsWith('wed')) return 'Wednesday';
@@ -40,24 +57,38 @@ function normalizeDay(day: string | number): string {
   if (clean.startsWith('fri')) return 'Friday';
   if (clean.startsWith('sat')) return 'Saturday';
   if (clean.startsWith('sun')) return 'Sunday';
-  return day;
+  return String(day);
 }
 
 /**
- * Parses "HH:MM" or "HH:MM:SS" to total minutes from midnight
+ * Parses "HH:MM", "HH:MM:SS", or 12h "HH:MM AM/PM" to total minutes from midnight
  */
 function parseTimeToMinutes(timeStr: string): number {
   if (!timeStr) return 0;
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  return (hours || 0) * 60 + (minutes || 0);
+  const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)?$/i);
+  if (match) {
+    let hours = parseInt(match[1], 10) || 0;
+    const minutes = parseInt(match[2], 10) || 0;
+    const ampm = match[3]?.toLowerCase();
+    if (ampm === 'pm' && hours < 12) hours += 12;
+    if (ampm === 'am' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  }
+  const [hStr, mStr] = timeStr.split(':');
+  const hours = parseInt(hStr || '0', 10) || 0;
+  const minutes = parseInt(mStr || '0', 10) || 0;
+  return hours * 60 + minutes;
 }
 
 /**
- * Formats "09:30" to "9:30 AM"
+ * Formats "09:30" or "09:30:00" to "9:30 AM"
  */
 function formatTime12h(timeStr: string): string {
   if (!timeStr) return '';
-  const [hours, minutes] = timeStr.split(':').map(Number);
+  if (/\b(am|pm)\b/i.test(timeStr)) return timeStr;
+  const parts = timeStr.split(':');
+  const hours = parseInt(parts[0] || '0', 10) || 0;
+  const minutes = parseInt(parts[1] || '0', 10) || 0;
   const period = hours >= 12 ? 'PM' : 'AM';
   const hour12 = hours % 12 === 0 ? 12 : hours % 12;
   const paddedMin = String(minutes).padStart(2, '0');
@@ -72,7 +103,7 @@ export const CalendarWeekView: React.FC<CalendarWeekViewProps> = ({
   onBlockClick,
   className = '',
 }) => {
-  const totalMinutesInView = (endHour - startHour) * 60;
+  const totalMinutesInView = Math.max(1, (endHour - startHour) * 60);
   const startMinute = startHour * 60;
 
   // Generate hour marks for the time gutter
@@ -224,7 +255,7 @@ export const CalendarWeekView: React.FC<CalendarWeekViewProps> = ({
                   const clampedEnd = Math.min(startMinute + totalMinutesInView, endMin);
                   const duration = clampedEnd - clampedStart;
 
-                  if (duration <= 0) return null;
+                  if (!duration || duration <= 0 || isNaN(duration)) return null;
 
                   const topPercent = ((clampedStart - startMinute) / totalMinutesInView) * 100;
                   const heightPercent = (duration / totalMinutesInView) * 100;

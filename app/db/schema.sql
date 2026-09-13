@@ -150,3 +150,46 @@ LEFT JOIN time_blocks tb ON tb.user_id = u.id
   AND tb.status = 'enrolled'
   AND tb.deleted = FALSE
 GROUP BY u.id, u.weekly_work_hour_limit;
+
+-- -----------------------------------------------------------------------------
+-- 8. NOTIFICATIONS & REMINDERS
+-- -----------------------------------------------------------------------------
+
+CREATE TABLE push_subscriptions (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint    TEXT UNIQUE NOT NULL,
+  p256dh      TEXT NOT NULL,
+  auth        TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_push_subs_user_id ON push_subscriptions(user_id);
+
+CREATE TABLE notification_prefs (
+  user_id             BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  push_enabled        BOOLEAN NOT NULL DEFAULT TRUE,
+  email_enabled       BOOLEAN NOT NULL DEFAULT FALSE,
+  class_reminder_min  INT NOT NULL DEFAULT 30,
+  shift_reminder_min  INT NOT NULL DEFAULT 60,
+  study_reminder_min  INT NOT NULL DEFAULT 15,
+  deadline_reminder   BOOLEAN NOT NULL DEFAULT TRUE,
+  conflict_alerts     BOOLEAN NOT NULL DEFAULT TRUE,
+  quiet_hours_start   TIME,
+  quiet_hours_end     TIME
+);
+
+CREATE TABLE notification_log (
+  id          BIGSERIAL PRIMARY KEY,
+  user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type        VARCHAR(50) NOT NULL, -- 'class', 'shift', 'study', 'deadline', 'conflict', 'test'
+  title       VARCHAR(255) NOT NULL,
+  body        VARCHAR(500) NOT NULL,
+  sent_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  channel     VARCHAR(20) NOT NULL, -- 'push' | 'email'
+  dedup_key   VARCHAR(255)
+);
+
+CREATE INDEX idx_notification_log_user_sent ON notification_log(user_id, sent_at DESC);
+CREATE INDEX idx_notification_log_dedup ON notification_log(dedup_key);
+

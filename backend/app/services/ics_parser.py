@@ -251,6 +251,16 @@ def parse_ics_timetable(content: bytes | str) -> tuple[list[IcsPreviewItem], lis
             )
             continue
 
+        # Extract recurrence interval (e.g. 1=weekly, 2=biweekly)
+        interval_val = rrule.get("INTERVAL", 1) if rrule else 1
+        try:
+            interval_int = int(interval_val[0] if isinstance(interval_val, list) else interval_val)
+        except Exception:
+            interval_int = 1
+
+        effective_from_date = dtstart_val.date() if isinstance(dtstart_val, datetime) else (dtstart_val if isinstance(dtstart_val, date) else None)
+        effective_until_date = until_date if 'until_date' in locals() and until_date else None
+
         # Extract days of week (0=Monday, 6=Sunday)
         days = extract_recurring_days(rrule, dtstart_val)
         course_code = extract_course_code(summary)
@@ -262,6 +272,10 @@ def parse_ics_timetable(content: bytes | str) -> tuple[list[IcsPreviewItem], lis
             notes = ""
             if len(days) > 1:
                 notes = f"Recurring multi-day session ({len(days)} days/week)"
+            if interval_int == 2:
+                notes = f"Biweekly class (every 2 weeks){(' · ' + notes) if notes else ''}"
+            elif interval_int > 2:
+                notes = f"Repeats every {interval_int} weeks{(' · ' + notes) if notes else ''}"
 
             preview.append(
                 IcsPreviewItem(
@@ -273,6 +287,9 @@ def parse_ics_timetable(content: bytes | str) -> tuple[list[IcsPreviewItem], lis
                     location=location,
                     is_recurring=True,
                     recurring=True,
+                    recurrence_interval=interval_int,
+                    effective_from=effective_from_date,
+                    effective_until=effective_until_date,
                     course_code=course_code,
                     notes=notes,
                 )

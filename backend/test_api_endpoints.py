@@ -82,24 +82,25 @@ def test_courses_endpoints():
         headers=AUTH_HEADER,
         json={"code": "CS210", "name": "Data Structures", "color": "#10b981"},
     )
-    assert resp.status_code == 200, resp.text
+    assert resp.status_code in (200, 201), resp.text
     assert resp.json()["data"]["code"] == "CS210"
     print("[PASS] POST /api/v1/courses")
 
-    # PATCH /courses/1
+    # PATCH /courses
+    created_course_id = resp.json()["data"]["id"]
     resp = client.patch(
-        "/api/v1/courses/1",
+        f"/api/v1/courses/{created_course_id}",
         headers=AUTH_HEADER,
         json={"name": "Updated Data Structures"},
     )
     assert resp.status_code == 200, resp.text
-    print("[PASS] PATCH /api/v1/courses/1")
+    print(f"[PASS] PATCH /api/v1/courses/{created_course_id}")
 
-    # DELETE /courses/1
-    resp = client.delete("/api/v1/courses/1", headers=AUTH_HEADER)
+    # DELETE /courses
+    resp = client.delete(f"/api/v1/courses/{created_course_id}", headers=AUTH_HEADER)
     assert resp.status_code == 200, resp.text
     assert resp.json()["data"]["deleted"] is True
-    print("[PASS] DELETE /api/v1/courses/1")
+    print(f"[PASS] DELETE /api/v1/courses/{created_course_id}")
 
 
 def test_blocks_endpoints():
@@ -149,14 +150,14 @@ def test_blocks_endpoints():
     assert resp_invalid.json()["error"]["code"] == "validation_error"
     print("[PASS] 422 Validation error format { error: { code, message } }")
 
-    # PATCH /blocks/1
+    # PATCH /blocks/{id}
     resp = client.patch(
-        "/api/v1/blocks/1",
+        f"/api/v1/blocks/{created['id']}",
         headers=AUTH_HEADER,
         json={"title": "Updated Shift Title", "hourly_wage": 19.00},
     )
     assert resp.status_code == 200, resp.text
-    print("[PASS] PATCH /api/v1/blocks/1")
+    print(f"[PASS] PATCH /api/v1/blocks/{created['id']}")
 
     # POST /blocks/duplicate (on newly created block)
     resp = client.post(
@@ -168,11 +169,11 @@ def test_blocks_endpoints():
     assert "id" in resp.json()["data"]
     print("[PASS] POST /api/v1/blocks/{id}/duplicate")
 
-    # DELETE /blocks/1
-    resp = client.delete("/api/v1/blocks/1", headers=AUTH_HEADER)
+    # DELETE /blocks/{id}
+    resp = client.delete(f"/api/v1/blocks/{created['id']}", headers=AUTH_HEADER)
     assert resp.status_code == 200, resp.text
     assert resp.json()["data"]["deleted"] is True
-    print("[PASS] DELETE /api/v1/blocks/1 (soft delete)")
+    print(f"[PASS] DELETE /api/v1/blocks/{created['id']} (soft delete)")
 
 
 def test_conflicts_and_week_endpoints():

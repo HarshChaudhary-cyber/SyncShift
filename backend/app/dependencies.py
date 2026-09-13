@@ -19,12 +19,29 @@ class CurrentUser:
         email: str,
         timezone: str = "Europe/London",
         weekly_limit: float = 20.0,
+        display_name: Optional[str] = None,
+        avatar_url: Optional[str] = None,
+        currency: str = "INR",
+        language: str = "en",
+        theme: str = "dark",
+        minimum_transition_minutes: int = 15,
+        oauth_provider: Optional[str] = None,
+        deleted_at: Optional[datetime] = None,
     ):
         self.user_id = user_id
         self.email = email
         self.timezone = timezone
         self.weekly_limit = weekly_limit
         self.weekly_work_hour_limit = weekly_limit
+        self.display_name = display_name
+        self.avatar_url = avatar_url
+        self.currency = currency
+        self.language = language
+        self.theme = theme
+        self.minimum_transition_minutes = minimum_transition_minutes
+        self.oauth_provider = oauth_provider
+        self.deleted_at = deleted_at
+
 
     def __int__(self) -> int:
         return self.user_id
@@ -53,7 +70,7 @@ def get_current_user(
     """
     Validate JWT Bearer token and extract user information.
     Decodes token using settings.JWT_SECRET.
-    Raises HTTP 401 if missing, invalid, or expired.
+    Raises HTTP 401 if missing, invalid, expired, or user deleted.
     """
     if credentials is None or not credentials.credentials:
         raise HTTPException(
@@ -72,11 +89,25 @@ def get_current_user(
             user_id = 1
         user = db.query(User).filter(User.id == user_id).first()
         if user:
+            if user.deleted_at is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={"code": "user_deleted", "message": "This account has been deleted"},
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
             return CurrentUser(
                 user_id=user.id,
                 email=user.email,
-                timezone=user.timezone,
-                weekly_limit=float(user.weekly_work_hour_limit),
+                timezone=user.timezone or "Europe/London",
+                weekly_limit=float(user.weekly_work_hour_limit or 20.0),
+                display_name=getattr(user, "display_name", None) or getattr(user, "name", None),
+                avatar_url=getattr(user, "avatar_url", None),
+                currency=getattr(user, "currency", "INR") or "INR",
+                language=getattr(user, "language", "en") or "en",
+                theme=getattr(user, "theme", "dark") or "dark",
+                minimum_transition_minutes=int(getattr(user, "minimum_transition_minutes", 15) or 15),
+                oauth_provider=getattr(user, "oauth_provider", None),
+                deleted_at=getattr(user, "deleted_at", None),
             )
         return CurrentUser(user_id=user_id, email=f"user_{user_id}@example.com")
 
@@ -94,13 +125,28 @@ def get_current_user(
 
         user = db.query(User).filter(User.id == user_id).first()
         if user:
+            if user.deleted_at is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={"code": "user_deleted", "message": "This account has been deleted"},
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
             return CurrentUser(
                 user_id=user.id,
                 email=user.email,
-                timezone=user.timezone,
-                weekly_limit=float(user.weekly_work_hour_limit),
+                timezone=user.timezone or "Europe/London",
+                weekly_limit=float(user.weekly_work_hour_limit or 20.0),
+                display_name=getattr(user, "display_name", None) or getattr(user, "name", None),
+                avatar_url=getattr(user, "avatar_url", None),
+                currency=getattr(user, "currency", "INR") or "INR",
+                language=getattr(user, "language", "en") or "en",
+                theme=getattr(user, "theme", "dark") or "dark",
+                minimum_transition_minutes=int(getattr(user, "minimum_transition_minutes", 15) or 15),
+                oauth_provider=getattr(user, "oauth_provider", None),
+                deleted_at=getattr(user, "deleted_at", None),
             )
         return CurrentUser(user_id=user_id, email=email)
+
 
     except jwt.ExpiredSignatureError:
         raise HTTPException(
@@ -114,4 +160,93 @@ def get_current_user(
             detail={"code": "unauthorized", "message": "Could not validate JWT credentials"},
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+class InstitutionContext:
+    """Encapsulates the verified tenant institution, membership, and user context."""
+
+    def __init__(self, institution, membership, user: CurrentUser):
+        self.institution = institution
+        self.membership = membership
+        self.user = user
+
+    @property
+    def institution_id(self) -> int:
+        return self.institution.id
+
+    @property
+    def role(self) -> str:
+        return self.membership.role
+
+    @property
+    def user_id(self) -> int:
+        return self.user.user_id
+
+    def is_admin(self) -> bool:
+        return self.membership.role in ("admin", "super_admin")
+
+
+def get_institution_context(
+    institution_id: int,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> InstitutionContext:
+    """
+    Validate that the authenticated user belongs to the specified institution.
+    Blocks unauthorized and cross-tenant access with 403 Forbidden.
+    """
+    from app.models.institution import Institution, InstitutionMembership
+
+    institution = (
+        db.query(Institution)
+        .filter(
+            Institution.id == institution_id,
+            Institution.deleted_at.is_(None),
+            Institution.is_active.is_(True),
+        )
+        .first()
+    )
+    if not institution:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "institution_not_found", "message": f"Institution {institution_id} not found or inactive"},
+        )
+
+    membership = (
+        db.query(InstitutionMembership)
+        .filter(
+            InstitutionMembership.user_id == current_user.user_id,
+            InstitutionMembership.institution_id == institution_id,
+            InstitutionMembership.deleted_at.is_(None),
+            InstitutionMembership.status == "active",
+        )
+        .first()
+    )
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "unauthorized_institution_access",
+                "message": "You do not have active membership in this institution",
+            },
+        )
+
+    return InstitutionContext(institution=institution, membership=membership, user=current_user)
+
+
+def require_institution_admin(
+    context: InstitutionContext = Depends(get_institution_context),
+) -> InstitutionContext:
+    """
+    Ensure the current user has 'admin' or 'super_admin' role in this institution.
+    """
+    if not context.is_admin():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "forbidden",
+                "message": f"Action requires administrator privileges. Your current role is '{context.role}'",
+            },
+        )
+    return context
 

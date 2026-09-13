@@ -3,28 +3,37 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { BlockOut, ConflictItem } from '@/lib/api';
+import DayHeader from './DayHeader';
 import CalendarBlockCard from './CalendarBlockCard';
+import CurrentTimeIndicator from './CurrentTimeIndicator';
 
 interface DayColumnProps {
   dayIndex: number;
   dayName: string;
   dateStr: string;
+  dayNumber: string;
+  isToday: boolean;
   blocks: BlockOut[];
+  allBlocks?: BlockOut[];
   conflicts: ConflictItem[];
   startHour: number;
   endHour: number;
   hourHeight: number;
   onBlockClick: (block: BlockOut) => void;
-  onBlockDelete: (id: number) => void;
-  onBlockResize: (id: number, newEndTime: string) => void;
+  onBlockDelete: (id: number, scope?: 'this' | 'future' | 'all', occurrenceDate?: string) => void;
+  onBlockResize: (id: number, newEndTime: string, occurrenceDate?: string) => void;
   onSlotClick?: (dayIndex: number, startTime: string, endTime: string) => void;
+  onReplanStudy?: (taskId: number) => Promise<void> | void;
 }
 
 export default function DayColumn({
   dayIndex,
   dayName,
   dateStr,
+  dayNumber,
+  isToday,
   blocks,
+  allBlocks,
   conflicts,
   startHour,
   endHour,
@@ -33,6 +42,7 @@ export default function DayColumn({
   onBlockDelete,
   onBlockResize,
   onSlotClick,
+  onReplanStudy,
 }: DayColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `day-${dayIndex}`,
@@ -42,9 +52,10 @@ export default function DayColumn({
   const totalHours = endHour - startHour;
 
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only fire if the click is directly on the grid (not on a block card)
+    // Prevent triggering slot click if click originated from a block card
     if ((e.target as HTMLElement).closest('[data-block-card]')) return;
     if (!onSlotClick) return;
+
     const rect = e.currentTarget.getBoundingClientRect();
     const relY = e.clientY - rect.top;
     const clickedMins = Math.round((relY / hourHeight) * 60 / 15) * 15;
@@ -56,12 +67,19 @@ export default function DayColumn({
   };
 
   return (
-    <div className="flex-1 min-w-[130px] border-r border-neutral-800 last:border-r-0 flex flex-col">
+    <div
+      className={`flex-1 min-w-[125px] sm:min-w-[140px] border-r border-[var(--border-color)] last:border-r-0 flex flex-col transition-colors ${
+        isToday ? 'bg-indigo-500/[0.02] dark:bg-indigo-950/[0.05]' : 'bg-transparent'
+      }`}
+    >
       {/* Column Header */}
-      <div className="py-2.5 px-2 text-center border-b border-neutral-800 bg-neutral-900/60 sticky top-0 z-20 backdrop-blur-xs">
-        <p className="text-xs font-semibold text-neutral-200">{dayName}</p>
-        <p className="text-[10px] text-neutral-400">{dateStr}</p>
-      </div>
+      <DayHeader
+        dayName={dayName}
+        dateStr={dateStr}
+        dayNumber={dayNumber}
+        isToday={isToday}
+        dayBlocks={blocks}
+      />
 
       {/* Grid container with droppable area */}
       <div
@@ -69,29 +87,49 @@ export default function DayColumn({
         onClick={handleGridClick}
         style={{ height: `${totalHours * hourHeight}px` }}
         className={`relative transition-colors cursor-cell ${
-          isOver ? 'bg-blue-500/10 ring-2 ring-inset ring-blue-500/40' : 'bg-transparent'
+          isOver
+            ? 'bg-indigo-500/15 ring-2 ring-inset ring-indigo-500/50'
+            : 'hover:bg-black/[0.01] dark:hover:bg-white/[0.01]'
         }`}
       >
         {/* Hour line background */}
         {Array.from({ length: totalHours }).map((_, idx) => (
-          <div
-            key={idx}
-            style={{ height: `${hourHeight}px`, top: `${idx * hourHeight}px` }}
-            className="absolute left-0 right-0 border-b border-neutral-800/50 pointer-events-none"
-          />
+          <React.Fragment key={idx}>
+            {/* Main hour solid line */}
+            <div
+              style={{ top: `${idx * hourHeight}px` }}
+              className="absolute left-0 right-0 border-b border-[var(--border-color)]/70 pointer-events-none"
+            />
+            {/* Half-hour subtle dashed line */}
+            <div
+              style={{ top: `${idx * hourHeight + hourHeight / 2}px` }}
+              className="absolute left-0 right-0 border-b border-dashed border-[var(--border-color)]/35 pointer-events-none"
+            />
+          </React.Fragment>
         ))}
+
+        {/* Current Time Indicator (rendered only on today's column) */}
+        {isToday && (
+          <CurrentTimeIndicator
+            startHour={startHour}
+            endHour={endHour}
+            hourHeight={hourHeight}
+          />
+        )}
 
         {/* Blocks rendered in this day */}
         {blocks.map((block) => (
           <CalendarBlockCard
-            key={block.id}
+            key={block.occurrence_date ? `${block.id}-${block.occurrence_date}` : block.id}
             block={block}
+            allBlocks={allBlocks}
             conflicts={conflicts}
             hourHeight={hourHeight}
             startHour={startHour}
             onClick={onBlockClick}
             onDelete={onBlockDelete}
             onResizeEnd={onBlockResize}
+            onReplanStudy={onReplanStudy}
           />
         ))}
       </div>

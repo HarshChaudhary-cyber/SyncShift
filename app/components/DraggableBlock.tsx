@@ -141,6 +141,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
     return (
       <div
         ref={setDragRef}
+        suppressHydrationWarning
         role="button"
         tabIndex={0}
         aria-label={`${block.label} from ${startLabel} to ${endLabel}`}
@@ -185,9 +186,15 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
                 </span>
               )}
               <span
-                className={`text-[9px] px-1 py-0.5 rounded leading-none shrink-0 ${styles.badge}`}
+                className={`text-[9px] font-semibold px-1 py-0.5 rounded leading-none shrink-0 ${styles.badge}`}
               >
-                {styles.tag}
+                {block.eventSource
+                  ? `[${block.eventSource.toUpperCase()}]`
+                  : block.type === 'shift'
+                  ? '[WORK]'
+                  : block.type === 'class'
+                  ? '[CLASS]'
+                  : styles.tag}
               </span>
             </div>
           </div>

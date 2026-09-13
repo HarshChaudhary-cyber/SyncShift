@@ -12,6 +12,9 @@ class IcsPreviewItem(BaseModel):
     location: Optional[str] = None
     is_recurring: bool = True
     recurring: Optional[bool] = True
+    recurrence_interval: Optional[int] = 1
+    effective_from: Optional[date] = None
+    effective_until: Optional[date] = None
     course_code: Optional[str] = None
     notes: Optional[str] = ""
 
@@ -36,6 +39,8 @@ class IcsConfirmBlock(BaseModel):
     course_id: Optional[int] = None
     effective_from: Optional[date] = None
     effective_until: Optional[date] = None
+    recurrence_interval: Optional[int] = 1
+    is_recurring: Optional[bool] = True
 
 
 class IcsConfirmRequest(BaseModel):

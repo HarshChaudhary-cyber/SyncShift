@@ -24,6 +24,27 @@ def init_db() -> None:
     from app import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
 
+    # Automatically add missing columns if upgrading existing database
+    try:
+        from sqlalchemy import inspect, text
+        insp = inspect(engine)
+        if "users" in insp.get_table_names():
+            cols = [c["name"] for c in insp.get_columns("users")]
+            with engine.begin() as conn:
+                if "currency" not in cols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN currency VARCHAR(8) DEFAULT 'INR'"))
+                if "language" not in cols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN language VARCHAR(5) DEFAULT 'en'"))
+                if "theme" not in cols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN theme VARCHAR(10) DEFAULT 'dark'"))
+                if "minimum_transition_minutes" not in cols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN minimum_transition_minutes INTEGER DEFAULT 15"))
+                if "deleted_at" not in cols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN deleted_at DATETIME"))
+    except Exception as e:
+        print("Warning during init_db column check:", e)
+
+
 
 # Auto-initialize database tables for dev / testing
 try:

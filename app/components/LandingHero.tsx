@@ -25,12 +25,14 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
   onImportClick,
   className = '',
 }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
   return (
     <div
       className={`min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col justify-between ${className}`}
     >
       {/* ── Navigation ──────────────────────────────────────────────────── */}
-      <header className="w-full max-w-6xl mx-auto px-6 h-20 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900">
+      <header className="relative w-full max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900 z-30">
         <div className="flex items-center gap-2.5">
           <div className="h-7 w-7 rounded-md bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">
             S
@@ -40,18 +42,19 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
           </span>
         </div>
 
-        <nav className="flex items-center gap-3">
+        {/* Desktop navigation */}
+        <nav className="hidden md:flex items-center gap-3">
           <button
             type="button"
             onClick={onHowItWorksClick}
-            className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors"
+            className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors cursor-pointer"
           >
             How it works
           </button>
           <button
             type="button"
             onClick={onImportClick}
-            className="text-xs font-medium px-3 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-800 hover:border-indigo-300 dark:hover:border-indigo-700 bg-zinc-50 dark:bg-zinc-900 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/40 text-zinc-700 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors inline-flex items-center gap-1.5"
+            className="text-xs font-medium px-3 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-800 hover:border-indigo-300 dark:hover:border-indigo-700 bg-zinc-50 dark:bg-zinc-900 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/40 text-zinc-700 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
           >
             <svg className="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -77,6 +80,77 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
             Calendar App →
           </Link>
         </nav>
+
+        {/* Mobile hamburger button */}
+        <div className="flex md:hidden items-center gap-2">
+          <Link
+            href="/calendar"
+            className="text-xs font-medium px-2.5 py-1.5 rounded-md bg-indigo-600 text-white"
+          >
+            App →
+          </Link>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition cursor-pointer"
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {/* Mobile dropdown drawer */}
+        {mobileMenuOpen && (
+          <div className="absolute top-full left-0 right-0 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-xl p-4 flex flex-col gap-2.5 md:hidden z-40">
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onHowItWorksClick?.();
+              }}
+              className="text-left py-2 px-3 rounded-lg text-sm text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+            >
+              How it works
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onImportClick?.();
+              }}
+              className="text-left py-2 px-3 rounded-lg text-sm text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition flex items-center gap-2"
+            >
+              <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Import timetable (.ics)
+            </button>
+            <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-1" />
+            <Link
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2 px-3 rounded-lg text-sm text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/signup"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-2.5 px-3 rounded-lg text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white text-center transition"
+            >
+              Sign up
+            </Link>
+          </div>
+        )}
       </header>
 
 
@@ -295,7 +369,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
       <footer className="w-full max-w-6xl mx-auto px-6 py-8 border-t border-zinc-100 dark:border-zinc-900 text-xs text-zinc-400 dark:text-zinc-500 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>© {new Date().getFullYear()} SyncShift. Free tool for student workers.</div>
+        <div suppressHydrationWarning>© {new Date().getFullYear()} SyncShift. Free tool for student workers.</div>
         <div className="flex gap-4">
           <a href="#privacy" className="hover:underline hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
             Privacy

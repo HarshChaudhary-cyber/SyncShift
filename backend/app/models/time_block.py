@@ -23,6 +23,7 @@ from app.database import Base
 class BlockType(str, enum.Enum):
     CLASS = "class"
     SHIFT = "shift"
+    STUDY = "study"
 
 
 class BlockStatus(str, enum.Enum):
@@ -34,9 +35,9 @@ class BlockStatus(str, enum.Enum):
 class TimeBlock(Base):
     __tablename__ = "time_blocks"
 
-    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, index=True, autoincrement=True)
     user_id = Column(
-        BigInteger,
+        BigInteger().with_variant(Integer, "sqlite"),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -51,7 +52,7 @@ class TimeBlock(Base):
         default=BlockStatus.ENROLLED,
     )
     course_id = Column(
-        BigInteger,
+        BigInteger().with_variant(Integer, "sqlite"),
         ForeignKey("courses.id", ondelete="SET NULL"),
         nullable=True,
     )
@@ -60,6 +61,7 @@ class TimeBlock(Base):
 
     # Recurrence & Timing
     is_recurring = Column(Boolean, nullable=False, default=True)
+    recurrence_interval = Column(Integer, nullable=False, default=1, server_default="1")  # 1 = weekly, 2 = biweekly (every 2 weeks)
     specific_date = Column(Date, nullable=True)
     day_of_week = Column(SmallInteger, nullable=True)  # 0 = Sunday, 1 = Monday ... 6 = Saturday
     start_time = Column(Time, nullable=False)
@@ -76,6 +78,14 @@ class TimeBlock(Base):
     hourly_wage = Column(Numeric(10, 2), nullable=True)
     is_imported = Column(Boolean, default=False, nullable=False)
     deleted = Column(Boolean, default=False, nullable=False, index=True)
+
+    # Study Planner Link (nullable, only for study blocks)
+    study_task_id = Column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        ForeignKey("study_tasks.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(
@@ -97,3 +107,4 @@ class TimeBlock(Base):
     user = relationship("User", back_populates="time_blocks")
     course = relationship("Course", back_populates="time_blocks")
     overrides = relationship("BlockOverride", back_populates="time_block", cascade="all, delete-orphan")
+    study_task = relationship("StudyTask", back_populates="study_blocks")

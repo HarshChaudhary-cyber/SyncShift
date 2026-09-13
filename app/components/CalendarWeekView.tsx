@@ -13,6 +13,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import DraggableBlock from './DraggableBlock';
+import ClientOnlyDnd from './ClientOnlyDnd';
 
 // ---------------------------------------------------------------------------
 // Types (re-exported so existing imports keep working)
@@ -32,6 +33,8 @@ export interface ConflictMetadata {
   involvedBlockIds: (string | number)[];
 }
 
+export type EventSource = 'class' | 'work' | 'personal' | 'other';
+
 export interface TimeBlock {
   /** Optional stable key for React reconciliation */
   id?: string | number;
@@ -45,6 +48,8 @@ export interface TimeBlock {
   /** 24-hour "HH:MM" or "HH:MM:SS", e.g. "11:00" */
   endTime: string;
   type: BlockType;
+  /** Unified event source category for coexisting calendar events: [CLASS], [WORK], [PERSONAL], [OTHER] */
+  eventSource?: EventSource;
   label: string;
   /** Course code for matching academic sections (e.g. CS101) */
   courseCode?: string;
@@ -542,7 +547,8 @@ export const CalendarWeekView: React.FC<CalendarWeekViewProps> = ({
   const isDraggingAny = activeId !== null;
 
   return (
-    <DndContext
+    <ClientOnlyDnd>
+      <DndContext
       sensors={sensors}
       modifiers={modifiers}
       onDragStart={handleDragStart}
@@ -677,6 +683,7 @@ export const CalendarWeekView: React.FC<CalendarWeekViewProps> = ({
         {activeBlock ? <OverlayBlock block={activeBlock} /> : null}
       </DragOverlay>
     </DndContext>
+  </ClientOnlyDnd>
   );
 };
 

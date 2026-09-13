@@ -13,7 +13,7 @@ export default function BlocksPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-neutral-950 flex items-center justify-center text-neutral-400">
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-secondary)]">
         Loading blocks…
       </div>
     </ProtectedRoute>

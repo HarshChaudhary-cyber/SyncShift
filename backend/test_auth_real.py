@@ -268,3 +268,64 @@ def test_user_data_isolation():
     # Student A can still query their own block
     a_blocks_resp = client.get("/api/v1/blocks", headers=headers_a)
     assert any(b["id"] == block_a_id for b in a_blocks_resp.json()["data"])
+
+
+def test_auth_registration_optional_timezone():
+    """Registration without timezone should succeed and default to None/Europe/London."""
+    email = f"student_notz_{int(time.time())}@university.edu"
+    resp = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email,
+            "password": "Password123!",
+            "weekly_work_hour_limit": 18.0,
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()["data"]
+    assert data["email"] == email
+    assert data.get("timezone") is None or isinstance(data.get("timezone"), str)
+
+
+def test_auth_patch_profile():
+    """PATCH /auth/me allows updating timezone and weekly work hour limit."""
+    email = f"student_patch_{int(time.time())}@university.edu"
+    reg = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email,
+            "password": "Password123!",
+            "timezone": "Europe/London",
+            "weekly_work_hour_limit": 20.0,
+        },
+    )
+    token = reg.json()["data"]["token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Update timezone and limit
+    patch_resp = client.patch(
+        "/api/v1/auth/me",
+        headers=headers,
+        json={"timezone": "Asia/Kolkata", "weekly_work_hour_limit": 25.0},
+    )
+    assert patch_resp.status_code == 200, patch_resp.text
+    data = patch_resp.json()["data"]
+    assert data["timezone"] == "Asia/Kolkata"
+    assert data["weekly_work_hour_limit"] == 25.0
+
+    # Invalid timezone rejected
+    bad_tz = client.patch(
+        "/api/v1/auth/me",
+        headers=headers,
+        json={"timezone": "Invalid/Fake_Zone"},
+    )
+    assert bad_tz.status_code == 400
+    assert bad_tz.json()["error"]["code"] == "validation_error"
+
+    # Invalid weekly limit (<= 0) rejected
+    bad_limit = client.patch(
+        "/api/v1/auth/me",
+        headers=headers,
+        json={"weekly_work_hour_limit": -5.0},
+    )
+    assert bad_limit.status_code in (400, 422)

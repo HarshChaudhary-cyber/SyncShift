@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { format, startOfWeek, addWeeks, subWeeks } from 'date-fns';
+import { format, startOfWeek, addWeeks, subWeeks, parseISO } from 'date-fns';
 import {
   api,
   ApiError,
@@ -15,6 +15,8 @@ import { showErrorToast } from '@/lib/toast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export type CalendarViewMode = '5day' | '7day';
+
 interface CalendarContextType {
   blocks: BlockOut[];
   conflicts: ConflictItem[];
@@ -24,6 +26,8 @@ interface CalendarContextType {
   /** ISO string or null — timestamp of the last successful week fetch. */
   lastUpdated: Date | null;
   error: string | null;
+  viewMode: CalendarViewMode;
+  setViewMode: (mode: CalendarViewMode) => void;
   setWeekStart: (date: string) => void;
   goToNextWeek: () => void;
   goToPrevWeek: () => void;
@@ -32,9 +36,10 @@ interface CalendarContextType {
   refreshConflicts: () => Promise<void>;
   addBlock: (payload: BlockCreatePayload) => Promise<BlockOut>;
   updateBlock: (id: number, payload: BlockUpdatePayload) => Promise<BlockOut>;
-  deleteBlock: (id: number) => Promise<void>;
-  moveBlock: (id: number, dayOfWeek: number, startTime: string, endTime: string) => Promise<void>;
-  resizeBlock: (id: number, endTime: string) => Promise<void>;
+  duplicateBlock: (id: number, daysOffset?: number) => Promise<BlockOut>;
+  deleteBlock: (id: number, scope?: 'this' | 'future' | 'all', occurrenceDate?: string) => Promise<void>;
+  moveBlock: (id: number, dayOfWeek: number, startTime: string, endTime: string, occurrenceDate?: string, scope?: 'this' | 'future' | 'all') => Promise<void>;
+  resizeBlock: (id: number, endTime: string, occurrenceDate?: string, scope?: 'this' | 'future' | 'all') => Promise<void>;
 }
 
 const defaultTotals: WeeklyTotals = {
@@ -63,6 +68,7 @@ export function CalendarProvider({ children, onUnauthorized }: CalendarProviderP
   const [weekStart, setWeekStart] = useState<string>(() =>
     format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
   );
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('7day');
   const [blocks, setBlocks] = useState<BlockOut[]>([]);
   const [conflicts, setConflicts] = useState<ConflictItem[]>([]);
   const [totals, setTotals] = useState<WeeklyTotals>(defaultTotals);
@@ -116,85 +122,100 @@ export function CalendarProvider({ children, onUnauthorized }: CalendarProviderP
     loadWeek(weekStart);
   }, [loadWeek, weekStart]);
 
-  // ── Idle-refetch: attach to the onIdleReturn ref from AuthContext ───────────
-  // CalendarProvider receives a ref from the page component so it can register
-  // a "reload on idle return" callback without depending on AuthContext directly.
-  // (This is wired up in calendar/page.tsx.)
-
   // ── CRUD actions ───────────────────────────────────────────────────────────
 
   const addBlock = async (payload: BlockCreatePayload) => {
     const created = await api.createBlock(payload);
-    setBlocks((prev) => [...prev, created]);
+    await refreshWeek();
     await refreshConflicts();
     return created;
   };
 
   const updateBlock = async (id: number, payload: BlockUpdatePayload) => {
     const updated = await api.updateBlock(id, payload);
-    setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, ...updated } : b)));
+    await refreshWeek();
     await refreshConflicts();
     return updated;
   };
 
-  const deleteBlock = async (id: number) => {
-    await api.deleteBlock(id);
-    setBlocks((prev) => prev.filter((b) => b.id !== id));
+  const duplicateBlock = async (id: number, daysOffset: number = 0) => {
+    const duplicated = await api.duplicateBlock(id, daysOffset);
+    await refreshWeek();
+    await refreshConflicts();
+    return duplicated;
+  };
+
+  const deleteBlock = async (id: number, scope: 'this' | 'future' | 'all' = 'all', occurrenceDate?: string) => {
+    await api.deleteBlock(id, scope, occurrenceDate);
+    await refreshWeek();
     await refreshConflicts();
   };
 
-  const moveBlock = async (id: number, dayOfWeek: number, startTime: string, endTime: string) => {
+  const moveBlock = async (
+    id: number,
+    dayOfWeek: number,
+    startTime: string,
+    endTime: string,
+    occurrenceDate?: string,
+    scope: 'this' | 'future' | 'all' = 'this'
+  ) => {
     const previousBlock = blocks.find((b) => b.id === id);
     if (!previousBlock) return;
 
     setBlocks((prev) =>
       prev.map((b) =>
-        b.id === id
+        b.id === id && (!occurrenceDate || b.occurrence_date === occurrenceDate)
           ? { ...b, day_of_week: dayOfWeek, start_time: startTime, end_time: endTime, isSaving: true }
           : b
       )
     );
 
     try {
-      const updated = await api.updateBlock(id, {
+      await api.updateBlock(id, {
         day_of_week: dayOfWeek,
         start_time: startTime,
         end_time: endTime,
+        occurrence_date: occurrenceDate,
+        scope,
       });
-
-      setBlocks((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, ...updated, isSaving: false } : b))
-      );
+      await refreshWeek();
       await refreshConflicts();
     } catch (err: unknown) {
       console.error(`Failed to persist move for block #${id}:`, err);
-      setBlocks((prev) =>
-        prev.map((b) => (b.id === id ? { ...previousBlock, isSaving: false } : b))
-      );
+      await refreshWeek();
       showErrorToast("Couldn't save move. Please try again.");
       throw err;
     }
   };
 
-  const resizeBlock = async (id: number, endTime: string) => {
+  const resizeBlock = async (
+    id: number,
+    endTime: string,
+    occurrenceDate?: string,
+    scope: 'this' | 'future' | 'all' = 'this'
+  ) => {
     const previousBlock = blocks.find((b) => b.id === id);
     if (!previousBlock) return;
 
     setBlocks((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, end_time: endTime, isSaving: true } : b))
+      prev.map((b) =>
+        b.id === id && (!occurrenceDate || b.occurrence_date === occurrenceDate)
+          ? { ...b, end_time: endTime, isSaving: true }
+          : b
+      )
     );
 
     try {
-      const updated = await api.updateBlock(id, { end_time: endTime });
-      setBlocks((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, ...updated, isSaving: false } : b))
-      );
+      await api.updateBlock(id, {
+        end_time: endTime,
+        occurrence_date: occurrenceDate,
+        scope,
+      });
+      await refreshWeek();
       await refreshConflicts();
     } catch (err: unknown) {
       console.error(`Failed to resize block #${id}:`, err);
-      setBlocks((prev) =>
-        prev.map((b) => (b.id === id ? { ...previousBlock, isSaving: false } : b))
-      );
+      await refreshWeek();
       showErrorToast("Couldn't save resize. Please try again.");
       throw err;
     }
@@ -210,17 +231,20 @@ export function CalendarProvider({ children, onUnauthorized }: CalendarProviderP
         loading,
         lastUpdated,
         error,
+        viewMode,
+        setViewMode,
         setWeekStart,
         goToNextWeek: () =>
-          setWeekStart((curr) => format(addWeeks(new Date(curr), 1), 'yyyy-MM-dd')),
+          setWeekStart((curr) => format(addWeeks(parseISO(curr), 1), 'yyyy-MM-dd')),
         goToPrevWeek: () =>
-          setWeekStart((curr) => format(subWeeks(new Date(curr), 1), 'yyyy-MM-dd')),
+          setWeekStart((curr) => format(subWeeks(parseISO(curr), 1), 'yyyy-MM-dd')),
         goToCurrentWeek: () =>
           setWeekStart(format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')),
         refreshWeek,
         refreshConflicts,
         addBlock,
         updateBlock,
+        duplicateBlock,
         deleteBlock,
         moveBlock,
         resizeBlock,

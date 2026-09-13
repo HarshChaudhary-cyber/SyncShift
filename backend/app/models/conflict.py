@@ -24,20 +24,20 @@ class ConflictStatus(str, enum.Enum):
 class Conflict(Base):
     __tablename__ = "conflicts"
 
-    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    id = Column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, index=True, autoincrement=True)
     user_id = Column(
-        BigInteger,
+        BigInteger().with_variant(Integer, "sqlite"),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
     block_a_id = Column(
-        BigInteger,
+        BigInteger().with_variant(Integer, "sqlite"),
         ForeignKey("time_blocks.id", ondelete="CASCADE"),
         nullable=False,
     )
     block_b_id = Column(
-        BigInteger,
+        BigInteger().with_variant(Integer, "sqlite"),
         ForeignKey("time_blocks.id", ondelete="CASCADE"),
         nullable=False,
     )

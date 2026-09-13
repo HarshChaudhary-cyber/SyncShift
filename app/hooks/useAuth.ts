@@ -25,6 +25,8 @@ export interface UseAuthReturn {
     timezone?: string,
     weeklyLimit?: number,
   ) => Promise<void>;
+  /** Accepts OAuth login/signup response data, saves token, and activates session. */
+  loginWithOAuthData: (data: any) => Promise<void>;
   /** Clears localStorage token and resets to unauthenticated. */
   logout: () => void;
   /** Timestamp of the last successful /auth/me or login verification. */
@@ -143,6 +145,28 @@ export function useAuth(): UseAuthReturn {
     [],
   );
 
+  // ── loginWithOAuthData ───────────────────────────────────────────────
+  const loginWithOAuthData = useCallback(async (data: any) => {
+    if (data?.token) {
+      setAuthToken(data.token);
+    }
+    try {
+      const profile = await api.getAuthMe();
+      setUser(profile);
+    } catch {
+      setUser({
+        user_id: data.user_id,
+        email: data.email,
+        timezone: data.timezone || 'Europe/London',
+        weekly_work_hour_limit: 20.0,
+        display_name: data.display_name,
+        avatar_url: data.avatar_url,
+      });
+    }
+    setStatus('authenticated');
+    setLastVerified(new Date());
+  }, []);
+
   // ── logout ────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
     clearAuthToken();
@@ -151,5 +175,15 @@ export function useAuth(): UseAuthReturn {
     setLastVerified(null);
   }, []);
 
-  return { status, user, login, register, logout, lastVerified, refreshUser, onIdleReturn };
+  return {
+    status,
+    user,
+    login,
+    register,
+    loginWithOAuthData,
+    logout,
+    lastVerified,
+    refreshUser,
+    onIdleReturn,
+  };
 }

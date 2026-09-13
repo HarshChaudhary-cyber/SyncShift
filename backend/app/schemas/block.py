@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, model_validator
 
 
 class BlockBase(BaseModel):
-    type: Literal["class", "shift"]
+    type: Literal["class", "shift", "study"]
     title: str = Field(..., max_length=255)
     location: Optional[str] = Field(None, max_length=255)
     day_of_week: int = Field(..., ge=0, le=6, description="0 = Sunday, 1 = Monday ... 6 = Saturday")
@@ -12,9 +12,13 @@ class BlockBase(BaseModel):
     end_time: Union[time, str] = Field(..., description="End time (HH:MM or HH:MM:SS)")
     effective_from: Optional[date] = None
     effective_until: Optional[date] = None
+    is_recurring: bool = True
+    recurrence_interval: int = Field(default=1, ge=1, le=52, description="1 = weekly, 2 = biweekly (every 2 weeks)")
+    specific_date: Optional[date] = None
     is_flexible: bool = False
     hourly_wage: Optional[float] = Field(None, ge=0.0)
     course_id: Optional[int] = None
+    study_task_id: Optional[int] = None
 
 
 class BlockCreate(BlockBase):
@@ -42,8 +46,15 @@ class BlockUpdate(BaseModel):
     end_time: Optional[Union[time, str]] = None
     effective_from: Optional[date] = None
     effective_until: Optional[date] = None
+    is_recurring: Optional[bool] = None
+    recurrence_interval: Optional[int] = Field(None, ge=1, le=52)
+    specific_date: Optional[date] = None
     is_flexible: Optional[bool] = None
     hourly_wage: Optional[float] = Field(None, ge=0.0)
+    course_id: Optional[int] = None
+    # Recurrence edit scope: "this" (single occurrence), "future" (this and future), "all" (entire series)
+    scope: Optional[Literal["this", "future", "all"]] = "all"
+    occurrence_date: Optional[date] = None
 
     @model_validator(mode="after")
     def validate_update_dates(self) -> "BlockUpdate":
@@ -51,6 +62,22 @@ class BlockUpdate(BaseModel):
             if self.effective_until < self.effective_from:
                 raise ValueError("effective_until must be greater than or equal to effective_from")
         return self
+
+
+class BlockDeleteRequest(BaseModel):
+    scope: Literal["this", "future", "all"] = "all"
+    occurrence_date: Optional[date] = None
+
+
+class BlockExceptionCreate(BaseModel):
+    original_date: date
+    override_date: Optional[date] = None
+    start_time: Optional[Union[time, str]] = None
+    end_time: Optional[Union[time, str]] = None
+    title: Optional[str] = Field(None, max_length=255)
+    location: Optional[str] = Field(None, max_length=255)
+    is_cancelled: bool = False
+    note: Optional[str] = Field(None, max_length=255)
 
 
 class BlockDuplicate(BaseModel):
@@ -68,10 +95,21 @@ class BlockOut(BaseModel):
     end_time: str
     effective_from: Optional[date] = None
     effective_until: Optional[date] = None
+    is_recurring: bool = True
+    recurrence_interval: int = 1
+    specific_date: Optional[date] = None
     is_flexible: bool = False
     hourly_wage: Optional[float] = None
     course_id: Optional[int] = None
+    study_task_id: Optional[int] = None
+    color: Optional[str] = None
+    deleted: Optional[bool] = False
+
+    # Single-occurrence fields (when returned in week or today occurrences)
+    occurrence_date: Optional[date] = None
+    is_exception: bool = False
+    original_date: Optional[date] = None
+    override_id: Optional[int] = None
 
     class Config:
         from_attributes = True
-

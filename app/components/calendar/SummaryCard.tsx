@@ -11,38 +11,38 @@ export default function SummaryCard() {
   const isOver = totals.over_limit || totals.shift_hours > limit;
 
   return (
-    <div className="w-full bg-neutral-900/90 border border-neutral-800 rounded-xl p-4 shadow-lg backdrop-blur-sm">
+    <div className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-4 shadow-lg backdrop-blur-sm">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* KPI metrics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1">
           {/* Shift Hours */}
-          <div className="bg-neutral-950/70 border border-neutral-800/80 rounded-lg p-3">
-            <div className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-3">
+            <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
               Shift Hours
             </div>
-            <div className="mt-1 text-2xl font-bold text-emerald-400">
+            <div className="mt-1 text-2xl font-bold text-emerald-500">
               {totals.shift_hours.toFixed(1)}
-              <span className="text-xs font-normal text-neutral-400 ml-1">hrs</span>
+              <span className="text-xs font-normal text-[var(--text-muted)] ml-1">hrs</span>
             </div>
           </div>
 
           {/* Class Hours */}
-          <div className="bg-neutral-950/70 border border-neutral-800/80 rounded-lg p-3">
-            <div className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-3">
+            <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
               Class Hours
             </div>
-            <div className="mt-1 text-2xl font-bold text-blue-400">
+            <div className="mt-1 text-2xl font-bold text-blue-500">
               {totals.class_hours.toFixed(1)}
-              <span className="text-xs font-normal text-neutral-400 ml-1">hrs</span>
+              <span className="text-xs font-normal text-[var(--text-muted)] ml-1">hrs</span>
             </div>
           </div>
 
           {/* Expected Earnings */}
-          <div className="bg-neutral-950/70 border border-neutral-800/80 rounded-lg p-3">
-            <div className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-3">
+            <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
               Expected Earnings
             </div>
-            <div className="mt-1 text-2xl font-bold text-neutral-100">
+            <div className="mt-1 text-2xl font-bold text-[var(--text-primary)]">
               ${totals.expected_earnings.toFixed(2)}
             </div>
           </div>
@@ -51,18 +51,18 @@ export default function SummaryCard() {
           <div
             className={`rounded-lg p-3 border transition-colors ${
               isOver
-                ? 'bg-rose-950/40 border-rose-500/50'
-                : 'bg-neutral-950/70 border-neutral-800/80'
+                ? 'bg-rose-500/10 border-rose-500/50'
+                : 'bg-[var(--bg-secondary)] border-[var(--border-color)]'
             }`}
           >
-            <div className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+            <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
               Work Limit
             </div>
             <div className="mt-1 text-2xl font-bold">
-              <span className={isOver ? 'text-rose-400' : 'text-neutral-200'}>
+              <span className={isOver ? 'text-rose-500' : 'text-[var(--text-primary)]'}>
                 {totals.shift_hours.toFixed(1)}
               </span>
-              <span className="text-xs font-normal text-neutral-500"> / {limit}h</span>
+              <span className="text-xs font-normal text-[var(--text-muted)]"> / {limit}h</span>
             </div>
           </div>
         </div>

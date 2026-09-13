@@ -41,7 +41,7 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -61,14 +61,14 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label="Import timetable summary"
-        className="relative w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-2xl shadow-black/40 overflow-hidden"
+        className="relative w-full h-full sm:h-auto sm:max-w-lg rounded-none sm:rounded-2xl border-0 sm:border border-[var(--border-color)] bg-[var(--bg-card)] text-[var(--text-primary)] shadow-2xl shadow-black/40 flex flex-col max-h-full sm:max-h-[85vh] overflow-hidden"
         initial={{ opacity: 0, y: 20, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 16, scale: 0.97 }}
         transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[var(--border-color)] shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -76,10 +76,10 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
               </svg>
             </div>
             <div>
-              <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+              <h2 className="text-sm sm:text-base font-semibold text-[var(--text-primary)]">
                 Timetable Import Summary
               </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="text-[11px] sm:text-xs text-[var(--text-secondary)]">
                 Processed university schedule file
               </p>
             </div>
@@ -87,17 +87,17 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="rounded-md p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer"
             aria-label="Close summary"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4 text-xs">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4 text-xs">
           {/* Main stat highlights */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {/* Classes count */}
@@ -317,14 +317,14 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
                 {importedSections.map((sec) => (
                   <div
                     key={sec.id}
-                    className="p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 flex items-center justify-between gap-3 text-xs"
+                    className="p-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between gap-3 text-xs"
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                      <div className="font-medium text-[var(--text-primary)] truncate">
                         {sec.courseCode ? `${sec.courseCode}: ` : ''}
                         {sec.courseName}
                       </div>
-                      <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                      <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
                         {sec.day} · {fmt12h(sec.startTime)} – {fmt12h(sec.endTime)}
                         {sec.room ? ` · ${sec.room}` : ''}
                       </div>
@@ -341,7 +341,7 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
           )}
 
           {/* Shift Protection Reassurance */}
-          <div className="p-3 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+          <div className="p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[11px] text-[var(--text-secondary)] flex items-center gap-2">
             <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
@@ -352,11 +352,11 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
         </div>
 
         {/* Footer actions */}
-        <div className="flex items-center justify-end gap-2.5 px-6 py-3.5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/60 shrink-0">
+        <div className="flex items-center justify-end gap-2.5 px-6 py-3.5 border-t border-[var(--border-color)] bg-[var(--bg-secondary)] shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-lg hover:bg-zinc-200/60 dark:hover:bg-zinc-800 transition-colors"
+            className="px-4 py-2 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg hover:bg-[var(--border-color)] transition-colors"
           >
             Close
           </button>
