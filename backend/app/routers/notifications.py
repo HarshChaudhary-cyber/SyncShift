@@ -3,10 +3,11 @@ Notifications Router for SyncShift.
 Provides endpoints for push subscriptions, notification preferences,
 test push notifications, and notification logs.
 """
-from datetime import datetime, time
+from datetime import datetime, time, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import JSONResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -14,9 +15,13 @@ from app.dependencies import CurrentUser, get_current_user
 from app.models.notification import NotificationLog, NotificationPrefs, PushSubscription
 from app.schemas.common import DataResponse
 from app.schemas.notification import (
+    NotificationListResponse,
     NotificationLogOut,
+    NotificationMarkAllReadResponse,
+    NotificationMarkReadResponse,
     NotificationPrefsOut,
     NotificationPrefsUpdate,
+    NotificationUnreadCountResponse,
     PushSubscriptionDelete,
     PushSubscriptionIn,
     TestNotificationResponse,
@@ -50,6 +55,7 @@ def get_notification_prefs(
             user_id=current_user.user_id,
             push_enabled=True,
             email_enabled=False,
+            timetable_changes_enabled=True,
             class_reminder_min=30,
             shift_reminder_min=60,
             study_reminder_min=15,
@@ -66,6 +72,7 @@ def get_notification_prefs(
         user_id=prefs.user_id,
         push_enabled=prefs.push_enabled,
         email_enabled=prefs.email_enabled,
+        timetable_changes_enabled=getattr(prefs, "timetable_changes_enabled", True),
         class_reminder_min=prefs.class_reminder_min,
         shift_reminder_min=prefs.shift_reminder_min,
         study_reminder_min=prefs.study_reminder_min,
@@ -75,6 +82,7 @@ def get_notification_prefs(
         quiet_hours_end=_format_time_for_response(prefs.quiet_hours_end),
     )
     return DataResponse(data=out)
+
 
 
 @router.put("/prefs", response_model=DataResponse[NotificationPrefsOut])
@@ -96,6 +104,8 @@ def update_notification_prefs(
         prefs.push_enabled = body.push_enabled
     if body.email_enabled is not None:
         prefs.email_enabled = body.email_enabled
+    if body.timetable_changes_enabled is not None:
+        prefs.timetable_changes_enabled = body.timetable_changes_enabled
     if body.class_reminder_min is not None:
         prefs.class_reminder_min = body.class_reminder_min
     if body.shift_reminder_min is not None:
@@ -121,6 +131,7 @@ def update_notification_prefs(
         user_id=prefs.user_id,
         push_enabled=prefs.push_enabled,
         email_enabled=prefs.email_enabled,
+        timetable_changes_enabled=getattr(prefs, "timetable_changes_enabled", True),
         class_reminder_min=prefs.class_reminder_min,
         shift_reminder_min=prefs.shift_reminder_min,
         study_reminder_min=prefs.study_reminder_min,
@@ -130,6 +141,7 @@ def update_notification_prefs(
         quiet_hours_end=_format_time_for_response(prefs.quiet_hours_end),
     )
     return DataResponse(data=out)
+
 
 
 @router.post("/subscribe", status_code=status.HTTP_200_OK)
@@ -239,3 +251,132 @@ def get_notification_log(
 
     logs = query.order_by(NotificationLog.sent_at.desc()).limit(10).all()
     return DataResponse(data=logs)
+
+
+@router.get("", response_model=DataResponse[NotificationListResponse])
+def list_notifications(
+    unread_only: bool = Query(False, description="Filter to only unread notifications"),
+    limit: int = Query(50, ge=1, le=100, description="Max notifications to return"),
+    offset: int = Query(0, ge=0, description="Offset for pagination"),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    List notifications for current user with unread filter and pagination.
+    Returns list of items, unread_count, and total matching count.
+    """
+    base_query = db.query(NotificationLog).filter(NotificationLog.user_id == current_user.user_id)
+
+    unread_count = (
+        db.query(func.count(NotificationLog.id))
+        .filter(
+            NotificationLog.user_id == current_user.user_id,
+            NotificationLog.read_at.is_(None),
+        )
+        .scalar()
+        or 0
+    )
+
+    if unread_only:
+        base_query = base_query.filter(NotificationLog.read_at.is_(None))
+
+    total = base_query.count()
+    items = (
+        base_query
+        .order_by(NotificationLog.sent_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    return DataResponse(
+        data=NotificationListResponse(
+            items=items,
+            unread_count=unread_count,
+            total=total,
+        )
+    )
+
+
+@router.get("/unread-count", response_model=DataResponse[NotificationUnreadCountResponse])
+def get_unread_notification_count(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Fast query for unread notification count for badge rendering.
+    """
+    unread_count = (
+        db.query(func.count(NotificationLog.id))
+        .filter(
+            NotificationLog.user_id == current_user.user_id,
+            NotificationLog.read_at.is_(None),
+        )
+        .scalar()
+        or 0
+    )
+    return DataResponse(data=NotificationUnreadCountResponse(unread_count=unread_count))
+
+
+@router.patch("/{notification_id}/read", response_model=DataResponse[NotificationMarkReadResponse])
+def mark_notification_read(
+    notification_id: int = Path(..., description="ID of notification to mark as read"),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Marks a notification as read. Enforces user ownership.
+    """
+    notif = (
+        db.query(NotificationLog)
+        .filter(
+            NotificationLog.id == notification_id,
+            NotificationLog.user_id == current_user.user_id,
+        )
+        .first()
+    )
+    if not notif:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "notification_not_found", "message": f"Notification {notification_id} not found"},
+        )
+
+    now_utc = datetime.now(timezone.utc)
+    notif.read_at = now_utc
+    db.commit()
+
+    return DataResponse(
+        data=NotificationMarkReadResponse(
+            id=notif.id,
+            read_at=now_utc,
+            ok=True,
+        )
+    )
+
+
+@router.post("/read-all", response_model=DataResponse[NotificationMarkAllReadResponse])
+def mark_all_notifications_read(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Marks all unread notifications as read for current user.
+    """
+    now_utc = datetime.now(timezone.utc)
+    updated = (
+        db.query(NotificationLog)
+        .filter(
+            NotificationLog.user_id == current_user.user_id,
+            NotificationLog.read_at.is_(None),
+        )
+        .update({"read_at": now_utc}, synchronize_session=False)
+    )
+    db.commit()
+
+    return DataResponse(
+        data=NotificationMarkAllReadResponse(
+            marked_count=updated,
+            ok=True,
+        )
+    )
+

@@ -176,7 +176,7 @@ def test_part_62_and_63_complete_e2e_flow():
     assert chat_data["action"] is not None
 
     action_preview = chat_data["action"]
-    assert action_preview["action_type"] == "MOVE_EVENT"
+    assert action_preview["action_type"] in ("MOVE_EVENT", "move_shift")
     assert action_preview["block_id"] == wed_work_id
     assert action_preview["target"]["start_time"] == "13:00"
     

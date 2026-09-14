@@ -22,6 +22,7 @@ class NotificationPrefsOut(BaseModel):
     user_id: int
     push_enabled: bool
     email_enabled: bool
+    timetable_changes_enabled: bool = True
     class_reminder_min: int
     shift_reminder_min: int
     study_reminder_min: int
@@ -37,6 +38,7 @@ class NotificationPrefsOut(BaseModel):
 class NotificationPrefsUpdate(BaseModel):
     push_enabled: Optional[bool] = None
     email_enabled: Optional[bool] = None
+    timetable_changes_enabled: Optional[bool] = None
     class_reminder_min: Optional[int] = Field(None, ge=0, le=1440)
     shift_reminder_min: Optional[int] = Field(None, ge=0, le=1440)
     study_reminder_min: Optional[int] = Field(None, ge=0, le=1440)
@@ -77,11 +79,68 @@ class NotificationLogOut(BaseModel):
     body: str
     sent_at: datetime
     channel: str
+    read_at: Optional[datetime] = None
+    priority: str = "INFO"
+    action_url: Optional[str] = None
+    institution_id: Optional[int] = None
+    timetable_version_id: Optional[int] = None
+    delivery_status: str = "delivered"
+    metadata_json: Optional[str] = None
 
     class Config:
         from_attributes = True
 
 
+class NotificationListResponse(BaseModel):
+    items: list[NotificationLogOut]
+    unread_count: int
+    total: int
+
+
+class NotificationUnreadCountResponse(BaseModel):
+    unread_count: int
+
+
+class NotificationMarkReadResponse(BaseModel):
+    id: int
+    read_at: datetime
+    ok: bool = True
+
+
+class NotificationMarkAllReadResponse(BaseModel):
+    marked_count: int
+    ok: bool = True
+
+
+class NotificationAdminItemOut(BaseModel):
+    id: int
+    student_id: int
+    student_name: str
+    type: str
+    priority: str
+    channel: str
+    delivery_status: str
+    title: str
+    sent_at: datetime
+    read_at: Optional[datetime] = None
+
+
+class UniversityNotificationSummaryOut(BaseModel):
+    version_id: int
+    version_number: int
+    students_affected: int
+    total_notifications: int
+    in_app_count: int
+    email_delivered_count: int
+    email_failed_count: int
+    push_delivered_count: int
+    push_failed_count: int
+    conflict_alerts_count: int
+    summary_status: str  # all_delivered | partially_delivered | none_sent
+    logs: list[NotificationAdminItemOut] = []
+
+
 class TestNotificationResponse(BaseModel):
     ok: bool = True
     message: str = "Test notification sent"
+

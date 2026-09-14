@@ -18,6 +18,7 @@ from app.routers.institutions import router as institutions_router
 from app.routers.students import router as students_router
 from app.routers.timetables import router as timetables_router
 from app.routers.student_planning import router as student_planning_router
+from app.routers.university_analytics import router as university_analytics_router
 
 __all__ = [
     "auth_router",
@@ -40,5 +41,6 @@ __all__ = [
     "students_router",
     "timetables_router",
     "student_planning_router",
+    "university_analytics_router",
 ]
 

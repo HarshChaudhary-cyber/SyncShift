@@ -359,6 +359,7 @@ def change_password(
     request: Request,
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit(5, 60, "change_password")),
 ):
     """
     Change password for authenticated student.
@@ -415,6 +416,7 @@ def delete_account(
     body: DeleteAccountRequest,
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
+    _rate_limit: None = Depends(rate_limit(5, 60, "delete_account")),
 ):
     """
     Soft delete authenticated student account.

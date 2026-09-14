@@ -26,6 +26,7 @@ from app.routers import (
     students_router,
     timetables_router,
     student_planning_router,
+    university_analytics_router,
 )
 from app.services.reminders import start_reminder_scheduler, stop_reminder_scheduler
 
@@ -163,6 +164,7 @@ app.include_router(institutions_router, prefix=settings.API_V1_STR)
 app.include_router(students_router, prefix=settings.API_V1_STR)
 app.include_router(timetables_router, prefix=settings.API_V1_STR)
 app.include_router(student_planning_router, prefix=settings.API_V1_STR)
+app.include_router(university_analytics_router, prefix=settings.API_V1_STR)
 
 
 

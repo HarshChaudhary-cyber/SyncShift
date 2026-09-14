@@ -71,26 +71,32 @@ export default function Navbar({ onImportClick }: NavbarProps) {
     }
   };
 
-  // Fetch today's notifications
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch recent notifications and unread count
+  const loadNotifications = async () => {
+    if (!user) return;
+    try {
+      setLoadingNotifications(true);
+      const res = await api.getNotifications(false, 10, 0);
+      setNotifications(res.items || []);
+      setUnreadCount(res.unread_count || 0);
+    } catch {
+      // Fallback silently if unauthenticated or network error
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
-    async function loadNotifications() {
-      try {
-        setLoadingNotifications(true);
-        const data = await api.getNotificationLog(true);
-        setNotifications(data || []);
-      } catch {
-        // Fallback silently if unauthenticated or error
-      } finally {
-        setLoadingNotifications(false);
-      }
-    }
     loadNotifications();
 
     // Poll every 30 seconds for new alerts
     const interval = setInterval(loadNotifications, 30000);
     return () => clearInterval(interval);
   }, [user]);
+
 
   // Click outside listener for dropdowns
   useEffect(() => {
@@ -232,9 +238,9 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                 title="Notifications"
               >
                 <span className="text-sm">🔔</span>
-                {notifCount > 0 && (
+                {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-4 rounded-full bg-indigo-600 text-[10px] font-black text-white leading-none shadow-sm flex items-center justify-center">
-                    {notifCount > 9 ? '9+' : notifCount}
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </button>
@@ -244,20 +250,27 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                 <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-2xl overflow-hidden z-50 animate-fade-in text-[var(--text-primary)]">
                   <div className="p-3.5 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--bg-secondary)]">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[var(--text-primary)]">Today's Notifications</span>
-                      {notifCount > 0 && (
-                        <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-500 text-[10px] font-bold">
-                          {notifCount}
+                      <span className="text-xs font-bold text-[var(--text-primary)]">Notifications</span>
+                      {unreadCount > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold">
+                          {unreadCount} unread
                         </span>
                       )}
                     </div>
-                    <Link
-                      href="/settings?tab=notifications"
-                      onClick={() => setNotificationsOpen(false)}
-                      className="text-[11px] font-medium text-[var(--text-secondary)] hover:text-indigo-500 transition"
-                    >
-                      Settings ⚙️
-                    </Link>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            await api.markAllNotificationsRead();
+                            setNotifications((prev) => prev.map((n) => ({ ...n, read_at: new Date().toISOString() })));
+                            setUnreadCount(0);
+                          } catch {}
+                        }}
+                        className="text-[11px] font-medium text-[var(--text-secondary)] hover:text-indigo-400 transition cursor-pointer"
+                      >
+                        Mark all read ✓
+                      </button>
+                    )}
                   </div>
 
                   <div className="max-h-80 overflow-y-auto divide-y divide-[var(--border-color)] custom-theme-scrollbar">
@@ -269,38 +282,74 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                         You're all caught up.
                       </div>
                     ) : (
-                      notifications.map((n) => (
-                        <div key={n.id} className="p-3 hover:bg-[var(--bg-secondary)] transition">
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs">
-                                {n.channel === 'push' ? '🔔' : '📧'}
-                              </span>
-                              <span className="text-xs font-bold text-[var(--text-primary)]">
-                                {n.title}
+                      notifications.map((n) => {
+                        const isUnread = !n.read_at;
+                        return (
+                          <div
+                            key={n.id}
+                            onClick={async () => {
+                              if (isUnread) {
+                                try {
+                                  await api.markNotificationRead(n.id);
+                                  setNotifications((prev) =>
+                                    prev.map((item) => (item.id === n.id ? { ...item, read_at: new Date().toISOString() } : item))
+                                  );
+                                  setUnreadCount((c) => Math.max(0, c - 1));
+                                } catch {}
+                              }
+                              setNotificationsOpen(false);
+                              if (n.action_url) {
+                                router.push(n.action_url);
+                              } else {
+                                router.push('/notifications');
+                              }
+                            }}
+                            className={`p-3 hover:bg-[var(--bg-secondary)] transition cursor-pointer ${
+                              isUnread ? 'bg-indigo-500/5' : ''
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                {isUnread && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                                )}
+                                <span className="text-xs shrink-0">
+                                  {n.priority === 'URGENT' ? '🚨' : n.type === 'CLASS_MOVED' ? '🔄' : n.channel === 'push' ? '🔔' : '📧'}
+                                </span>
+                                <span className="text-xs font-bold text-[var(--text-primary)] truncate">
+                                  {n.title}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-[var(--text-muted)] shrink-0" suppressHydrationWarning>
+                                {n.sent_at ? new Date(n.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                               </span>
                             </div>
-                            <span className="text-[10px] text-[var(--text-muted)]" suppressHydrationWarning>
-                              {n.sent_at ? new Date(n.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                            </span>
+                            <p className="text-xs text-[var(--text-secondary)] line-clamp-2 leading-relaxed">{n.body}</p>
                           </div>
-                          <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{n.body}</p>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
 
-                  <div className="p-2.5 border-t border-[var(--border-color)] bg-[var(--bg-secondary)] text-center">
+                  <div className="p-2.5 border-t border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between text-xs px-3">
+                    <Link
+                      href="/notifications"
+                      onClick={() => setNotificationsOpen(false)}
+                      className="text-indigo-400 hover:text-indigo-300 font-semibold transition"
+                    >
+                      Open Notification Center →
+                    </Link>
                     <Link
                       href="/settings?tab=notifications"
                       onClick={() => setNotificationsOpen(false)}
-                      className="text-xs text-indigo-500 hover:text-indigo-600 font-semibold transition"
+                      className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition"
                     >
-                      Manage Notification Settings →
+                      Settings ⚙️
                     </Link>
                   </div>
                 </div>
               )}
+
             </div>
           )}
 

@@ -298,12 +298,27 @@ class PublishVersionRequest(BaseModel):
     notes: Optional[str] = Field(None, description="Optional publication audit note")
 
 
+class TimetableNotificationSummary(BaseModel):
+    students_affected: int = 0
+    classes_changed: int = 0
+    notifications_created: int = 0
+    in_app_delivered: int = 0
+    email_delivered: int = 0
+    email_failed: int = 0
+    push_delivered: int = 0
+    push_failed: int = 0
+    new_conflicts: int = 0
+    resolved_conflicts: int = 0
+
+
 class PublishVersionResponse(BaseModel):
     success: bool = True
     message: str
     published_version: TimetableVersionOut
     archived_version_id: Optional[int] = None
     published_at: datetime
+    notification_summary: Optional[TimetableNotificationSummary] = None
+
 
 
 class SubmitReviewRequest(BaseModel):

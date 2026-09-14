@@ -8,32 +8,55 @@ from app.schemas.import_ics import (
     IcsPreviewResponseData,
 )
 from app.services.ics_parser import parse_ics_timetable
+from app.services.rate_limiter import rate_limit
 
 router = APIRouter(prefix="/import", tags=["Timetable Import"])
+
+MAX_ICS_SIZE_BYTES = 20 * 1024 * 1024  # 20 MB max limit
 
 
 @router.post("/ics", response_model=DataResponse[IcsPreviewResponseData])
 async def preview_ics_timetable(
     file: UploadFile = File(..., description="University .ics calendar export file"),
     current_user: CurrentUser = Depends(get_current_user),
+    _rate_limit: None = Depends(rate_limit(10, 60, "ics_import")),
 ):
     """
     Parse an uploaded .ics university timetable file.
     Extracts recurring weekly lectures and flags ambiguous / all-day events without saving.
     """
-    # 1. Validate file extension (.ics or .ical)
-    if not file.filename or not file.filename.lower().endswith((".ics", ".ical")):
+    if not file.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "missing_filename", "message": "Uploaded file has no filename"},
+        )
+
+    # 1. Path traversal check
+    if ".." in file.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "invalid_filename", "message": "Malicious filename or path traversal detected"},
+        )
+
+    # 2. Validate file extension (.ics or .ical)
+    if not file.filename.lower().endswith((".ics", ".ical")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"code": "invalid_file_type", "message": "Uploaded file must be a .ics file"},
         )
 
-    # 2. Read file content
+    # 3. Read file content and enforce size limits
     content = await file.read()
     if not content or not content.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"code": "invalid_ics", "message": "Uploaded .ics file is empty"},
+        )
+
+    if len(content) > MAX_ICS_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "file_too_large", "message": "File exceeds maximum allowed size of 20MB"},
         )
 
     # 3. Parse .ics content

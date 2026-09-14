@@ -16,10 +16,12 @@ import {
   TimetableChangeProposal,
   TimetableImpactResponse,
   TimetableChangeApplyRequest,
+  PublishVersionResponse,
   getErrorMessage,
 } from '@/lib/api';
 import CalendarWeekView, { TimeBlock } from '@/components/CalendarWeekView';
 import TimetableImpactModal from '@/components/university/TimetableImpactModal';
+import TimetablePublishModal from '@/components/university/TimetablePublishModal';
 
 const DAYS_OF_WEEK = [
   { value: 1, label: 'Monday', short: 'Mon' },
@@ -103,6 +105,9 @@ export default function TimetableDetailPage() {
   const [impactModalOpen, setImpactModalOpen] = useState(false);
   const [staleError, setStaleError] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
+
+  // ── Task N7 / N8 Timetable Publish Modal State ───────────────────────────
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
 
   // Load all data
   const loadData = useCallback(async () => {
@@ -461,6 +466,13 @@ export default function TimetableDetailPage() {
                 className="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-sm font-medium transition-colors"
               >
                 Edit Info
+              </button>
+              <button
+                onClick={() => setPublishModalOpen(true)}
+                className="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-sm font-semibold shadow-md hover:shadow-emerald-500/20 transition-all flex items-center gap-1.5"
+                title="Publish official version and notify affected students"
+              >
+                <span>📢</span> Publish Timetable
               </button>
               <button
                 onClick={openCreateMeetingModal}
@@ -1050,6 +1062,30 @@ export default function TimetableDetailPage() {
           }
         }}
       />
+
+      {/* Task N8 / N7: Timetable Publish & Automatic Student Notifications */}
+      {timetable && institution && (
+        <TimetablePublishModal
+          isOpen={publishModalOpen}
+          onClose={() => setPublishModalOpen(false)}
+          institutionId={institution.id}
+          timetableId={timetable.id}
+          timetableName={timetable.name}
+          onPublished={async (summary?: PublishVersionResponse) => {
+            await loadData();
+            if (summary?.published_version) {
+              const students = summary.notification_summary?.students_affected ?? 0;
+              const conflicts = summary.notification_summary?.new_conflicts ?? 0;
+              setSuccessNotice(
+                `Timetable published! Version ${summary.published_version.version_number} is now official. ` +
+                `${students} students notified (${conflicts} new conflicts detected).`
+              );
+            } else {
+              setSuccessNotice('Timetable published successfully!');
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

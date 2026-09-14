@@ -14,8 +14,20 @@ import {
   CalendarIcon,
   ArrowRightIcon,
   InformationCircleIcon,
+  ChatBubbleLeftRightIcon,
+  PlusIcon,
+  TrashIcon,
+  ShieldCheckIcon,
+  BuildingLibraryIcon,
+  AcademicCapIcon,
 } from '@heroicons/react/24/outline';
-import { api, ActionPreview, AssistantChatResponse, AssistantConfirmResponse } from '@/lib/api';
+import {
+  api,
+  ActionPreview,
+  AssistantChatResponse,
+  AssistantConfirmResponse,
+  AssistantConversationItem,
+} from '@/lib/api';
 
 interface ChatMessage {
   id: string;
@@ -30,12 +42,20 @@ interface ChatMessage {
   confirmSuccess?: string | null;
 }
 
-const DEFAULT_SUGGESTIONS = [
+const STUDENT_SUGGESTIONS = [
+  'What classes do I have today?',
   'When can I work this week?',
-  'Do I have any conflicts tomorrow?',
+  'Do I have any conflicts?',
   'How many work hours do I have left?',
-  'Which day is busiest?',
+  'Preview my weekly plan',
   'Move my Friday shift to 4 PM',
+];
+
+const ADMIN_SUGGESTIONS = [
+  'Which rooms are available on Monday between 10:00 and 12:00?',
+  'Show university timetable versions',
+  'Who is affected by moving CS101?',
+  'Create a new draft version for timetable',
 ];
 
 export function openSyncShiftAssistant() {
@@ -48,12 +68,23 @@ export default function SyncShiftAssistant() {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [inputMessage, setInputMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [loadingStateText, setLoadingStateText] = useState<string>('Analyzing schedule...');
+  const [loadingStateText, setLoadingStateText] = useState<string>('Consulting schedule...');
+  const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
+  const [conversations, setConversations] = useState<AssistantConversationItem[]>([]);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<'student' | 'admin'>('student');
+  const [institutionId, setInstitutionId] = useState<number | null>(null);
+
+  const initialWelcomeText =
+    userRole === 'admin'
+      ? "👋 Welcome, Administrator! I'm your **SyncShift Assistant**. Ask me about room availability, timetable versions, draft creation, or impact analyses. Every timetable modification requires your explicit review and confirmation."
+      : "👋 Hi! I'm your **SyncShift Assistant**. Ask me anything about your timetable, enrolled courses, work hours, conflicts, or study blocks. All schedule changes require your explicit confirmation.";
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       sender: 'assistant',
-      text: "👋 Hi! I'm your **SyncShift Assistant**. Ask me anything about your timetable, work hours, conflicts, study slots, or schedule health. All actions require your explicit confirmation before anything is changed.",
+      text: initialWelcomeText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -65,18 +96,119 @@ export default function SyncShiftAssistant() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Listen for open event & check role
   useEffect(() => {
     const handleOpen = () => setIsOpen(true);
     window.addEventListener('open-syncshift-assistant', handleOpen);
+
+    // Fetch user status to set role
+    api
+      .getMyInstitutionStatus()
+      .then((res) => {
+        if (res?.has_institution && res.membership) {
+          setInstitutionId(res.membership.institution_id);
+          if (res.membership.role === 'admin' || res.membership.role === 'super_admin') {
+            setUserRole('admin');
+          }
+        }
+      })
+      .catch(() => {});
+
     return () => window.removeEventListener('open-syncshift-assistant', handleOpen);
   }, []);
+
+  // Load user's conversations
+  const loadConversations = async () => {
+    try {
+      const convs = await api.getAssistantConversations(institutionId);
+      if (Array.isArray(convs)) {
+        setConversations(convs);
+      }
+    } catch {
+      // Ignore unauthenticated or offline errors
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
       scrollToBottom();
       inputRef.current?.focus();
+      loadConversations();
     }
-  }, [isOpen, messages]);
+  }, [isOpen]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleStartNewChat = () => {
+    setCurrentConversationId(null);
+    setShowHistory(false);
+    setMessages([
+      {
+        id: `welcome-${Date.now()}`,
+        sender: 'assistant',
+        text:
+          userRole === 'admin'
+            ? "Started a new administrator consultation. What would you like to inspect or plan?"
+            : "Started a fresh conversation. What would you like to check in your schedule today?",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+  };
+
+  const handleSelectConversation = async (convId: number) => {
+    try {
+      setIsLoading(true);
+      setLoadingStateText('Loading conversation history...');
+      const detail = await api.getAssistantConversationDetail(convId);
+      setCurrentConversationId(convId);
+      setShowHistory(false);
+
+      if (detail && Array.isArray(detail.messages)) {
+        const loaded: ChatMessage[] = detail.messages.map((m) => ({
+          id: `msg-${m.id}`,
+          sender: m.role === 'user' ? 'user' : 'assistant',
+          text: m.content,
+          timestamp: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          action: m.action_preview,
+        }));
+        setMessages(loaded.length > 0 ? loaded : [
+          {
+            id: 'empty',
+            sender: 'assistant',
+            text: 'Conversation resumed.',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+      }
+    } catch (err: any) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `err-${Date.now()}`,
+          sender: 'assistant',
+          text: 'Unable to load conversation history. You can continue chatting below.',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteConversation = async (e: React.MouseEvent, convId: number) => {
+    e.stopPropagation();
+    try {
+      await api.deleteAssistantConversation(convId);
+      setConversations((prev) => prev.filter((c) => c.id !== convId));
+      if (currentConversationId === convId) {
+        handleStartNewChat();
+      }
+    } catch {
+      // deletion error
+    }
+  };
 
   const handleSendMessage = async (textToSend?: string) => {
     const query = (textToSend || inputMessage).trim();
@@ -95,15 +227,26 @@ export default function SyncShiftAssistant() {
     setIsLoading(true);
 
     if (query.toLowerCase().includes('move') || query.toLowerCase().includes('reschedule')) {
-      setLoadingStateText('Checking schedule constraints...');
-    } else if (query.toLowerCase().includes('work') || query.toLowerCase().includes('optimizer')) {
-      setLoadingStateText('Finding feasible slots...');
+      setLoadingStateText('Checking schedule constraints & room conflicts...');
+    } else if (query.toLowerCase().includes('work') || query.toLowerCase().includes('plan')) {
+      setLoadingStateText('Running smart schedule evaluator...');
+    } else if (query.toLowerCase().includes('room') || query.toLowerCase().includes('version')) {
+      setLoadingStateText('Checking institutional records...');
     } else {
-      setLoadingStateText('Interpreting request...');
+      setLoadingStateText('Analyzing request...');
     }
 
     try {
-      const response: AssistantChatResponse = await api.chatAssistant(query);
+      const response: AssistantChatResponse = await api.chatAssistant(
+        query,
+        currentConversationId,
+        institutionId
+      );
+
+      if (response.conversation_id && response.conversation_id !== currentConversationId) {
+        setCurrentConversationId(response.conversation_id);
+        loadConversations();
+      }
 
       const assistantMsg: ChatMessage = {
         id: `asst-${Date.now()}`,
@@ -172,7 +315,7 @@ export default function SyncShiftAssistant() {
             ? {
                 ...m,
                 isConfirming: false,
-                confirmError: err?.message || 'Failed to confirm scheduling change.',
+                confirmError: err?.message || 'Failed to execute confirmed change.',
               }
             : m
         )
@@ -182,7 +325,7 @@ export default function SyncShiftAssistant() {
 
   const handleCancelAction = (msgId: string) => {
     setMessages((prev) =>
-      prev.map((m) => (m.id === msgId ? { ...m, action: null, text: m.text + '\n\n*(Change cancelled)*' } : m))
+      prev.map((m) => (m.id === msgId ? { ...m, action: null, text: m.text + '\n\n*(Action cancelled by user)*' } : m))
     );
   };
 
@@ -190,26 +333,30 @@ export default function SyncShiftAssistant() {
     handleSendMessage(`Move ${choice.title} on ${choice.day} to 4 PM`);
   };
 
-  // Render text with basic bold & bullet formatting
+  // Render text with basic bold, bullet, and link formatting
   const renderFormattedText = (text: string) => {
     const lines = text.split('\n');
     return (
       <div className="space-y-1.5 text-sm leading-relaxed">
         {lines.map((line, idx) => {
           if (!line.trim()) return <div key={idx} className="h-1" />;
-          
+
           let parsedLine: React.ReactNode = line;
           // Simple bold parser
           if (line.includes('**')) {
             const parts = line.split('**');
-            parsedLine = parts.map((part, pIdx) => (pIdx % 2 === 1 ? <strong key={pIdx} className="font-semibold text-white">{part}</strong> : part));
+            parsedLine = parts.map((part, pIdx) =>
+              pIdx % 2 === 1 ? <strong key={pIdx} className="font-semibold text-white">{part}</strong> : part
+            );
           }
 
           if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
             return (
               <div key={idx} className="flex items-start gap-1.5 pl-1">
                 <span className="text-indigo-400 font-bold">•</span>
-                <span className="flex-1">{typeof parsedLine === 'string' ? parsedLine.replace(/^[•-]\s*/, '') : parsedLine}</span>
+                <span className="flex-1">
+                  {typeof parsedLine === 'string' ? parsedLine.replace(/^[•-]\s*/, '') : parsedLine}
+                </span>
               </div>
             );
           }
@@ -219,6 +366,8 @@ export default function SyncShiftAssistant() {
       </div>
     );
   };
+
+  const suggestions = userRole === 'admin' ? ADMIN_SUGGESTIONS : STUDENT_SUGGESTIONS;
 
   return (
     <>
@@ -237,7 +386,7 @@ export default function SyncShiftAssistant() {
       >
         <SparklesIcon className="w-5 h-5 text-indigo-200 animate-pulse" />
         <span className="text-sm font-semibold tracking-wide hidden sm:inline">
-          {isOpen ? 'Close Assistant' : 'SyncShift Assistant'}
+          {isOpen ? 'Close Assistant' : 'Ask SyncShift'}
         </span>
       </motion.button>
 
@@ -250,41 +399,57 @@ export default function SyncShiftAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-20 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[440px] max-h-[82vh] h-[640px] bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-20 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[480px] max-h-[85vh] h-[680px] bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-800 bg-slate-950/60">
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-800 bg-slate-950/70">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-inner">
-                  <SparklesIcon className="w-4 h-4 text-white" />
+                  {userRole === 'admin' ? (
+                    <BuildingLibraryIcon className="w-4 h-4 text-white" />
+                  ) : (
+                    <SparklesIcon className="w-4 h-4 text-white" />
+                  )}
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-white tracking-tight flex items-center gap-1.5">
                     SyncShift Assistant
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+                    {userRole === 'admin' && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono">
+                        ADMIN
+                      </span>
+                    )}
                   </h3>
-                  <p className="text-[11px] text-slate-400">Deterministic Interpreter • Zero Hallucination</p>
+                  <p className="text-[11px] text-slate-400">Deterministic Coordinator • Zero Hallucination</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-1">
+                {/* Conversation History Toggle */}
                 <button
-                  onClick={() =>
-                    setMessages([
-                      {
-                        id: 'welcome-reset',
-                        sender: 'assistant',
-                        text: "Conversation reset. What would you like to check in your schedule?",
-                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                      },
-                    ])
-                  }
-                  className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition"
-                  title="Clear conversation"
-                  aria-label="Clear conversation"
+                  onClick={() => setShowHistory((prev) => !prev)}
+                  className={`p-1.5 rounded-lg transition ${
+                    showHistory
+                      ? 'bg-indigo-600/30 text-indigo-300'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
+                  title="Past conversations"
+                  aria-label="Past conversations"
                 >
-                  <ArrowPathIcon className="w-4 h-4" />
+                  <ChatBubbleLeftRightIcon className="w-4 h-4" />
                 </button>
+
+                {/* New Chat */}
+                <button
+                  onClick={handleStartNewChat}
+                  className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition"
+                  title="New conversation"
+                  aria-label="New conversation"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                </button>
+
                 <button
                   onClick={() => setIsOpen(false)}
                   className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
@@ -296,6 +461,55 @@ export default function SyncShiftAssistant() {
               </div>
             </div>
 
+            {/* Conversation History Drawer */}
+            <AnimatePresence>
+              {showHistory && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="border-b border-slate-800 bg-slate-950/90 overflow-hidden"
+                >
+                  <div className="p-3 max-h-48 overflow-y-auto space-y-1.5 custom-scrollbar">
+                    <div className="flex items-center justify-between px-1 pb-1">
+                      <span className="text-xs font-semibold text-slate-400">Conversations</span>
+                      <button
+                        onClick={handleStartNewChat}
+                        className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                      >
+                        <PlusIcon className="w-3 h-3" /> New
+                      </button>
+                    </div>
+
+                    {conversations.length === 0 ? (
+                      <p className="text-xs text-slate-500 px-1 py-2 italic">No past conversations yet.</p>
+                    ) : (
+                      conversations.map((c) => (
+                        <div
+                          key={c.id}
+                          onClick={() => handleSelectConversation(c.id)}
+                          className={`group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition ${
+                            c.id === currentConversationId
+                              ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/40'
+                              : 'text-slate-300 hover:bg-slate-800/80'
+                          }`}
+                        >
+                          <span className="truncate flex-1">{c.title || 'Conversation'}</span>
+                          <button
+                            onClick={(e) => handleDeleteConversation(e, c.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-red-400 rounded transition"
+                            title="Delete conversation"
+                          >
+                            <TrashIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Chat Messages Feed */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 text-slate-200 custom-scrollbar">
               {messages.map((msg) => (
@@ -305,7 +519,7 @@ export default function SyncShiftAssistant() {
                 >
                   {/* Sender Bubble */}
                   <div
-                    className={`max-w-[88%] rounded-2xl px-4 py-3 shadow-md ${
+                    className={`max-w-[90%] rounded-2xl px-4 py-3 shadow-md ${
                       msg.sender === 'user'
                         ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-none'
                         : 'bg-slate-800/90 border border-slate-700/60 text-slate-200 rounded-bl-none'
@@ -313,7 +527,7 @@ export default function SyncShiftAssistant() {
                   >
                     {renderFormattedText(msg.text)}
 
-                    {/* Ambiguous Shift Choices */}
+                    {/* Ambiguous Choices */}
                     {msg.choices && msg.choices.length > 0 && (
                       <div className="mt-3 pt-2.5 border-t border-slate-700/80 space-y-2">
                         <p className="text-xs font-medium text-indigo-300">Select which shift to move:</p>
@@ -334,56 +548,119 @@ export default function SyncShiftAssistant() {
                       </div>
                     )}
 
-                    {/* Action Preview Card (Part 8 & 54) */}
+                    {/* Structured Action Preview Card */}
                     {msg.action && (
                       <div className="mt-3.5 p-3.5 bg-slate-950/80 border border-slate-700/90 rounded-xl space-y-3">
                         <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                           <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
-                            <ClockIcon className="w-3.5 h-3.5" /> Suggested Change
+                            <ClockIcon className="w-3.5 h-3.5" /> Action Preview
                           </span>
                           <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-900/50 text-indigo-300 border border-indigo-700/40">
-                            Verification Required
+                            Explicit Confirmation Required
                           </span>
                         </div>
 
-                        {/* From -> To Preview */}
-                        <div className="space-y-1.5 text-xs">
+                        {/* Title & Description */}
+                        <div className="space-y-1 text-xs">
                           <p className="font-semibold text-white text-sm">{msg.action.title}</p>
-                          <div className="flex items-center gap-2 text-slate-400">
-                            <span>
-                              {msg.action.original.day} {msg.action.original.start_time}–{msg.action.original.end_time}
-                            </span>
-                            <ArrowRightIcon className="w-3 h-3 text-indigo-400" />
-                            <span className="font-semibold text-emerald-400">
-                              {msg.action.target.day} {msg.action.target.start_time}–{msg.action.target.end_time}
-                            </span>
-                          </div>
-                          {msg.action.original.location && (
-                            <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                              <MapPinIcon className="w-3 h-3 text-slate-500" />
-                              {msg.action.original.location}
-                            </div>
+                          {msg.action.description && (
+                            <p className="text-slate-400 text-xs">{msg.action.description}</p>
                           )}
                         </div>
 
-                        {/* Checks list */}
-                        <div className="space-y-1 pt-1">
-                          <p className="text-[11px] font-medium text-slate-400">Safety & Conflict Checks:</p>
-                          {msg.action.checks.map((check, chkIdx) => (
-                            <div key={chkIdx} className="flex items-center gap-1.5 text-xs">
-                              {check.warning ? (
-                                <ExclamationTriangleIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                              ) : check.passed ? (
-                                <CheckCircleIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                              ) : (
-                                <XMarkIcon className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                              )}
-                              <span className={check.warning ? 'text-amber-300' : check.passed ? 'text-slate-300' : 'text-red-300'}>
-                                {check.label}
+                        {/* From -> To Preview if available */}
+                        {msg.action.original && msg.action.target && (
+                          <div className="p-2 rounded-lg bg-slate-900/70 border border-slate-800 text-xs space-y-1">
+                            <div className="flex items-center gap-2 text-slate-300">
+                              <span className="text-slate-400">
+                                {msg.action.original.day} {msg.action.original.time || `${msg.action.original.start_time}–${msg.action.original.end_time}`}
+                              </span>
+                              <ArrowRightIcon className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                              <span className="font-semibold text-emerald-400">
+                                {msg.action.target.day} {msg.action.target.time || `${msg.action.target.start_time}–${msg.action.target.end_time}`}
                               </span>
                             </div>
-                          ))}
-                        </div>
+                            {msg.action.original.location && (
+                              <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                                <MapPinIcon className="w-3 h-3 text-slate-500" />
+                                {msg.action.original.location}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* N6 Impact Analysis Badges (if timetable_change) */}
+                        {msg.action.impact_summary && (
+                          <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-slate-300 flex items-center gap-1">
+                                <ShieldCheckIcon className="w-3.5 h-3.5 text-indigo-400" />
+                                N6 Impact Analysis:
+                              </span>
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  msg.action.impact_summary.severity === 'LOW'
+                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                    : msg.action.impact_summary.severity === 'MEDIUM'
+                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                    : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                                }`}
+                              >
+                                {msg.action.impact_summary.severity} SEVERITY
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-1.5 text-[11px]">
+                              <div className="p-1.5 rounded bg-slate-950/60 border border-slate-800/80 text-center">
+                                <div className="font-bold text-white">
+                                  {msg.action.impact_summary.students_affected_count ?? 0}
+                                </div>
+                                <div className="text-[10px] text-slate-400">Students</div>
+                              </div>
+                              <div className="p-1.5 rounded bg-slate-950/60 border border-slate-800/80 text-center">
+                                <div className="font-bold text-white">
+                                  {msg.action.impact_summary.new_conflicts_count ?? 0}
+                                </div>
+                                <div className="text-[10px] text-slate-400">New Conflicts</div>
+                              </div>
+                              <div className="p-1.5 rounded bg-slate-950/60 border border-slate-800/80 text-center">
+                                <div className="font-bold text-white">
+                                  {msg.action.impact_summary.work_shift_conflicts_count ?? 0}
+                                </div>
+                                <div className="text-[10px] text-slate-400">Shift Clashes</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Safety & Constraint Checks */}
+                        {msg.action.checks && msg.action.checks.length > 0 && (
+                          <div className="space-y-1 pt-1">
+                            <p className="text-[11px] font-medium text-slate-400">Deterministic Safety Checks:</p>
+                            {msg.action.checks.map((check, chkIdx) => (
+                              <div key={chkIdx} className="flex items-center gap-1.5 text-xs">
+                                {check.warning ? (
+                                  <ExclamationTriangleIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                ) : check.passed ? (
+                                  <CheckCircleIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                ) : (
+                                  <XMarkIcon className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                                )}
+                                <span
+                                  className={
+                                    check.warning
+                                      ? 'text-amber-300'
+                                      : check.passed
+                                      ? 'text-slate-300'
+                                      : 'text-red-300'
+                                  }
+                                >
+                                  {check.label}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                         {/* Status Messages */}
                         {msg.confirmError && (
@@ -417,10 +694,10 @@ export default function SyncShiftAssistant() {
                               {msg.isConfirming ? (
                                 <>
                                   <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
-                                  Confirming...
+                                  Applying...
                                 </>
                               ) : (
-                                'Confirm Move'
+                                'Confirm & Apply'
                               )}
                             </button>
                           </div>
@@ -436,7 +713,7 @@ export default function SyncShiftAssistant() {
               {/* Loading indicator */}
               {isLoading && (
                 <div className="flex items-start gap-2 text-slate-400 text-xs">
-                  <div className="p-2 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center gap-2">
+                  <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center gap-2 shadow-sm">
                     <ArrowPathIcon className="w-3.5 h-3.5 animate-spin text-indigo-400" />
                     <span>{loadingStateText}</span>
                   </div>
@@ -446,9 +723,9 @@ export default function SyncShiftAssistant() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Suggestion Chips */}
-            <div className="px-3 py-2 bg-slate-950/40 border-t border-slate-800/60 overflow-x-auto flex items-center gap-1.5 no-scrollbar">
-              {DEFAULT_SUGGESTIONS.map((chip, idx) => (
+            {/* Quick Starter Suggestion Chips */}
+            <div className="px-3 py-2 bg-slate-950/50 border-t border-slate-800/60 overflow-x-auto flex items-center gap-1.5 no-scrollbar">
+              {suggestions.map((chip, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSendMessage(chip)}
@@ -474,7 +751,11 @@ export default function SyncShiftAssistant() {
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Ask about your schedule or shifts..."
+                placeholder={
+                  userRole === 'admin'
+                    ? 'Ask about room vacancies, timetable drafts, or impact...'
+                    : 'Ask about your schedule, shifts, or study sessions...'
+                }
                 disabled={isLoading}
                 className="flex-1 px-3.5 py-2.5 bg-slate-900 border border-slate-700/80 focus:border-indigo-500 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition"
               />

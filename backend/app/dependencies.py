@@ -83,6 +83,12 @@ def get_current_user(
 
     # Dev/Mock token support for testing without a full auth backend
     if token.startswith("mock_token_"):
+        if getattr(settings, "ENV", "development").lower() == "production":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={"code": "unauthorized", "message": "Mock authentication tokens are disabled in production"},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         try:
             user_id = int(token.replace("mock_token_", ""))
         except ValueError:

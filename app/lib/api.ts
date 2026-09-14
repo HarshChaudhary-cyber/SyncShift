@@ -125,14 +125,25 @@ export interface ActionCheckItem {
 
 export interface ActionPreview {
   action_type: string;
-  block_id: number;
+  block_id?: number | null;
   title: string;
-  original: Record<string, any>;
-  target: Record<string, any>;
+  description?: string | null;
+  parameters?: Record<string, any> | null;
+  original?: Record<string, any> | null;
+  target?: Record<string, any> | null;
   checks: ActionCheckItem[];
+  impact_summary?: {
+    severity?: string;
+    is_blocked?: boolean;
+    blocking_reasons?: string[];
+    students_affected_count?: number;
+    new_conflicts_count?: number;
+    work_shift_conflicts_count?: number;
+  } | null;
 }
 
 export interface AssistantChatResponse {
+  conversation_id?: number | null;
   message: string;
   intent: string;
   requires_confirmation: boolean;
@@ -141,10 +152,42 @@ export interface AssistantChatResponse {
   suggestions: string[];
 }
 
+export interface AssistantMessageItem {
+  id: number;
+  conversation_id: number;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  intent?: string | null;
+  action_preview?: ActionPreview | null;
+  tool_calls_meta?: Record<string, any>[] | null;
+  created_at: string;
+}
+
+export interface AssistantConversationItem {
+  id: number;
+  user_id: number;
+  institution_id?: number | null;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AssistantConversationDetail {
+  id: number;
+  user_id: number;
+  institution_id?: number | null;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  messages: AssistantMessageItem[];
+}
+
 export interface AssistantConfirmResponse {
   success: boolean;
+  action_type?: string;
   message: string;
   updated_block?: Record<string, any> | null;
+  data?: Record<string, any> | null;
   conflicts?: Record<string, any>[];
   health_score?: number | null;
 }
@@ -571,6 +614,7 @@ export interface NotificationPrefs {
   user_id: number;
   push_enabled: boolean;
   email_enabled: boolean;
+  timetable_changes_enabled?: boolean;
   class_reminder_min: number;
   shift_reminder_min: number;
   study_reminder_min: number;
@@ -583,6 +627,7 @@ export interface NotificationPrefs {
 export interface NotificationPrefsUpdatePayload {
   push_enabled?: boolean;
   email_enabled?: boolean;
+  timetable_changes_enabled?: boolean;
   class_reminder_min?: number;
   shift_reminder_min?: number;
   study_reminder_min?: number;
@@ -606,12 +651,20 @@ export interface PushSubscriptionPayload {
 export interface NotificationLogItem {
   id: number;
   user_id: number;
-  type: 'class' | 'shift' | 'study' | 'deadline' | 'conflict' | 'test' | string;
+  type: 'class' | 'shift' | 'study' | 'deadline' | 'conflict' | 'test' | 'TIMETABLE_UPDATE' | 'CLASS_MOVED' | 'CLASS_ROOM_CHANGED' | 'CLASS_FACULTY_CHANGED' | 'CLASS_ADDED' | 'CLASS_REMOVED' | 'SCHEDULE_CONFLICT' | string;
   title: string;
   body: string;
   sent_at: string;
-  channel: 'push' | 'email' | string;
+  channel: 'push' | 'email' | 'in_app' | string;
+  read_at?: string | null;
+  priority?: 'INFO' | 'IMPORTANT' | 'URGENT' | string;
+  action_url?: string | null;
+  institution_id?: number | null;
+  timetable_version_id?: number | null;
+  delivery_status?: 'delivered' | 'pending' | 'failed' | string;
+  metadata_json?: string | null;
 }
+
 
 export const AUTH_TOKEN_KEY = 'syncshift_jwt';
 
@@ -779,9 +832,29 @@ export const api = {
   getMyDebugData: () => request<MyDebugData>('/debug/my-data'),
   getNotificationLog: (today: boolean = false) =>
     request<NotificationLogItem[]>(`/notifications/log${today ? '?today=true' : ''}`),
+  getNotifications: (unreadOnly: boolean = false, limit: number = 50, offset: number = 0) =>
+    request<{ items: NotificationLogItem[]; unread_count: number; total: number }>(
+      `/notifications?unread_only=${unreadOnly}&limit=${limit}&offset=${offset}`
+    ),
+  getUnreadNotificationCount: () =>
+    request<{ unread_count: number }>('/notifications/unread-count'),
+  markNotificationRead: (id: number) =>
+    request<{ id: number; read_at: string; ok: boolean }>(`/notifications/${id}/read`, { method: 'PATCH' }),
+  markAllNotificationsRead: () =>
+    request<{ marked_count: number; ok: boolean }>('/notifications/read-all', { method: 'POST' }),
   // ── SyncShift Assistant Endpoints ─────────────────────────────────────────
-  chatAssistant: (message: string, context?: Record<string, any>) =>
-    request<AssistantChatResponse>('/assistant/chat', { method: 'POST', body: JSON.stringify({ message, context }) }),
+
+  chatAssistant: (message: string, conversationId?: number | null, institutionId?: number | null) =>
+    request<AssistantChatResponse>('/assistant/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, conversation_id: conversationId, institution_id: institutionId }),
+    }),
+  getAssistantConversations: (institutionId?: number | null) =>
+    request<AssistantConversationItem[]>(`/assistant/conversations${institutionId ? `?institution_id=${institutionId}` : ''}`),
+  getAssistantConversationDetail: (conversationId: number) =>
+    request<AssistantConversationDetail>(`/assistant/conversations/${conversationId}`),
+  deleteAssistantConversation: (conversationId: number) =>
+    request<{ id: number; message: string }>(`/assistant/conversations/${conversationId}`, { method: 'DELETE' }),
   confirmAssistantAction: (action: ActionPreview) =>
     request<AssistantConfirmResponse>('/assistant/confirm', { method: 'POST', body: JSON.stringify({ action }) }),
   // ── Audit Logs Endpoints ──────────────────────────────────────────────────
@@ -992,12 +1065,31 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  // ── Task N7 & N8 Timetable Versions, Publishing & Notification Endpoints ──
+  getTimetableVersions: (institutionId: number, timetableId: number) =>
+    request<TimetableVersionOut[]>(`/institutions/${institutionId}/timetables/${timetableId}/versions`),
+  createTimetableVersion: (institutionId: number, timetableId: number, payload?: { name?: string; change_summary?: string; source_version_id?: number }) =>
+    request<TimetableVersionOut>(`/institutions/${institutionId}/timetables/${timetableId}/versions`, { method: 'POST', body: JSON.stringify(payload || {}) }),
+  getTimetableVersionChecklist: (institutionId: number, timetableId: number, versionId: number) =>
+    request<VersionChecklistOut>(`/institutions/${institutionId}/timetables/${timetableId}/versions/${versionId}/checklist`),
+  compareTimetableVersions: (institutionId: number, timetableId: number, baseVersionId: number, targetVersionId: number) =>
+    request<VersionComparisonOut>(`/institutions/${institutionId}/timetables/${timetableId}/versions/compare?base_version_id=${baseVersionId}&target_version_id=${targetVersionId}`),
+  submitVersionReview: (institutionId: number, timetableId: number, versionId: number, notes?: string) =>
+    request<TimetableVersionOut>(`/institutions/${institutionId}/timetables/${timetableId}/versions/${versionId}/review`, { method: 'POST', body: JSON.stringify({ notes }) }),
+  approveTimetableVersion: (institutionId: number, timetableId: number, versionId: number, notes?: string) =>
+    request<TimetableVersionOut>(`/institutions/${institutionId}/timetables/${timetableId}/versions/${versionId}/approve`, { method: 'POST', body: JSON.stringify({ notes }) }),
+  publishTimetableVersion: (institutionId: number, timetableId: number, versionId: number, payload?: { expected_updated_at?: string; notes?: string }) =>
+    request<PublishVersionResponse>(`/institutions/${institutionId}/timetables/${timetableId}/versions/${versionId}/publish`, { method: 'POST', body: JSON.stringify(payload || {}) }),
+  getPublishNotificationSummary: (institutionId: number, timetableId: number, versionId: number) =>
+    request<UniversityNotificationSummaryOut>(`/institutions/${institutionId}/timetables/${timetableId}/versions/${versionId}/notifications`),
+
   getMyAcademicSchedule: (params?: { term_id?: number }) => {
     const q = new URLSearchParams();
     if (params?.term_id) q.append('term_id', String(params.term_id));
     const qs = q.toString();
     return request<StudentAcademicSchedule>(`/students/me/schedule${qs ? `?${qs}` : ''}`);
   },
+
 
   // ── Task N5 Smart Planning Endpoints ─────────────────────────────────────
   previewSmartPlan: (payload?: SmartPlanPreviewRequest) =>
@@ -1015,6 +1107,54 @@ export const api = {
       `/students/me/planning/revert?week_start=${encodeURIComponent(weekStart)}`,
       { method: 'DELETE' }
     ),
+
+  // ── Task N10 University Analytics & Decision Dashboard Endpoints ────────
+  getUniversityAnalyticsDashboard: (institutionId: number, termId?: number, departmentId?: number) => {
+    const q = new URLSearchParams();
+    if (termId) q.append('term_id', String(termId));
+    if (departmentId) q.append('department_id', String(departmentId));
+    const qs = q.toString();
+    return request<UniversityDashboardAnalyticsResponse>(`/institutions/${institutionId}/analytics/dashboard${qs ? `?${qs}` : ''}`);
+  },
+  getUniversityOverviewAnalytics: (institutionId: number, termId?: number) => {
+    const q = new URLSearchParams();
+    if (termId) q.append('term_id', String(termId));
+    const qs = q.toString();
+    return request<AnalyticsOverviewKPIs>(`/institutions/${institutionId}/analytics/overview${qs ? `?${qs}` : ''}`);
+  },
+  getUniversityEnrollmentAnalytics: (institutionId: number, termId?: number, departmentId?: number) => {
+    const q = new URLSearchParams();
+    if (termId) q.append('term_id', String(termId));
+    if (departmentId) q.append('department_id', String(departmentId));
+    const qs = q.toString();
+    return request<EnrollmentAnalyticsData>(`/institutions/${institutionId}/analytics/enrollment${qs ? `?${qs}` : ''}`);
+  },
+  getUniversityRoomAnalytics: (institutionId: number, termId?: number, departmentId?: number) => {
+    const q = new URLSearchParams();
+    if (termId) q.append('term_id', String(termId));
+    if (departmentId) q.append('department_id', String(departmentId));
+    const qs = q.toString();
+    return request<RoomAnalyticsData>(`/institutions/${institutionId}/analytics/rooms${qs ? `?${qs}` : ''}`);
+  },
+  getUniversityFacultyAnalytics: (institutionId: number, termId?: number, departmentId?: number) => {
+    const q = new URLSearchParams();
+    if (termId) q.append('term_id', String(termId));
+    if (departmentId) q.append('department_id', String(departmentId));
+    const qs = q.toString();
+    return request<FacultyAnalyticsData>(`/institutions/${institutionId}/analytics/faculty${qs ? `?${qs}` : ''}`);
+  },
+  getUniversityTimetableAnalytics: (institutionId: number, termId?: number) => {
+    const q = new URLSearchParams();
+    if (termId) q.append('term_id', String(termId));
+    const qs = q.toString();
+    return request<TimetableHealthAnalyticsData>(`/institutions/${institutionId}/analytics/timetable${qs ? `?${qs}` : ''}`);
+  },
+  getUniversityDepartmentAnalytics: (institutionId: number, termId?: number) => {
+    const q = new URLSearchParams();
+    if (termId) q.append('term_id', String(termId));
+    const qs = q.toString();
+    return request<DepartmentComparisonItem[]>(`/institutions/${institutionId}/analytics/departments${qs ? `?${qs}` : ''}`);
+  },
 };
 
 // ── Task N5 Smart Planning Interfaces ─────────────────────────────────────
@@ -1821,4 +1961,297 @@ export async function verifyPersistence(email: string, password: string): Promis
   await api.deleteBlock(found.id);
   return true;
 }
+
+// ── Task N7 & N8 Timetable Versioning, Publishing & Notification Types ──────
+
+export interface TimetableVersionOut {
+  id: number;
+  institution_id: number;
+  timetable_id: number;
+  version_number: number;
+  name: string | null;
+  status: 'draft' | 'in_review' | 'approved' | 'published' | 'archived' | 'rejected' | string;
+  change_summary: string | null;
+  created_by_user_id: number | null;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+  archived_at: string | null;
+  is_current_published: boolean;
+  total_meetings_count: number;
+  total_sections_count: number;
+}
+
+export interface VersionChecklistOut {
+  version_id: number;
+  version_number: number;
+  status: string;
+  is_publishable: boolean;
+  can_submit_review: boolean;
+  can_approve: boolean;
+  summary_message: string;
+  total_meetings: number;
+  total_sections_scheduled: number;
+  blocking_issues: string[];
+  warnings: string[];
+}
+
+export interface VersionMeetingDiff {
+  section_id: number;
+  course_code: string;
+  course_name: string;
+  section_code: string;
+  change_type: 'moved' | 'added' | 'removed' | 'modified' | string;
+  before_day?: number | null;
+  before_day_name?: string | null;
+  before_start_time?: string | null;
+  before_end_time?: string | null;
+  before_room?: string | null;
+  before_faculty?: string | null;
+  after_day?: number | null;
+  after_day_name?: string | null;
+  after_start_time?: string | null;
+  after_end_time?: string | null;
+  after_room?: string | null;
+  after_faculty?: string | null;
+  human_summary: string;
+}
+
+export interface VersionComparisonOut {
+  base_version_id: number;
+  base_version_number: number;
+  base_version_name: string | null;
+  target_version_id: number;
+  target_version_number: number;
+  target_version_name: string | null;
+  total_classes_changed: number;
+  time_changes_count: number;
+  room_changes_count: number;
+  faculty_changes_count: number;
+  added_classes_count: number;
+  removed_classes_count: number;
+  students_affected: number;
+  new_conflicts: number;
+  resolved_conflicts: number;
+  diffs: VersionMeetingDiff[];
+}
+
+export interface TimetableNotificationSummary {
+  students_affected: number;
+  classes_changed: number;
+  notifications_created: number;
+  in_app_delivered: number;
+  email_delivered: number;
+  email_failed: number;
+  push_delivered: number;
+  push_failed: number;
+  new_conflicts: number;
+  resolved_conflicts: number;
+}
+
+export interface PublishVersionResponse {
+  success: boolean;
+  message: string;
+  published_version: TimetableVersionOut;
+  archived_version_id?: number | null;
+  published_at: string;
+  notification_summary?: TimetableNotificationSummary;
+}
+
+export interface UniversityNotificationSummaryOut {
+  version_id: number;
+  version_number: number;
+  students_affected: number;
+  total_notifications: number;
+  in_app_count: number;
+  email_delivered_count: number;
+  email_failed_count: number;
+  push_delivered_count: number;
+  push_failed_count: number;
+  conflict_alerts_count: number;
+  summary_status: 'all_delivered' | 'partially_delivered' | 'none_sent' | string;
+  logs: {
+    id: number;
+    student_id: number;
+    student_name: string;
+    type: string;
+    priority: string;
+    channel: string;
+    delivery_status: string;
+    title: string;
+    sent_at: string;
+    read_at?: string | null;
+  }[];
+}
+
+// ── Task N10 University Analytics & Decision Dashboard Interfaces ─────────────
+
+export interface AnalyticsTermOption {
+  id: number;
+  name: string;
+  code: string;
+  status: string;
+  is_default: boolean;
+}
+
+export interface AnalyticsOverviewKPIs {
+  active_students: number;
+  enrolled_students: number;
+  active_courses: number;
+  active_sections: number;
+  scheduled_classes: number;
+  unscheduled_sections: number;
+  active_rooms: number;
+  scheduled_room_utilization_rate: number;
+  faculty_involved: number;
+  timetable_conflicts: number;
+  recent_timetable_changes: number;
+  students_affected_by_changes: number;
+}
+
+export interface SectionDemandItem {
+  section_id: number;
+  section_code: string;
+  course_id: number;
+  course_code: string;
+  course_title: string;
+  department_id?: number | null;
+  department_name?: string | null;
+  capacity: number;
+  enrolled_count: number;
+  remaining_seats: number;
+  utilization_rate: number;
+  demand_status: 'high_demand' | 'moderate' | 'low_utilization' | 'over_capacity' | string;
+}
+
+export interface EnrollmentAnalyticsData {
+  term_id: number;
+  term_name: string;
+  total_enrolled_students: number;
+  total_sections: number;
+  total_capacity: number;
+  total_seats_filled: number;
+  average_section_utilization: number;
+  high_demand_sections: SectionDemandItem[];
+  low_utilization_sections: SectionDemandItem[];
+  all_sections: SectionDemandItem[];
+}
+
+export interface RoomUtilizationItem {
+  room_id: number;
+  room_name: string;
+  building?: string | null;
+  capacity: number;
+  scheduled_hours: number;
+  scheduled_meetings_count: number;
+  operating_hours_baseline: number;
+  scheduled_utilization_rate: number;
+  utilization_category: 'high' | 'balanced' | 'low' | 'unused' | string;
+}
+
+export interface DailyRoomUtilization {
+  day_of_week: number;
+  day_name: string;
+  total_scheduled_hours: number;
+  meeting_count: number;
+}
+
+export interface RoomAnalyticsData {
+  term_id: number;
+  term_name: string;
+  total_rooms: number;
+  used_rooms: number;
+  overall_scheduled_utilization_rate: number;
+  operating_hours_baseline_per_room: number;
+  most_used_rooms: RoomUtilizationItem[];
+  least_used_rooms: RoomUtilizationItem[];
+  all_rooms: RoomUtilizationItem[];
+  daily_utilization: DailyRoomUtilization[];
+  utilization_label_notice: string;
+}
+
+export interface FacultyScheduleItem {
+  faculty_id: number;
+  user_id: number;
+  name: string;
+  department_id?: number | null;
+  department_name?: string | null;
+  title?: string | null;
+  scheduled_teaching_hours: number;
+  sections_count: number;
+  meetings_count: number;
+  schedule_conflicts_count: number;
+}
+
+export interface FacultyAnalyticsData {
+  term_id: number;
+  term_name: string;
+  total_faculty_count: number;
+  active_teaching_faculty_count: number;
+  total_scheduled_teaching_hours: number;
+  average_teaching_hours_per_faculty: number;
+  faculty_schedules: FacultyScheduleItem[];
+}
+
+export interface TimetableConflictSummary {
+  room_collisions: number;
+  faculty_collisions: number;
+  student_class_collisions: number;
+  student_work_collisions: number;
+  total_conflicts: number;
+}
+
+export interface TimetableChangeHistoryItem {
+  version_id: number;
+  version_number: number;
+  version_name?: string | null;
+  published_at?: string | null;
+  changes_count: number;
+  affected_students: number;
+  notifications_generated: number;
+  summary_status?: string | null;
+}
+
+export interface TimetableHealthAnalyticsData {
+  term_id: number;
+  term_name: string;
+  timetable_id?: number | null;
+  timetable_name?: string | null;
+  timetable_status: string;
+  is_published: boolean;
+  conflicts: TimetableConflictSummary;
+  recent_versions: TimetableChangeHistoryItem[];
+  total_recent_changes: number;
+  total_affected_students: number;
+  total_notifications_sent: number;
+}
+
+export interface DepartmentComparisonItem {
+  department_id: number;
+  department_name: string;
+  department_code: string;
+  courses_count: number;
+  sections_count: number;
+  total_capacity: number;
+  total_enrolled: number;
+  average_utilization_rate: number;
+  scheduled_hours: number;
+}
+
+export interface UniversityDashboardAnalyticsResponse {
+  institution_id: number;
+  term_id: number;
+  term_name: string;
+  calculated_at: string;
+  data_freshness_label: string;
+  available_terms: AnalyticsTermOption[];
+  overview: AnalyticsOverviewKPIs;
+  enrollment: EnrollmentAnalyticsData;
+  rooms: RoomAnalyticsData;
+  faculty: FacultyAnalyticsData;
+  timetable: TimetableHealthAnalyticsData;
+  departments: DepartmentComparisonItem[];
+}
+
+
 

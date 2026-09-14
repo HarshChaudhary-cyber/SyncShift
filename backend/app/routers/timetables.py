@@ -34,6 +34,7 @@ from app.schemas.timetable import (
     TimetableChangeProposal,
     TimetableCreate,
     TimetableImpactResponse,
+    TimetableNotificationSummary,
     TimetableOut,
     TimetableUpdate,
     TimetableVersionCreate,
@@ -42,6 +43,7 @@ from app.schemas.timetable import (
     VersionChecklistOut,
     VersionComparisonOut,
 )
+from app.schemas.notification import UniversityNotificationSummaryOut
 from app.services.audit import record_audit_log
 from app.services.impact_analysis import analyze_timetable_change
 from app.services.timetable_validator import (
@@ -547,7 +549,7 @@ def list_versions(
     # Ensure baseline initial version exists
     get_or_create_initial_version(db, context.institution_id, timetable_id)
 
-    versions = (
+    v_query = (
         db.query(TimetableVersion)
         .options(joinedload(TimetableVersion.creator))
         .filter(
@@ -555,9 +557,12 @@ def list_versions(
             TimetableVersion.institution_id == context.institution_id,
             TimetableVersion.deleted_at.is_(None),
         )
-        .order_by(TimetableVersion.version_number.desc())
-        .all()
     )
+    # Non-admin students only see published timetable versions
+    if not context.is_admin():
+        v_query = v_query.filter(TimetableVersion.status == "published")
+
+    versions = v_query.order_by(TimetableVersion.version_number.desc()).all()
 
     results: List[TimetableVersionOut] = []
     for v in versions:
@@ -680,6 +685,12 @@ def get_version(
         .first()
     )
     if not v:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "version_not_found", "message": f"Version {version_id} not found"},
+        )
+    # Non-admin students only see published timetable versions
+    if not context.is_admin() and v.status != "published":
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "version_not_found", "message": f"Version {version_id} not found"},
@@ -823,6 +834,34 @@ def publish_timetable_version(
         request=request,
     )
     from datetime import datetime, timezone
+    from app.schemas.timetable import TimetableNotificationSummary
+    from app.schemas.notification import UniversityNotificationSummaryOut
+    from app.services.timetable_notification_service import (
+        process_timetable_publication_notifications,
+        get_version_notification_summary,
+    )
+
+    summary_data = process_timetable_publication_notifications(
+        db=db,
+        institution_id=context.institution_id,
+        timetable_id=timetable_id,
+        published_version_id=ver.id,
+        previous_version_id=archived_id,
+        actor_user_id=context.user_id,
+    )
+    notif_summary = TimetableNotificationSummary(
+        students_affected=summary_data.get("students_affected", 0),
+        classes_changed=summary_data.get("classes_changed", 0),
+        notifications_created=summary_data.get("notifications_created", 0),
+        in_app_delivered=summary_data.get("in_app_delivered", 0),
+        email_delivered=summary_data.get("email_delivered", 0),
+        email_failed=summary_data.get("email_failed", 0),
+        push_delivered=summary_data.get("push_delivered", 0),
+        push_failed=summary_data.get("push_failed", 0),
+        new_conflicts=summary_data.get("new_conflicts", 0),
+        resolved_conflicts=summary_data.get("resolved_conflicts", 0),
+    )
+
     return DataResponse(
         data=PublishVersionResponse(
             success=True,
@@ -830,8 +869,42 @@ def publish_timetable_version(
             published_version=_enrich_version_out(ver, ver.id),
             archived_version_id=archived_id,
             published_at=ver.published_at or datetime.now(timezone.utc),
+            notification_summary=notif_summary,
         )
     )
+
+
+@router.get(
+    "/{institution_id}/timetables/{timetable_id}/versions/{version_id}/notifications",
+    response_model=DataResponse[UniversityNotificationSummaryOut],
+)
+def get_version_notifications(
+    institution_id: int = Path(...),
+    timetable_id: int = Path(...),
+    version_id: int = Path(...),
+    context: InstitutionContext = Depends(require_institution_admin),
+    db: Session = Depends(get_db),
+):
+    """
+    Returns university administrator summary of notifications sent for this timetable version.
+    Includes delivery stats across channels and sanitized student log items.
+    """
+    from app.schemas.notification import UniversityNotificationSummaryOut
+    from app.services.timetable_notification_service import get_version_notification_summary
+
+    summary = get_version_notification_summary(
+        db=db,
+        institution_id=context.institution_id,
+        timetable_id=timetable_id,
+        version_id=version_id,
+    )
+    if "error" in summary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": summary["error"], "message": f"Version {version_id} not found"},
+        )
+    return DataResponse(data=UniversityNotificationSummaryOut(**summary))
+
 
 
 @router.post("/{institution_id}/timetables/{timetable_id}/versions/{version_id}/archive", response_model=DataResponse[TimetableVersionOut])

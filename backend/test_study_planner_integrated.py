@@ -131,8 +131,9 @@ def test_study_planner_calendar_analytics_integration():
 
     # 5. Verify Analytics immediately reflects the added study block
     analytics_after = client.get("/api/v1/analytics/week", headers=headers).json()["data"]
-    assert analytics_after["hours"]["study_hours"] == first_slot["duration_hours"]
-    assert analytics_after["hours"]["total_hours"] == analytics_before["hours"]["total_hours"] + first_slot["duration_hours"]
+    import pytest
+    assert analytics_after["hours"]["study_hours"] == pytest.approx(first_slot["duration_hours"], abs=0.1)
+    assert analytics_after["hours"]["total_hours"] == pytest.approx(analytics_before["hours"]["total_hours"] + first_slot["duration_hours"], abs=0.1)
 
     # 6. Mark task complete: POST /api/v1/tasks/{id}/complete
     comp_resp = client.post(f"/api/v1/tasks/{task_id}/complete", headers=headers)

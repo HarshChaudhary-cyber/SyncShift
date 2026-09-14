@@ -112,6 +112,12 @@ export default function UniversityLayout({ children }: { children: React.ReactNo
             icon: '👥',
             isActive: pathname.startsWith('/university/members'),
           },
+          {
+            label: 'Insights',
+            href: '/university/insights',
+            icon: '📊',
+            isActive: pathname.startsWith('/university/insights'),
+          },
         ]
       : []),
   ];

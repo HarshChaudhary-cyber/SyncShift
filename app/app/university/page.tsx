@@ -324,7 +324,7 @@ export default function UniversityDashboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <Link
             href="/university/timetables"
             className="flex flex-col items-start p-3.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-indigo-500/40 transition group cursor-pointer"
@@ -376,11 +376,24 @@ export default function UniversityDashboardPage() {
               Directory & enrollments
             </span>
           </Link>
+
+          <Link
+            href="/university/insights"
+            className="flex flex-col items-start p-3.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-indigo-500/40 transition group cursor-pointer"
+          >
+            <span className="text-2xl mb-2">📊</span>
+            <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-400 transition">
+              University Insights
+            </span>
+            <span className="text-[11px] text-[var(--text-muted)] mt-0.5">
+              Capacity & impact
+            </span>
+          </Link>
         </div>
       </div>
 
       {/* 3. Streamlined Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <Link
           href="/university/terms"
           className="group p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-indigo-500/40 transition shadow-xs flex flex-col justify-between"
@@ -449,6 +462,29 @@ export default function UniversityDashboardPage() {
           </div>
           <span className="mt-4 text-xs font-semibold text-indigo-400 group-hover:underline">
             Manage Student Directory →
+          </span>
+        </Link>
+
+        <Link
+          href="/university/insights"
+          className="group p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-indigo-500/40 transition shadow-xs flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl">📊</span>
+              <span className="text-xs font-semibold uppercase text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
+                Decision Analytics
+              </span>
+            </div>
+            <p className="mt-3 text-lg font-bold text-[var(--text-primary)]">
+              University Insights
+            </p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
+              Room usage, capacity bottlenecks & student impact
+            </p>
+          </div>
+          <span className="mt-4 text-xs font-semibold text-indigo-400 group-hover:underline">
+            Explore Insights →
           </span>
         </Link>
       </div>

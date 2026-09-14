@@ -361,7 +361,9 @@ def test_expired_subscription_autodelete():
     mock_resp.status_code = 410
     mock_ex = WebPushException("Subscription expired", response=mock_resp)
 
-    with patch("app.services.reminders.webpush", side_effect=mock_ex):
+    with patch("app.services.reminders.settings.VAPID_PUBLIC_KEY", "mock_pub_key"), \
+         patch("app.services.reminders.settings.VAPID_PRIVATE_KEY", "mock_priv_key"), \
+         patch("app.services.reminders.webpush", side_effect=mock_ex):
         result = send_web_push(sub, {"title": "Test"}, db=db)
         assert result is False
 

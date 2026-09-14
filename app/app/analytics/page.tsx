@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, AnalyticsData } from '@/lib/api';
+import Link from 'next/link';
+import { api, AnalyticsData, UserInstitutionStatus } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Navbar from '@/components/Navbar';
 import { CalendarProvider, useCalendar } from '@/context/CalendarContext';
@@ -19,6 +20,7 @@ function AnalyticsContent() {
   const { weekStart, goToNextWeek, goToPrevWeek, goToCurrentWeek } = useCalendar();
 
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [institutionStatus, setInstitutionStatus] = useState<UserInstitutionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -27,8 +29,23 @@ function AnalyticsContent() {
     if (!isSilent) setLoading(true);
     setError(null);
     try {
-      const data = await api.getAnalytics(weekStart);
-      setAnalytics(data);
+      const [data, inst] = await Promise.allSettled([
+        api.getAnalytics(weekStart),
+        api.getMyInstitutionStatus(),
+      ]);
+      if (data.status === 'fulfilled') {
+        setAnalytics(data.value);
+      } else {
+        const err = data.reason;
+        if (err?.status === 401) {
+          router.replace('/login');
+          return;
+        }
+        setError(err?.message || 'Failed to load schedule analytics');
+      }
+      if (inst.status === 'fulfilled') {
+        setInstitutionStatus(inst.value);
+      }
     } catch (err: any) {
       if (err?.status === 401) {
         router.replace('/login');
@@ -43,6 +60,10 @@ function AnalyticsContent() {
   useEffect(() => {
     fetchAnalytics();
   }, [fetchAnalytics]);
+
+  const isAdmin =
+    institutionStatus?.membership?.role === 'admin' ||
+    institutionStatus?.membership?.role === 'super_admin';
 
   // Week navigation
   const handlePrevWeek = () => {
@@ -62,6 +83,26 @@ function AnalyticsContent() {
       <Navbar onImportClick={() => setImportModalOpen(true)} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+        {isAdmin && (
+          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <span className="text-xl">🏛️</span>
+              <div>
+                <span className="font-bold text-indigo-300">University Administrator: </span>
+                <span className="text-[var(--text-secondary)]">
+                  You are viewing personal student schedule analytics. For campus-wide room utilization, section capacity, and timetable impact, access University Insights.
+                </span>
+              </div>
+            </div>
+            <Link
+              href="/university/insights"
+              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold whitespace-nowrap transition"
+            >
+              University Insights →
+            </Link>
+          </div>
+        )}
+
         {/* Page Header & Week Navigator */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

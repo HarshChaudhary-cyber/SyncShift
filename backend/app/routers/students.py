@@ -646,6 +646,77 @@ def get_my_academic_schedule(
     )
 
 
+@router.get("/me/schedule/export.ics")
+def export_academic_schedule_ics(
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Exports the authenticated student's official academic schedule as an iCalendar (.ics) file.
+    Reflects the current authoritative published timetable version.
+    """
+    from fastapi.responses import Response
+    from datetime import datetime, timedelta, timezone
+
+    # Reuse schedule query logic
+    schedule_resp = get_my_academic_schedule(term_id=None, current_user=current_user, db=db)
+    sched = schedule_resp.data
+
+    ics_lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//SyncShift//Student Academic Schedule//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        f"X-WR-CALNAME:SyncShift - {sched.institution_name or 'Academic Schedule'}",
+    ]
+
+    day_by_code = {0: "SU", 1: "MO", 2: "TU", 3: "WE", 4: "TH", 5: "FR", 6: "SA"}
+
+    # Reference base date: modern Sunday
+    ref_sunday = datetime(2026, 9, 13)
+
+    for m in sched.meetings:
+        dow = m.day_of_week
+        by_day = day_by_code.get(dow, "MO")
+        ev_date = ref_sunday + timedelta(days=dow)
+
+        s_parts = [int(p) for p in m.start_time.split(":")[:2]]
+        e_parts = [int(p) for p in m.end_time.split(":")[:2]]
+
+        dtstart = ev_date.replace(hour=s_parts[0], minute=s_parts[1], second=0).strftime("%Y%m%dT%H%M%S")
+        dtend = ev_date.replace(hour=e_parts[0], minute=e_parts[1], second=0).strftime("%Y%m%dT%H%M%S")
+
+        summary = f"{m.course_code or 'Class'}: {m.course_name or 'Lecture'} ({m.section_code or ''})"
+        location = m.room_name or "TBA"
+
+        ics_lines.extend([
+            "BEGIN:VEVENT",
+            f"UID:syncshift-meeting-{m.id}-{m.section_id}@syncshift.app",
+            f"DTSTAMP:{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
+            f"DTSTART:{dtstart}",
+            f"DTEND:{dtend}",
+            f"RRULE:FREQ=WEEKLY;BYDAY={by_day}",
+            f"SUMMARY:{summary.strip()}",
+            f"LOCATION:{location}",
+            f"DESCRIPTION:Official university class for {m.course_name or ''}. Section {m.section_code or ''}. Room: {location}.",
+            "STATUS:CONFIRMED",
+            "END:VEVENT",
+        ])
+
+    ics_lines.append("END:VCALENDAR")
+    ics_content = "\r\n".join(ics_lines) + "\r\n"
+
+    return Response(
+        content=ics_content,
+        media_type="text/calendar",
+        headers={
+            "Content-Disposition": 'attachment; filename="syncshift_schedule.ics"',
+        },
+    )
+
+
+
 # ── Student Weekly Availability Endpoints ────────────────────────────────────
 
 def _parse_time_str(t_str: str) -> time:

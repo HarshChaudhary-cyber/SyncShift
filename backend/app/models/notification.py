@@ -50,6 +50,7 @@ class NotificationPrefs(Base):
     study_reminder_min = Column(Integer, default=15, nullable=False)
     deadline_reminder = Column(Boolean, default=True, nullable=False)
     conflict_alerts = Column(Boolean, default=True, nullable=False)
+    timetable_changes_enabled = Column(Boolean, default=True, nullable=False)
     quiet_hours_start = Column(Time, nullable=True)
     quiet_hours_end = Column(Time, nullable=True)
 
@@ -67,12 +68,34 @@ class NotificationLog(Base):
         nullable=False,
         index=True,
     )
-    type = Column(String(50), nullable=False)  # class, shift, study, deadline, conflict, test
+    type = Column(String(50), nullable=False)  # class, shift, study, deadline, conflict, test, TIMETABLE_UPDATE, CLASS_MOVED, CLASS_ROOM_CHANGED, CLASS_FACULTY_CHANGED, CLASS_ADDED, CLASS_REMOVED, SCHEDULE_CONFLICT
     title = Column(String(255), nullable=False)
     body = Column(String(500), nullable=False)
     sent_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    channel = Column(String(20), nullable=False)  # push | email
+    channel = Column(String(20), nullable=False)  # push | email | in_app
     dedup_key = Column(String(255), nullable=True, index=True)
+
+    # N8 enhancements
+    read_at = Column(DateTime(timezone=True), nullable=True)
+    priority = Column(String(20), server_default="INFO", default="INFO", nullable=False)  # INFO | IMPORTANT | URGENT
+    action_url = Column(String(255), nullable=True)
+    institution_id = Column(
+        BigInteger,
+        ForeignKey("institutions.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    timetable_version_id = Column(
+        BigInteger,
+        ForeignKey("timetable_versions.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    delivery_status = Column(String(20), server_default="delivered", default="delivered", nullable=False)  # delivered | pending | failed
+    metadata_json = Column(Text, nullable=True)
 
     # Relationships
     user = relationship("User", back_populates="notification_logs")
+    institution = relationship("Institution")
+    timetable_version = relationship("TimetableVersion")
+

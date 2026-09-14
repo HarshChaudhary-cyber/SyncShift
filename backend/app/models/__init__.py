@@ -22,6 +22,7 @@ from app.models.student_constraint import StudentConstraint, StudentPreference
 from app.models.timetable import Timetable
 from app.models.timetable_version import TimetableVersion
 from app.models.course_meeting import CourseMeeting, SectionMeeting
+from app.models.assistant_conversation import AssistantConversation, AssistantMessage
 
 __all__ = [
     "User",
@@ -58,5 +59,8 @@ __all__ = [
     "TimetableVersion",
     "CourseMeeting",
     "SectionMeeting",
+    "AssistantConversation",
+    "AssistantMessage",
 ]
+
 

@@ -45,8 +45,11 @@ class Settings(BaseSettings):
     SMTP_FROM: str = os.getenv("SMTP_FROM", "notifications@syncshift.app")
 
     # CORS
-
     BACKEND_CORS_ORIGINS: list[str] = [
+        o.strip().rstrip("/")
+        for o in (os.getenv("ALLOWED_ORIGINS") or os.getenv("BACKEND_CORS_ORIGINS", "")).split(",")
+        if o.strip() and o.strip() != "*"
+    ] or [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8000",
