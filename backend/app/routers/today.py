@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Optional
 from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, Query
@@ -8,7 +8,7 @@ from app.schemas.block import BlockOut
 from app.schemas.common import DataResponse
 from app.schemas.today import TodayViewData
 from app.services.timezone_helper import get_user_today
-from app.store import detect_conflicts_and_totals, get_all_blocks
+from app.store import detect_conflicts_and_totals, get_all_blocks, get_occurrences_for_range
 
 from app.database import get_db
 from sqlalchemy.orm import Session
@@ -47,24 +47,27 @@ def get_today_schedule(
     else:
         today_d, today_dow = get_user_today(current_user)
 
-    # 3. Fetch user blocks and filter by today's day of week & effective dates
-    all_blocks = get_all_blocks(user_id=current_user.user_id, include_deleted=False, db=db)
-    today_blocks: list[BlockOut] = []
+    # 2. Fetch materialized occurrences for the specific date
+    # Use get_occurrences_for_range to properly handle effective_from/effective_until and overrides
+    occurrences = get_occurrences_for_range(
+        user_id=current_user.user_id,
+        start_date=today_d,
+        end_date=today_d,
+        db=db
+    )
+    
+    # Filter to only blocks on the requested date
+    today_blocks: list[BlockOut] = [
+        b for b in occurrences 
+        if (b.occurrence_date == today_d or b.day_of_week == today_dow)
+    ]
 
     # Map courses to colors
     from app.services.schedule import get_course_colors
     course_color_map: dict[int, str] = get_course_colors(current_user.user_id)
 
-    for b in all_blocks:
-        if b.day_of_week != today_dow:
-            continue
-        # Verify date range if specified
-        if b.effective_from and today_d < b.effective_from:
-            continue
-        if b.effective_until and today_d > b.effective_until:
-            continue
-
-        # Assign color if not already set
+    # Apply colors to blocks
+    for i, b in enumerate(today_blocks):
         color = b.color
         if not color:
             if b.type == "shift":
@@ -73,9 +76,9 @@ def get_today_schedule(
                 color = course_color_map[b.course_id]
             else:
                 color = "#3b82f6"  # Blue
-
-        # Create a shallow copy with color
-        b_with_color = BlockOut(
+        
+        # Update color in place
+        today_blocks[i] = BlockOut(
             id=b.id,
             user_id=b.user_id,
             type=b.type,
@@ -91,12 +94,11 @@ def get_today_schedule(
             course_id=b.course_id,
             color=color,
         )
-        today_blocks.append(b_with_color)
 
-    # 4. Sort blocks chronologically by start_time
+    # 3. Sort blocks chronologically by start_time
     today_blocks.sort(key=lambda item: _to_minutes(item.start_time))
 
-    # 5. Compute shift_hours, class_hours, and expected_earnings
+    # 4. Compute shift_hours, class_hours, and expected_earnings
     shift_hours = 0.0
     class_hours = 0.0
     expected_earnings = 0.0
@@ -114,11 +116,13 @@ def get_today_schedule(
         elif b.type == "class":
             class_hours += hours
 
-    # 6. Detect conflicts among today's blocks
+    # 5. Detect conflicts among today's blocks
     today_block_ids = {b.id for b in today_blocks}
     all_conflicts, _ = detect_conflicts_and_totals(
         user_id=current_user.user_id,
         weekly_hour_limit=current_user.weekly_work_hour_limit or 20.0,
+        week_start=today_d - timedelta(days=(today_d.weekday())),  # Get Monday of the week
+        db=db,
     )
     today_conflicts = [
         c
