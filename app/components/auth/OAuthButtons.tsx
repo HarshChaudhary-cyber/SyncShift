@@ -1,46 +1,40 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 import { api, ApiError } from '@/lib/api';
 import { useAuthContext } from '@/context/AuthContext';
-
-declare global {
-  interface Window {
-    FB?: any;
-    fbAsyncInit?: () => void;
-    AppleID?: any;
-  }
-}
+import { getPortalRedirect } from '@/components/RoleGuard';
 
 interface OAuthButtonsProps {
   onSuccessRedirect?: string;
   className?: string;
+  captchaToken?: string;
 }
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
-const FB_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '';
-const APPLE_SERVICE_ID = process.env.NEXT_PUBLIC_APPLE_SERVICE_ID || '';
-const APPLE_REDIRECT_URI =
-  process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI ||
-  (typeof window !== 'undefined' ? `${window.location.origin}/auth/apple/callback` : 'http://localhost:3000/auth/apple/callback');
+const MICROSOFT_CLIENT_ID = process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID || '';
+const MICROSOFT_TENANT = process.env.NEXT_PUBLIC_MICROSOFT_TENANT_ID || 'common';
 
 function GoogleButtonInner({
   disabled,
   isLoading,
+  captchaToken,
   onStart,
   onComplete,
   onError,
 }: {
   disabled: boolean;
   isLoading: boolean;
+  captchaToken?: string;
   onStart: () => void;
   onComplete: (data: any) => void;
   onError: (msg: string) => void;
 }) {
   const triggerGoogleLogin = useGoogleLogin({
     flow: 'implicit',
+    prompt: 'select_account',
     onSuccess: async (tokenResponse) => {
       try {
         // Fetch user profile from Google using the access token to get id_token or verified claims
@@ -48,10 +42,10 @@ function GoogleButtonInner({
           headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
         });
         const userInfo = await userInfoRes.json();
-        
+
         // Pass verified claims via mock_google_ format if id_token not directly returned in implicit flow
         const idTokenPayload = `mock_google_:${userInfo.sub}:${userInfo.email}:${userInfo.name || ''}:${userInfo.picture || ''}`;
-        const res = await api.oauthGoogle(idTokenPayload);
+        const res = await api.oauthGoogle(idTokenPayload, captchaToken);
         onComplete(res);
       } catch (err: any) {
         if (err instanceof ApiError) {
@@ -83,7 +77,7 @@ function GoogleButtonInner({
       setTimeout(async () => {
         try {
           const devToken = `mock_google_:dev_google_user_1:student_google@university.edu:Student Google:https://lh3.googleusercontent.com/a/mock`;
-          const res = await api.oauthGoogle(devToken);
+          const res = await api.oauthGoogle(devToken, captchaToken);
           onComplete(res);
         } catch (e: any) {
           onError(e?.message || "Couldn't connect with Google.");
@@ -91,7 +85,7 @@ function GoogleButtonInner({
       }, 500);
       return;
     }
-    triggerGoogleLogin();
+    triggerGoogleLogin({ prompt: 'select_account' });
   };
 
   return (
@@ -115,57 +109,24 @@ function GoogleButtonInner({
   );
 }
 
-export function OAuthButtons({ onSuccessRedirect = '/dashboard', className = '' }: OAuthButtonsProps) {
+export function OAuthButtons({
+  onSuccessRedirect,
+  className = '',
+  captchaToken,
+}: OAuthButtonsProps) {
   const router = useRouter();
   const { loginWithOAuthData } = useAuthContext();
 
-  const [activeProvider, setActiveProvider] = useState<'google' | 'facebook' | 'apple' | null>(null);
+  const [activeProvider, setActiveProvider] = useState<'google' | 'microsoft' | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // ── Load Facebook SDK ────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    window.fbAsyncInit = function () {
-      if (window.FB) {
-        window.FB.init({
-          appId: FB_APP_ID || '1234567890',
-          cookie: true,
-          xfbml: true,
-          version: 'v18.0',
-        });
-      }
-    };
-
-    if (!document.getElementById('facebook-jssdk')) {
-      const js = document.createElement('script');
-      js.id = 'facebook-jssdk';
-      js.src = 'https://connect.facebook.net/en_US/sdk.js';
-      js.async = true;
-      js.defer = true;
-      document.body.appendChild(js);
-    }
-  }, []);
-
-  // ── Load Apple SDK ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    if (!document.getElementById('apple-jssdk')) {
-      const js = document.createElement('script');
-      js.id = 'apple-jssdk';
-      js.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/auth.js';
-      js.async = true;
-      js.defer = true;
-      document.body.appendChild(js);
-    }
-  }, []);
+  const popupRef = useRef<Window | null>(null);
 
   const handleOAuthSuccess = useCallback(
     async (data: any) => {
       try {
         await loginWithOAuthData(data);
-        router.replace(onSuccessRedirect);
+        const destination = onSuccessRedirect || getPortalRedirect(data.institution_role);
+        router.replace(destination);
       } catch (err: any) {
         setError(err?.message || 'Login succeeded but failed to initialize session.');
         setActiveProvider(null);
@@ -174,20 +135,21 @@ export function OAuthButtons({ onSuccessRedirect = '/dashboard', className = '' 
     [loginWithOAuthData, router, onSuccessRedirect]
   );
 
-  // ── Facebook Login Handler ──────────────────────────────────────────────────
-  const handleFacebookLogin = () => {
+  // ── Microsoft Login Handler ─────────────────────────────────────────────────
+  const handleMicrosoftLogin = () => {
     if (activeProvider) return;
     setError(null);
-    setActiveProvider('facebook');
+    setActiveProvider('microsoft');
 
-    if (!FB_APP_ID || !window.FB) {
+    if (!MICROSOFT_CLIENT_ID) {
       // Dev mode fallback
       setTimeout(async () => {
         try {
-          const res = await api.oauthFacebook('mock_fb_dev_user', 'fb_dev_user_123');
+          const devToken = `mock_microsoft_:dev_ms_user_1:student_ms@university.edu:Student Microsoft`;
+          const res = await api.oauthMicrosoft(devToken, captchaToken);
           await handleOAuthSuccess(res);
         } catch (e: any) {
-          setError(e?.message || "Couldn't connect with Facebook. Please try again.");
+          setError(e?.message || "Couldn't connect with Microsoft. Please try again.");
           setActiveProvider(null);
         }
       }, 500);
@@ -195,83 +157,85 @@ export function OAuthButtons({ onSuccessRedirect = '/dashboard', className = '' 
     }
 
     try {
-      window.FB.login(
-        async (response: any) => {
-          if (response.authResponse) {
-            const { accessToken, userID } = response.authResponse;
+      const redirectUri =
+        process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI ||
+        (typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/microsoft/callback`
+          : 'http://localhost:3000/auth/microsoft/callback');
+
+      const state = Math.random().toString(36).substring(2, 15);
+      const nonce = Math.random().toString(36).substring(2, 15);
+
+      const authUrl =
+        `https://login.microsoftonline.com/${MICROSOFT_TENANT}/oauth2/v2.0/authorize?` +
+        new URLSearchParams({
+          client_id: MICROSOFT_CLIENT_ID,
+          response_type: 'id_token',
+          redirect_uri: redirectUri,
+          scope: 'openid profile email',
+          response_mode: 'fragment',
+          state: state,
+          nonce: nonce,
+          prompt: 'select_account',
+        }).toString();
+
+      const popup = window.open(
+        authUrl,
+        'microsoft_oauth',
+        'width=520,height=650,left=150,top=100,menubar=no,status=no,toolbar=no'
+      );
+      popupRef.current = popup;
+
+      const messageListener = async (event: MessageEvent) => {
+        if (typeof window !== 'undefined' && event.origin !== window.location.origin) return;
+        if (event.data?.type === 'MS_AUTH_RESPONSE') {
+          window.removeEventListener('message', messageListener);
+          clearInterval(pollTimer);
+
+          if (event.data.error) {
+            if (event.data.error === 'access_denied') {
+              setError('Login canceled');
+            } else {
+              setError(event.data.error_description || "Couldn't connect with Microsoft. Please try again.");
+            }
+            setActiveProvider(null);
+            return;
+          }
+
+          if (event.data.id_token) {
             try {
-              const res = await api.oauthFacebook(accessToken, userID);
+              const res = await api.oauthMicrosoft(event.data.id_token, captchaToken);
               await handleOAuthSuccess(res);
             } catch (err: any) {
               if (err instanceof ApiError && (err.status === 409 || err.code === 'email_exists')) {
                 setError('This email is already registered with email/password. Please sign in that way.');
               } else {
-                setError(err.message || "Couldn't connect with Facebook. Please try again.");
+                setError(err?.message || "Couldn't connect with Microsoft. Please try again.");
               }
               setActiveProvider(null);
             }
-          } else {
-            setError('Login canceled');
-            setActiveProvider(null);
           }
-        },
-        { scope: 'email' }
-      );
-    } catch {
-      setError("Couldn't connect with Facebook. Please try again.");
-      setActiveProvider(null);
-    }
-  };
+        }
+      };
 
-  // ── Apple Login Handler ─────────────────────────────────────────────────────
-  const handleAppleLogin = async () => {
-    if (activeProvider) return;
-    setError(null);
-    setActiveProvider('apple');
+      window.addEventListener('message', messageListener);
 
-    if (!APPLE_SERVICE_ID || !window.AppleID) {
-      // Dev mode fallback
-      setTimeout(async () => {
-        try {
-          const res = await api.oauthApple(
-            'mock_apple_:dev_apple_123:student_apple@privaterelay.appleid.com:Apple Student',
-            'Apple Student'
-          );
-          await handleOAuthSuccess(res);
-        } catch (e: any) {
-          setError(e?.message || "Couldn't connect with Apple. Please try again.");
-          setActiveProvider(null);
+      // Poll to detect popup closure without response
+      const pollTimer = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(pollTimer);
+          window.removeEventListener('message', messageListener);
+          setActiveProvider((current) => {
+            if (current === 'microsoft') {
+              setError('Login canceled');
+              return null;
+            }
+            return current;
+          });
         }
       }, 500);
-      return;
-    }
-
-    try {
-      window.AppleID.auth.init({
-        clientId: APPLE_SERVICE_ID,
-        scope: 'name email',
-        redirectURI: APPLE_REDIRECT_URI,
-        usePopup: true,
-      });
-
-      const data = await window.AppleID.auth.signIn();
-      const idToken = data.authorization.id_token;
-      let displayName: string | undefined;
-      if (data.user?.name) {
-        const { firstName, lastName } = data.user.name;
-        displayName = [firstName, lastName].filter(Boolean).join(' ');
-      }
-
-      const res = await api.oauthApple(idToken, displayName);
-      await handleOAuthSuccess(res);
-    } catch (err: any) {
-      if (err?.error === 'popup_closed_by_user') {
-        setError('Login canceled');
-      } else if (err instanceof ApiError && (err.status === 409 || err.code === 'email_exists')) {
-        setError('This email is already registered with email/password. Please sign in that way.');
-      } else {
-        setError(err?.message || "Couldn't connect with Apple. Please try again.");
-      }
+    } catch {
+      setError("Couldn't connect with Microsoft. Please try again.");
       setActiveProvider(null);
     }
   };
@@ -279,13 +243,14 @@ export function OAuthButtons({ onSuccessRedirect = '/dashboard', className = '' 
   const isAnyLoading = activeProvider !== null;
 
   return (
-    <div className={`w-full flex flex-col items-center gap-2 ${className}`}>
-      {/* 1. Google Button (using @react-oauth/google provider) */}
+    <div className={`w-full flex flex-col items-center gap-2.5 ${className}`}>
+      {/* 1. Google Button (using @react-oauth/google provider with select_account prompt) */}
       <div className="w-full">
         <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID || 'dummy_id_for_init'}>
           <GoogleButtonInner
             disabled={isAnyLoading && activeProvider !== 'google'}
             isLoading={activeProvider === 'google'}
+            captchaToken={captchaToken}
             onStart={() => {
               setError(null);
               setActiveProvider('google');
@@ -299,41 +264,22 @@ export function OAuthButtons({ onSuccessRedirect = '/dashboard', className = '' 
         </GoogleOAuthProvider>
       </div>
 
-      {/* 2. Facebook Button */}
+      {/* 2. Microsoft Button */}
       <button
         type="button"
-        onClick={handleFacebookLogin}
+        onClick={handleMicrosoftLogin}
         disabled={isAnyLoading}
-        aria-label="Continue with Facebook"
-        className="w-full h-[44px] min-h-[44px] px-4 rounded-lg bg-[#1877F2] hover:bg-[#166fe5] text-white font-medium text-sm shadow-sm flex items-center justify-between transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        aria-label="Continue with Microsoft"
+        className="w-full h-[44px] min-h-[44px] px-4 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-sm border border-neutral-700 shadow-sm flex items-center justify-between transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
         <div className="w-6 flex items-center justify-start shrink-0">
-          <FacebookLogo />
+          <MicrosoftLogo />
         </div>
         <span className="flex-1 text-center font-medium text-white">
-          {activeProvider === 'facebook' ? 'Connecting to Facebook…' : 'Continue with Facebook'}
+          {activeProvider === 'microsoft' ? 'Connecting to Microsoft…' : 'Continue with Microsoft'}
         </span>
         <div className="w-6 flex items-center justify-end shrink-0">
-          {activeProvider === 'facebook' && <Spinner size={16} color="text-white" />}
-        </div>
-      </button>
-
-      {/* 3. Apple Button */}
-      <button
-        type="button"
-        onClick={handleAppleLogin}
-        disabled={isAnyLoading}
-        aria-label="Continue with Apple"
-        className="w-full h-[44px] min-h-[44px] px-4 rounded-lg bg-black hover:bg-neutral-900 text-white font-medium text-sm border border-neutral-800 shadow-sm flex items-center justify-between transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-      >
-        <div className="w-6 flex items-center justify-start shrink-0">
-          <AppleLogo />
-        </div>
-        <span className="flex-1 text-center font-medium text-white">
-          {activeProvider === 'apple' ? 'Connecting to Apple…' : 'Continue with Apple'}
-        </span>
-        <div className="w-6 flex items-center justify-end shrink-0">
-          {activeProvider === 'apple' && <Spinner size={16} color="text-white" />}
+          {activeProvider === 'microsoft' && <Spinner size={16} color="text-white" />}
         </div>
       </button>
 
@@ -391,18 +337,13 @@ function GoogleLogo() {
   );
 }
 
-function FacebookLogo() {
+function MicrosoftLogo() {
   return (
-    <svg className="w-4 h-4 fill-white shrink-0" viewBox="0 0 24 24">
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-    </svg>
-  );
-}
-
-function AppleLogo() {
-  return (
-    <svg className="w-4 h-4 fill-white shrink-0" viewBox="0 0 170 170">
-      <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.7-3.05-7.69-7.85-11.97-14.41-6.1-9.37-10.89-19.78-14.36-31.23-3.48-11.45-5.21-22.37-5.21-32.76 0-14.35 3.65-26.17 10.96-35.45 7.31-9.28 16.48-14.04 27.5-14.28 4.79 0 10.12 1.25 16.01 3.76 5.88 2.51 9.69 3.82 11.43 3.94 1.86-.12 5.88-1.48 12.07-4.07 6.19-2.58 11.38-3.76 15.57-3.52 13.72.78 24.35 5.73 31.91 14.86-12.25 7.42-18.26 17.51-18.04 30.26.24 9.94 4.09 18.23 11.56 24.87 7.47 6.64 16.32 10.51 26.54 11.61-2.22 6.84-4.8 13.51-7.74 20.02zm-35.19-111.48c.12 3.48-.95 7.02-3.21 10.62-2.26 3.61-5.18 6.54-8.77 8.81-3.13 2.01-6.49 3.24-10.08 3.69-.36-3.24.78-6.72 3.42-10.43 2.64-3.72 5.78-6.68 9.42-8.89 3.24-1.94 6.31-3.2 9.22-3.8z" />
+    <svg className="w-4 h-4 shrink-0" viewBox="0 0 21 21">
+      <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+      <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+      <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+      <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
     </svg>
   );
 }

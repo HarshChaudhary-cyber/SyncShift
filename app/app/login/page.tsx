@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthContext } from '@/context/AuthContext';
 import { ApiError } from '@/lib/api';
 import { OAuthButtons, OAuthDivider } from '@/components/auth/OAuthButtons';
+import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 import { getPortalRedirect } from '@/components/RoleGuard';
 
 export default function LoginPage() {
@@ -18,6 +19,17 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string>('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlError = params.get('error');
+      if (urlError) {
+        setError(urlError);
+      }
+    }
+  }, []);
 
   // If already authenticated, redirect to the correct portal
   useEffect(() => {
@@ -43,7 +55,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email.trim(), password);
+      await login(email.trim(), password, captchaToken);
       // After login, useAuth will have updated user profile — redirect based on role
       // We need to get the profile after login to know the role
       const { api } = await import('@/lib/api');
@@ -189,6 +201,9 @@ export default function LoginPage() {
               )}
             </AnimatePresence>
 
+            {/* Bot Protection / Turnstile */}
+            <TurnstileWidget onVerify={(token) => setCaptchaToken(token)} />
+
             {/* Submit button */}
             <button
               type="submit"
@@ -209,7 +224,7 @@ export default function LoginPage() {
           {/* Divider & OAuth buttons */}
           <div className="px-5 sm:px-6 pb-5 pt-0">
             <OAuthDivider text="OR" />
-            <OAuthButtons onSuccessRedirect="/student/dashboard" />
+            <OAuthButtons onSuccessRedirect="/student/dashboard" captchaToken={captchaToken} />
           </div>
 
           {/* Footer note */}

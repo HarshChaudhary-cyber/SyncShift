@@ -544,6 +544,8 @@ def process_assistant_chat(
 
     try:
         from app.services.assistant_gemini import (
+            GeminiQuotaExceededError,
+            GeminiTemporaryUnavailableError,
             call_gemini_with_tools,
             gemini_answer_general_question,
             is_general_question,
@@ -605,6 +607,24 @@ def process_assistant_chat(
                 gemini_response_text = raw_text
                 gemini_intent_str = AssistantIntentType.GENERAL_HELP.value
                 gemini_used = True
+    except GeminiQuotaExceededError as gemini_exc:
+        logger.warning("Gemini quota exceeded for assistant request; retry_after=%s", getattr(gemini_exc, "retry_after", None))
+        return _finalize_response(
+            db=db,
+            conv_id=conv.id,
+            text="SyncShift AI is temporarily unavailable because the AI service quota has been reached. Please try again later.",
+            intent=AssistantIntentType.GENERAL_HELP.value,
+            suggestions=["What classes do I have today?", "Do I have any conflicts?", "Plan my week"],
+        )
+    except GeminiTemporaryUnavailableError as gemini_exc:
+        logger.warning("Gemini service unavailable for assistant request: %s", gemini_exc)
+        return _finalize_response(
+            db=db,
+            conv_id=conv.id,
+            text="SyncShift AI is temporarily unavailable. Please try again later.",
+            intent=AssistantIntentType.GENERAL_HELP.value,
+            suggestions=["What classes do I have today?", "Do I have any conflicts?", "Plan my week"],
+        )
     except Exception as gemini_exc:
         logger.info(f"Gemini unavailable, falling back to keyword classifier: {gemini_exc}")
         gemini_used = False

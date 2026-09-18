@@ -284,6 +284,7 @@ export function SettingsContent({ showNavbar = true }: { showNavbar?: boolean })
   // Account provider label
   const oauthProviderName = useMemo(() => {
     if (user?.oauth_provider === 'google') return 'Google';
+    if (user?.oauth_provider === 'microsoft') return 'Microsoft';
     if (user?.oauth_provider === 'facebook') return 'Facebook';
     if (user?.oauth_provider === 'apple') return 'Apple';
     return user?.has_password ? 'Email & Password' : 'Email Account';

@@ -630,6 +630,8 @@ export interface AuthResponseData {
   timezone?: string | null;
   display_name?: string | null;
   avatar_url?: string | null;
+  institution_id?: number | null;
+  institution_role?: string | null;
 }
 
 export interface NotificationPrefs {
@@ -752,16 +754,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 
 export const api = {
-  login: (email: string, password: string) =>
-    request<AuthResponseData>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
-  register: (email: string, password: string, timezone = 'Europe/London', weekly_work_hour_limit = 20.0) =>
-    request<AuthResponseData>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, timezone, weekly_work_hour_limit }) }),
-  oauthGoogle: (id_token: string) =>
-    request<AuthResponseData>('/auth/oauth/google', { method: 'POST', body: JSON.stringify({ id_token }) }),
-  oauthFacebook: (access_token: string, user_id: string) =>
-    request<AuthResponseData>('/auth/oauth/facebook', { method: 'POST', body: JSON.stringify({ access_token, user_id }) }),
-  oauthApple: (id_token: string, display_name?: string) =>
-    request<AuthResponseData>('/auth/oauth/apple', { method: 'POST', body: JSON.stringify({ id_token, display_name }) }),
+  login: (email: string, password: string, captcha_token?: string) =>
+    request<AuthResponseData>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password, captcha_token }) }),
+  register: (email: string, password: string, timezone = 'Europe/London', weekly_work_hour_limit = 20.0, captcha_token?: string) =>
+    request<AuthResponseData>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, timezone, weekly_work_hour_limit, captcha_token }) }),
+  oauthGoogle: (id_token: string, captcha_token?: string) =>
+    request<AuthResponseData>('/auth/oauth/google', { method: 'POST', body: JSON.stringify({ id_token, captcha_token }) }),
+  oauthMicrosoft: (id_token: string, captcha_token?: string) =>
+    request<AuthResponseData>('/auth/oauth/microsoft', { method: 'POST', body: JSON.stringify({ id_token, captcha_token }) }),
   getAuthMe: () => request<UserProfile>('/auth/me'),
   updateProfile: (payload: UserProfileUpdatePayload) =>
     request<UserProfile>('/auth/me', { method: 'PATCH', body: JSON.stringify(payload) }),

@@ -19,25 +19,23 @@ class UserRegister(BaseModel):
         le=120,
         description="Configured minimum transition buffer between events in minutes",
     )
+    captcha_token: Optional[str] = None
 
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+    captcha_token: Optional[str] = None
 
 
 class OAuthGoogleRequest(BaseModel):
     id_token: str
+    captcha_token: Optional[str] = None
 
 
-class OAuthFacebookRequest(BaseModel):
-    access_token: str
-    user_id: str
-
-
-class OAuthAppleRequest(BaseModel):
+class OAuthMicrosoftRequest(BaseModel):
     id_token: str
-    display_name: Optional[str] = None
+    captcha_token: Optional[str] = None
 
 
 class AuthResponseData(BaseModel):

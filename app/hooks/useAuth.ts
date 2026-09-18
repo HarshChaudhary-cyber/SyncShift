@@ -17,13 +17,14 @@ export interface UseAuthReturn {
   status: AuthStatus;
   user: UserProfile | null;
   /** Call on successful login/register — stores token and sets status = authenticated. */
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, captcha_token?: string) => Promise<void>;
   /** Like login, but also accepts signup-specific fields with sensible defaults. */
   register: (
     email: string,
     password: string,
     timezone?: string,
     weeklyLimit?: number,
+    captcha_token?: string,
   ) => Promise<void>;
   /** Accepts OAuth login/signup response data, saves token, and activates session. */
   loginWithOAuthData: (data: any) => Promise<void>;
@@ -118,8 +119,8 @@ export function useAuth(): UseAuthReturn {
   }, [status, verifyToken]);
 
   // ── login ─────────────────────────────────────────────────────────────
-  const login = useCallback(async (email: string, password: string) => {
-    const data = await api.login(email, password);
+  const login = useCallback(async (email: string, password: string, captchaToken?: string) => {
+    const data = await api.login(email, password, captchaToken);
     setAuthToken(data.token);
     const profile = await api.getAuthMe();
     setUser(profile);
@@ -134,8 +135,9 @@ export function useAuth(): UseAuthReturn {
       password: string,
       timezone = 'Europe/London',
       weeklyLimit = 20.0,
+      captchaToken?: string,
     ) => {
-      const data = await api.register(email, password, timezone, weeklyLimit);
+      const data = await api.register(email, password, timezone, weeklyLimit, captchaToken);
       setAuthToken(data.token);
       const profile = await api.getAuthMe();
       setUser(profile);

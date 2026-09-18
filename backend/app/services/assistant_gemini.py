@@ -16,11 +16,52 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+class GeminiServiceError(RuntimeError):
+    """Base exception for sanitized Gemini failures used in the app layer."""
+
+    def __init__(self, message: str, retry_after: Optional[int] = None):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+class GeminiQuotaExceededError(GeminiServiceError):
+    """Raised when the Google Gemini API returns a 429 quota exhaustion response."""
+
+
+class GeminiTemporaryUnavailableError(GeminiServiceError):
+    """Raised when the Gemini service is unavailable for a non-quota reason."""
+
+
+def _extract_retry_after_seconds(exc: Exception) -> Optional[int]:
+    """Try to read retry-after metadata from known Google API error strings."""
+    raw = str(exc)
+    match = re.search(r"retry in\s+([0-9]+(?:\.[0-9]+)?)\s*(?:sec|s|seconds?)", raw, re.IGNORECASE)
+    if match:
+        return max(1, int(float(match.group(1))))
+    return None
+
+
+def _safe_user_message_for_gemini_error(exc: Exception) -> str:
+    """Return a safe application-level message without exposing Google raw error details."""
+    err = str(exc).lower()
+    if "429" in err or "quota" in err or "resourceexhausted" in err or "rate limit" in err:
+        return "SyncShift AI is temporarily unavailable because the AI service quota has been reached. Please try again later."
+    if "api_key" in err or "not configured" in err or "service_not_configured" in err:
+        return "SyncShift AI is temporarily unavailable because the AI service is not configured."
+    return "SyncShift AI is temporarily unavailable. Please try again later."
+
+
+QUOTA_EXCEEDED_MESSAGE = "SyncShift AI is temporarily unavailable because the AI service quota has been reached. Please try again later."
+GENERIC_SERVICE_MESSAGE = "SyncShift AI is temporarily unavailable. Please try again later."
+MISSING_CONFIG_MESSAGE = "SyncShift AI is temporarily unavailable because the AI service is not configured."
 
 # ---------------------------------------------------------------------------
 # Gemini Tool Schemas (function declarations)
@@ -487,7 +528,7 @@ def call_gemini_with_tools(
 
     api_key = settings.GEMINI_API_KEY
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not configured")
+        raise GeminiTemporaryUnavailableError(MISSING_CONFIG_MESSAGE)
 
     genai.configure(api_key=api_key)
 
@@ -517,12 +558,11 @@ def call_gemini_with_tools(
         g_role = role_map.get(h.get("role", "user"), "user")
         history.append({"role": g_role, "parts": [h.get("content", "")]})
 
-    # Try model candidates
+    # Try model candidates in supported order for the current Google AI API.
     model_candidates = [
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-flash-latest",
-        "gemini-2.0-flash",
+        "gemini-3.1-pro-preview",
+        "gemini-3.7-flash",
+        "gemini-2.5-flash-lite",
     ]
 
     tool_calls_meta: List[Dict[str, Any]] = []
@@ -614,23 +654,26 @@ def call_gemini_with_tools(
             is_not_found = "404" in err_str or "not found" in err_str.lower()
             is_auth = "403" in err_str or "401" in err_str or "api_key" in err_str.lower()
             is_quota = "429" in err_str or "quota" in err_str.lower() or "resourceexhausted" in err_str.lower()
+            retry_after = _extract_retry_after_seconds(exc)
 
-            if is_not_found or is_quota:
-                logger.info(f"Model {model_name} failed ({exc.__class__.__name__}), trying next...")
+            if is_quota:
+                logger.warning("Gemini quota exceeded for model %s; retry_after=%s", model_name, retry_after)
+                raise GeminiQuotaExceededError(QUOTA_EXCEEDED_MESSAGE, retry_after=retry_after) from exc
+            if is_not_found:
+                logger.info("Model %s failed (%s), trying next...", model_name, exc.__class__.__name__)
                 last_error = exc
                 continue
-            elif is_auth:
-                logger.error(f"Gemini auth error: {exc}")
-                raise RuntimeError(f"Gemini authentication failed: {exc}")
-            else:
-                logger.warning(f"Gemini error on {model_name}: {exc}")
-                last_error = exc
-                continue
+            if is_auth:
+                logger.error("Gemini auth error for model %s: %s", model_name, exc.__class__.__name__)
+                raise GeminiTemporaryUnavailableError(MISSING_CONFIG_MESSAGE) from exc
+            logger.warning("Gemini error on %s: %s", model_name, exc.__class__.__name__)
+            last_error = exc
+            continue
 
     # All models failed
     if last_error:
-        raise RuntimeError(f"All Gemini models failed: {last_error}")
-    raise RuntimeError("Gemini returned no response")
+        raise GeminiTemporaryUnavailableError(GENERIC_SERVICE_MESSAGE) from last_error
+    raise GeminiTemporaryUnavailableError(GENERIC_SERVICE_MESSAGE)
 
 
 def gemini_answer_general_question(
@@ -648,7 +691,7 @@ def gemini_answer_general_question(
 
     api_key = settings.GEMINI_API_KEY
     if not api_key:
-        return "I can answer general questions, but the AI service is not configured."
+        return MISSING_CONFIG_MESSAGE
 
     genai.configure(api_key=api_key)
 
@@ -665,7 +708,7 @@ def gemini_answer_general_question(
         g_role = role_map.get(h.get("role", "user"), "user")
         history.append({"role": g_role, "parts": [h.get("content", "")]})
 
-    model_candidates = ["gemini-1.5-flash", "gemini-flash-latest", "gemini-2.0-flash"]
+    model_candidates = ["gemini-3.1-pro-preview", "gemini-3.7-flash", "gemini-2.5-flash-lite"]
     for model_name in model_candidates:
         try:
             model = genai.GenerativeModel(
@@ -684,15 +727,15 @@ def gemini_answer_general_question(
                 return text
         except Exception as exc:
             err_str = str(exc)
-            if "404" in err_str or "429" in err_str or "quota" in err_str.lower():
+            if "429" in err_str or "quota" in err_str.lower() or "resourceexhausted" in err_str.lower():
+                logger.warning("Gemini quota exceeded for general question; retry_after=%s", _extract_retry_after_seconds(exc))
+                return QUOTA_EXCEEDED_MESSAGE
+            if "404" in err_str:
                 continue
-            logger.warning(f"Gemini general Q&A error: {exc}")
+            logger.warning("Gemini general Q&A error: %s", exc.__class__.__name__)
             continue
 
-    return (
-        "I'm happy to help with general questions! However, the AI service is temporarily unavailable. "
-        "Please try again in a moment."
-    )
+    return GENERIC_SERVICE_MESSAGE
 
 
 # ---------------------------------------------------------------------------

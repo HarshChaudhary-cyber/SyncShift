@@ -22,11 +22,13 @@ class Settings(BaseSettings):
 
     # OAuth Settings
     GOOGLE_CLIENT_ID: str | None = os.getenv("GOOGLE_CLIENT_ID", None)
-    FACEBOOK_APP_ID: str | None = os.getenv("FACEBOOK_APP_ID", None)
-    FACEBOOK_APP_SECRET: str | None = os.getenv("FACEBOOK_APP_SECRET", None)
-    APPLE_KEY_ID: str | None = os.getenv("APPLE_KEY_ID", None)
-    APPLE_TEAM_ID: str | None = os.getenv("APPLE_TEAM_ID", None)
-    APPLE_BUNDLE_ID: str | None = os.getenv("APPLE_BUNDLE_ID", None)
+    MICROSOFT_CLIENT_ID: str | None = os.getenv("MICROSOFT_CLIENT_ID", None)
+    MICROSOFT_CLIENT_SECRET: str | None = os.getenv("MICROSOFT_CLIENT_SECRET", None)
+    MICROSOFT_TENANT_ID: str = os.getenv("MICROSOFT_TENANT_ID", "common")
+
+    # Bot Protection / CAPTCHA (Cloudflare Turnstile)
+    CAPTCHA_SECRET_KEY: str | None = os.getenv("CAPTCHA_SECRET_KEY", None)
+    CAPTCHA_ENFORCE: bool = os.getenv("CAPTCHA_ENFORCE", "false").lower() in ("true", "1", "yes")
 
     # AI Settings
     GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY", None)

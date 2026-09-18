@@ -148,14 +148,12 @@ def call_gemini_model(parts: list[Any]) -> str:
     try:
         genai.configure(api_key=api_key)
         
-        # Primary working model: gemini-flash-latest, with fallback rotation
+        # Primary working model: current supported Gemini models with fallback rotation.
         global _WORKING_MODEL_NAME
         base_candidates = [
-            "gemini-flash-latest",
+            "gemini-3.1-pro-preview",
             "gemini-3.7-flash",
-            "gemini-3.5-flash",
             "gemini-2.5-flash-lite",
-            "gemini-pro-latest",
         ]
         if _WORKING_MODEL_NAME and _WORKING_MODEL_NAME in base_candidates:
             # Try last working model first, then the rest

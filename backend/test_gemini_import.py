@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.config import settings
+from app.services.assistant_gemini import gemini_answer_general_question
 from app.store import get_all_blocks
 from app.dependencies import get_current_user, CurrentUser
 
@@ -82,6 +83,46 @@ def test_gemini_not_configured():
         err = get_error(response)
         assert err.get("code") == "service_not_configured"
         assert "Import service not configured" in err.get("message", "")
+
+
+def test_gemini_successful_answer_is_preserved():
+    """A successful Gemini answer should return the model text unchanged."""
+    with patch("google.generativeai.configure"), patch("google.generativeai.GenerativeModel") as mock_model:
+        mock_response = type("Resp", (), {"candidates": [type("Cand", (), {"content": type("Content", (), {"parts": [type("Part", (), {"text": "Gemini API connection successful"})()]})})()]})()
+        mock_model.return_value.start_chat.return_value.send_message.return_value = mock_response
+
+        result = gemini_answer_general_question("Reply with exactly: Gemini API connection successful", [])
+        assert result == "Gemini API connection successful"
+
+
+def test_gemini_quota_response_is_sanitized():
+    """429 quota errors should be translated into a safe app-level message."""
+    with patch.object(settings, "GEMINI_API_KEY", "test-key"), patch(
+        "google.generativeai.GenerativeModel",
+        side_effect=Exception("429 ResourceExhausted: quota exceeded. Please retry in 36 seconds."),
+    ):
+        result = gemini_answer_general_question("Hello", [])
+        assert "SyncShift AI is temporarily unavailable because the AI service quota has been reached" in result
+        assert "429" not in result
+        assert "Please retry in 36 seconds" not in result
+
+
+def test_gemini_generic_error_is_sanitized():
+    """Other Gemini API failures should not expose raw provider details."""
+    with patch.object(settings, "GEMINI_API_KEY", "test-key"), patch(
+        "google.generativeai.GenerativeModel",
+        side_effect=Exception("500 internal server error from upstream"),
+    ):
+        result = gemini_answer_general_question("Hello", [])
+        assert result == "SyncShift AI is temporarily unavailable. Please try again later."
+        assert "500" not in result
+
+
+def test_gemini_missing_api_key_is_sanitized():
+    """Missing configuration should return an app-level message, not a raw SDK error."""
+    with patch.object(settings, "GEMINI_API_KEY", None):
+        result = gemini_answer_general_question("Hello", [])
+        assert result == "SyncShift AI is temporarily unavailable because the AI service is not configured."
 
 
 def test_gemini_returns_empty_or_non_timetable():

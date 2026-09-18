@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthContext } from '@/context/AuthContext';
 import { ApiError } from '@/lib/api';
 import { OAuthButtons, OAuthDivider } from '@/components/auth/OAuthButtons';
+import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 import CustomSelect from '@/components/ui/CustomSelect';
 import { TIMEZONE_OPTIONS } from '@/lib/timezones';
 
@@ -46,6 +47,17 @@ export default function SignupPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string>('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlError = params.get('error');
+      if (urlError) {
+        setError(urlError);
+      }
+    }
+  }, []);
 
   // If already authenticated, redirect to student dashboard
   useEffect(() => {
@@ -123,7 +135,7 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      await authRegister(email.trim(), password, timezone, weeklyLimit);
+      await authRegister(email.trim(), password, timezone, weeklyLimit, captchaToken);
       router.replace('/student/dashboard');
     } catch (err: unknown) {
       if (err instanceof ApiError) {
@@ -188,7 +200,7 @@ export default function SignupPage() {
 
           {/* OAuth Buttons & Divider placed ABOVE email form */}
           <div className="px-4 sm:px-5 pt-2 pb-0">
-            <OAuthButtons onSuccessRedirect="/student/dashboard" />
+            <OAuthButtons onSuccessRedirect="/student/dashboard" captchaToken={captchaToken} />
             <OAuthDivider text="OR" />
           </div>
 
@@ -438,6 +450,9 @@ export default function SignupPage() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Bot Protection / Turnstile */}
+            <TurnstileWidget onVerify={(token) => setCaptchaToken(token)} />
 
             {/* Submit button */}
             <button

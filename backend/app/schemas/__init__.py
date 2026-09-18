@@ -6,8 +6,7 @@ from app.schemas.auth import (
     UserProfileData,
     UserProfileUpdate,
     OAuthGoogleRequest,
-    OAuthFacebookRequest,
-    OAuthAppleRequest,
+    OAuthMicrosoftRequest,
 )
 from app.schemas.course import CourseCreate, CourseUpdate, CourseOut
 from app.schemas.block import BlockCreate, BlockUpdate, BlockDuplicate, BlockOut
@@ -123,8 +122,7 @@ __all__ = [
     "UserProfileData",
     "UserProfileUpdate",
     "OAuthGoogleRequest",
-    "OAuthFacebookRequest",
-    "OAuthAppleRequest",
+    "OAuthMicrosoftRequest",
     "CourseCreate",
     "CourseUpdate",
     "CourseOut",

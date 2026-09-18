@@ -6,6 +6,7 @@ import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.dependencies import CurrentUser, create_access_token, get_current_user
 from app.models.course import Course
@@ -20,9 +21,8 @@ from app.schemas.auth import (
     DeleteAccountRequest,
     ExportDataResponse,
     MessageData,
-    OAuthAppleRequest,
-    OAuthFacebookRequest,
     OAuthGoogleRequest,
+    OAuthMicrosoftRequest,
     UserLogin,
     UserProfileData,
     UserProfileUpdate,
@@ -30,10 +30,10 @@ from app.schemas.auth import (
 )
 from app.schemas.common import DataResponse
 from app.services.audit import record_audit_log
+from app.services.captcha_service import verify_captcha_token
 from app.services.oauth_service import (
-    verify_apple_id_token,
-    verify_facebook_token,
     verify_google_id_token,
+    verify_microsoft_token,
 )
 from app.services.rate_limiter import rate_limit
 
@@ -94,7 +94,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 @router.post("/register", response_model=DataResponse[AuthResponseData])
-def register(
+async def register(
     body: UserRegister,
     request: Request,
     db: Session = Depends(get_db),
@@ -106,6 +106,7 @@ def register(
     validates IANA timezone, verifies email uniqueness (409 on duplicate),
     hashes password with bcrypt, and returns JWT access token.
     """
+    await verify_captcha_token(body.captcha_token, request.client.host if request.client else None)
     validate_password_strength(body.password)
     validate_iana_timezone(body.timezone)
 
@@ -169,7 +170,7 @@ def register(
 
 
 @router.post("/login", response_model=DataResponse[AuthResponseData])
-def login(
+async def login(
     body: UserLogin,
     request: Request,
     db: Session = Depends(get_db),
@@ -180,6 +181,9 @@ def login(
     Compares provided password against bcrypt hash in database.
     Returns JWT access token with 7-day expiration.
     """
+    if body.captcha_token or settings.CAPTCHA_SECRET_KEY:
+        await verify_captcha_token(body.captcha_token, request.client.host if request.client else None)
+
     normalized_email = body.email.lower()
     user = db.query(User).filter(User.email == normalized_email).first()
     if not user or not user.password_hash or not verify_password(body.password, user.password_hash):
@@ -599,11 +603,14 @@ def export_user_data(
 
 
 @router.post("/oauth/google", response_model=DataResponse[AuthResponseData])
-async def oauth_google(body: OAuthGoogleRequest, db: Session = Depends(get_db)):
+async def oauth_google(body: OAuthGoogleRequest, request: Request, db: Session = Depends(get_db)):
     """
     Authenticate or register user using Google ID token.
     Extracts sub (google_id), email, name, and picture.
     """
+    if body.captcha_token:
+        await verify_captcha_token(body.captcha_token, request.client.host if request.client else None)
+
     profile = await verify_google_id_token(body.id_token)
     google_id = profile["google_id"]
     email = profile["email"]
@@ -657,6 +664,16 @@ async def oauth_google(body: OAuthGoogleRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
 
+    membership = (
+        db.query(InstitutionMembership)
+        .filter(
+            InstitutionMembership.user_id == user.id,
+            InstitutionMembership.deleted_at.is_(None),
+            InstitutionMembership.status == "active",
+        )
+        .first()
+    )
+
     token = create_access_token(user_id=user.id, email=user.email)
     return DataResponse(
         data=AuthResponseData(
@@ -666,37 +683,41 @@ async def oauth_google(body: OAuthGoogleRequest, db: Session = Depends(get_db)):
             timezone=user.timezone,
             display_name=user.display_name or user.name,
             avatar_url=user.avatar_url,
+            institution_id=membership.institution_id if membership else None,
+            institution_role=membership.role if membership else None,
         )
     )
 
 
-@router.post("/oauth/facebook", response_model=DataResponse[AuthResponseData])
-async def oauth_facebook(body: OAuthFacebookRequest, db: Session = Depends(get_db)):
+@router.post("/oauth/microsoft", response_model=DataResponse[AuthResponseData])
+async def oauth_microsoft(body: OAuthMicrosoftRequest, request: Request, db: Session = Depends(get_db)):
     """
-    Authenticate or register user using Facebook access token and user_id.
+    Authenticate or register user using Microsoft OpenID Connect ID token.
+    Extracts oid/sub (microsoft_id), email, and display name.
     """
-    profile = await verify_facebook_token(body.access_token, body.user_id)
-    facebook_id = profile["facebook_id"]
+    if body.captcha_token:
+        await verify_captcha_token(body.captcha_token, request.client.host if request.client else None)
+
+    profile = await verify_microsoft_token(body.id_token)
+    microsoft_id = profile["microsoft_id"]
     email = profile["email"]
     display_name = profile.get("display_name")
     avatar_url = profile.get("avatar_url")
 
-    # 1. Check if user with facebook_id exists
-    user = db.query(User).filter(User.facebook_id == facebook_id).first()
+    # 1. Check if user with microsoft_id exists
+    user = db.query(User).filter(User.microsoft_id == microsoft_id).first()
     if user:
         if user.deleted_at is not None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail={"code": "user_deleted", "message": "This account has been deleted"},
             )
-        if avatar_url and not user.avatar_url:
-            user.avatar_url = avatar_url
         if display_name and not user.display_name:
             user.display_name = display_name
         db.commit()
         db.refresh(user)
     else:
-        # 2. Check if email already registered
+        # 2. Check if email already registered with email/password or different provider
         existing = db.query(User).filter(User.email == email).first()
         if existing:
             if existing.deleted_at is not None:
@@ -717,8 +738,8 @@ async def oauth_facebook(body: OAuthFacebookRequest, db: Session = Depends(get_d
             name=display_name or email.split("@")[0],
             display_name=display_name or email.split("@")[0],
             email=email,
-            facebook_id=facebook_id,
-            oauth_provider="facebook",
+            microsoft_id=microsoft_id,
+            oauth_provider="microsoft",
             avatar_url=avatar_url,
             password_hash=None,
             timezone="Europe/London",
@@ -728,75 +749,16 @@ async def oauth_facebook(body: OAuthFacebookRequest, db: Session = Depends(get_d
         db.commit()
         db.refresh(user)
 
-    token = create_access_token(user_id=user.id, email=user.email)
-    return DataResponse(
-        data=AuthResponseData(
-            user_id=user.id,
-            email=user.email,
-            token=token,
-            timezone=user.timezone,
-            display_name=user.display_name or user.name,
-            avatar_url=user.avatar_url,
+    membership = (
+        db.query(InstitutionMembership)
+        .filter(
+            InstitutionMembership.user_id == user.id,
+            InstitutionMembership.deleted_at.is_(None),
+            InstitutionMembership.status == "active",
         )
+        .first()
     )
 
-
-@router.post("/oauth/apple", response_model=DataResponse[AuthResponseData])
-async def oauth_apple(body: OAuthAppleRequest, db: Session = Depends(get_db)):
-    """
-    Authenticate or register user using Apple ID token and optional display_name.
-    """
-    profile = await verify_apple_id_token(body.id_token, body.display_name)
-    apple_id = profile["apple_id"]
-    email = profile["email"]
-    display_name = profile.get("display_name") or body.display_name
-
-    # 1. Check if user with apple_id exists
-    user = db.query(User).filter(User.apple_id == apple_id).first()
-    if user:
-        if user.deleted_at is not None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail={"code": "user_deleted", "message": "This account has been deleted"},
-            )
-        if display_name and not user.display_name:
-            user.display_name = display_name
-            user.name = display_name
-            db.commit()
-            db.refresh(user)
-    else:
-        # 2. Check if email already registered
-        existing = db.query(User).filter(User.email == email).first()
-        if existing:
-            if existing.deleted_at is not None:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail={"code": "user_deleted", "message": "This account has been deleted"},
-                )
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail={
-                    "code": "email_exists",
-                    "message": "This email is already registered with email/password. Please sign in that way.",
-                },
-            )
-
-        # 3. Create new OAuth user
-        user = User(
-            name=display_name or email.split("@")[0],
-            display_name=display_name or email.split("@")[0],
-            email=email,
-            apple_id=apple_id,
-            oauth_provider="apple",
-            avatar_url=None,
-            password_hash=None,
-            timezone="Europe/London",
-            weekly_work_hour_limit=20.0,
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
     token = create_access_token(user_id=user.id, email=user.email)
     return DataResponse(
         data=AuthResponseData(
@@ -806,6 +768,8 @@ async def oauth_apple(body: OAuthAppleRequest, db: Session = Depends(get_db)):
             timezone=user.timezone,
             display_name=user.display_name or user.name,
             avatar_url=user.avatar_url,
+            institution_id=membership.institution_id if membership else None,
+            institution_role=membership.role if membership else None,
         )
     )
 
