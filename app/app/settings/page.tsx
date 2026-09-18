@@ -94,7 +94,7 @@ function getTimezoneOffsetString(tz: string): string {
   }
 }
 
-function SettingsContent() {
+export function SettingsContent({ showNavbar = true }: { showNavbar?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, refreshUser, logout } = useAuthContext();
@@ -468,8 +468,8 @@ function SettingsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col transition-colors duration-200">
-      <Navbar />
+    <div className={showNavbar ? "min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col transition-colors duration-200" : "text-[var(--text-primary)] transition-colors duration-200"}>
+      {showNavbar && <Navbar />}
 
       {/* Floating Toast Notification */}
       {toast && (
@@ -1477,12 +1477,35 @@ function SettingsContent() {
   );
 }
 
+function SettingsRedirect() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user, status } = useAuthContext();
+
+  useEffect(() => {
+    if (status === 'authenticated' && user) {
+      const isUniv = ['faculty', 'professor', 'admin', 'super_admin'].includes(
+        user.institution_role || ''
+      );
+      const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
+      router.replace((isUniv ? '/university/settings' : '/student/settings') + query);
+    }
+  }, [user, status, router, searchParams]);
+
+  return (
+    <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)] text-sm">
+      Loading Settings...
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   return (
     <ProtectedRoute>
       <Suspense fallback={<div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)] text-sm">Loading Settings...</div>}>
-        <SettingsContent />
+        <SettingsRedirect />
       </Suspense>
     </ProtectedRoute>
   );
 }
+

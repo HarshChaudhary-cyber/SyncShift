@@ -47,6 +47,8 @@ class AuthResponseData(BaseModel):
     timezone: Optional[str] = None
     display_name: Optional[str] = None
     avatar_url: Optional[str] = None
+    institution_id: Optional[int] = None
+    institution_role: Optional[str] = None  # 'student' | 'faculty' | 'professor' | 'admin' | 'super_admin'
 
 
 class UserProfileData(BaseModel):
@@ -63,6 +65,8 @@ class UserProfileData(BaseModel):
     oauth_provider: Optional[str] = None
     has_password: bool = False
     created_at: Optional[datetime] = None
+    institution_id: Optional[int] = None
+    institution_role: Optional[str] = None  # 'student' | 'faculty' | 'professor' | 'admin' | 'super_admin'
 
 
 class UserProfileUpdate(BaseModel):

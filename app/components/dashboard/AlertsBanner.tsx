@@ -63,7 +63,7 @@ export default function AlertsBanner({
           </div>
         </div>
         <button
-          onClick={() => router.push('/calendar')}
+          onClick={() => router.push('/student/calendar')}
           className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition self-start sm:self-auto cursor-pointer shadow-sm"
         >
           View Calendar →
@@ -112,7 +112,7 @@ export default function AlertsBanner({
         </div>
 
         <button
-          onClick={() => router.push('/calendar')}
+          onClick={() => router.push('/student/calendar')}
           className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition shadow-md shadow-rose-900/30 flex items-center justify-center gap-1 self-start sm:self-auto cursor-pointer"
         >
           <span>Review</span>
@@ -142,7 +142,7 @@ export default function AlertsBanner({
 
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={() => router.push('/calendar')}
+                onClick={() => router.push('/student/calendar')}
                 className={`text-xs font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer flex items-center gap-1 ${
                   isConflict
                     ? 'bg-rose-600 hover:bg-rose-500 text-white border-transparent'

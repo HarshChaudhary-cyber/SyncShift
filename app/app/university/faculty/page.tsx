@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useUniversity } from '../layout';
 import AcademicResourcesNav from '@/components/university/AcademicResourcesNav';
+import CustomSelect from '@/components/ui/CustomSelect';
 import {
   api,
   FacultyProfile,
@@ -221,34 +222,36 @@ export default function FacultyPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-medium text-[var(--text-muted)]">Department:</label>
-          <select
+        <div className="w-52">
+          <CustomSelect
+            options={[
+              { value: 'all', label: 'All Departments' },
+              ...departments.map((d) => ({
+                value: String(d.id),
+                label: `${d.name} (${d.code})`,
+              })),
+            ]}
             value={deptFilter}
-            onChange={(e) => setDeptFilter(e.target.value)}
-            className="px-2.5 py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Departments</option>
-            {departments.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name} ({d.code})
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setDeptFilter(String(val))}
+            size="sm"
+            searchable
+            portalTheme="university"
+          />
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-medium text-[var(--text-muted)]">Status:</label>
-          <select
+        <div className="w-40">
+          <CustomSelect
+            options={[
+              { value: 'all', label: 'All Statuses' },
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' },
+              { value: 'archived', label: 'Archived' },
+            ]}
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-2.5 py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="archived">Archived</option>
-          </select>
+            onChange={(val) => setStatusFilter(String(val))}
+            size="sm"
+            portalTheme="university"
+          />
         </div>
 
         {(search || deptFilter !== 'all' || statusFilter !== 'all') && (
@@ -431,21 +434,21 @@ export default function FacultyPage() {
 
                   {addMode === 'member' ? (
                     <div>
-                      <select
-                        value={selectedUserId}
-                        onChange={(e) => setSelectedUserId(Number(e.target.value))}
-                        className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        {eligibleMembers.length === 0 ? (
-                          <option value={0}>No eligible members without faculty profile</option>
-                        ) : (
-                          eligibleMembers.map((m) => (
-                            <option key={m.user_id} value={m.user_id}>
-                              {m.user_name || m.user_email} ({m.user_email}) — Role: {m.role}
-                            </option>
-                          ))
-                        )}
-                      </select>
+                      <CustomSelect
+                        options={
+                          eligibleMembers.length === 0
+                            ? [{ value: '0', label: 'No eligible members without faculty profile', disabled: true }]
+                            : eligibleMembers.map((m) => ({
+                                value: String(m.user_id),
+                                label: `${m.user_name || m.user_email} (${m.user_email})`,
+                                sublabel: `Role: ${m.role}`,
+                              }))
+                        }
+                        value={selectedUserId ? String(selectedUserId) : '0'}
+                        onChange={(val) => setSelectedUserId(Number(val))}
+                        searchable
+                        portalTheme="university"
+                      />
                       <p className="text-[11px] text-[var(--text-muted)] mt-1">
                         Select an existing institution member. Their role will automatically be verified or elevated to professor.
                       </p>
@@ -492,20 +495,21 @@ export default function FacultyPage() {
 
               <div className="space-y-1">
                 <label className="text-xs font-medium text-[var(--text-secondary)]">Department</label>
-                <select
-                  value={formDeptId ?? ''}
-                  onChange={(e) =>
-                    setFormDeptId(e.target.value ? Number(e.target.value) : undefined)
+                <CustomSelect
+                  options={[
+                    { value: '', label: 'None / Interdisciplinary' },
+                    ...departments.map((d) => ({
+                      value: String(d.id),
+                      label: `${d.name} (${d.code})`,
+                    })),
+                  ]}
+                  value={formDeptId ? String(formDeptId) : ''}
+                  onChange={(val) =>
+                    setFormDeptId(val ? Number(val) : undefined)
                   }
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="">None / Interdisciplinary</option>
-                  {departments.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name} ({d.code})
-                    </option>
-                  ))}
-                </select>
+                  searchable
+                  portalTheme="university"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -524,15 +528,16 @@ export default function FacultyPage() {
 
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-[var(--text-secondary)]">Status</label>
-                  <select
+                  <CustomSelect
+                    options={[
+                      { value: 'active', label: 'Active' },
+                      { value: 'inactive', label: 'Inactive' },
+                      { value: 'archived', label: 'Archived' },
+                    ]}
                     value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="archived">Archived</option>
-                  </select>
+                    onChange={(val) => setFormStatus(String(val))}
+                    portalTheme="university"
+                  />
                 </div>
               </div>
 

@@ -704,6 +704,85 @@ def delete_block_from_store(
         return True
 
 
+def clear_student_timetable_store(
+    user_id: int,
+    only_imported: bool = False,
+    db: Optional[Session] = None,
+) -> dict:
+    """
+    Performs bulk soft-deletion of student timetable blocks (type == BlockType.CLASS).
+    - If only_imported is True, only deletes blocks where is_imported is True.
+    - Preserves work shifts (type == BlockType.SHIFT) and study tasks (type == BlockType.STUDY).
+    - Preserves institutional authoritative university timetable models completely.
+    - Strictly bound to user_id (no IDOR / cross-user leakage).
+    - Returns counts of deleted, remaining, and preserved blocks.
+    """
+    with get_session(db) as session:
+        query = session.query(TimeBlock).filter(
+            TimeBlock.user_id == user_id,
+            TimeBlock.type == BlockType.CLASS,
+            TimeBlock.deleted == False,
+        )
+        if only_imported:
+            query = query.filter(TimeBlock.is_imported == True)
+
+        blocks_to_delete = query.all()
+        deleted_count = len(blocks_to_delete)
+
+        for b in blocks_to_delete:
+            b.deleted = True
+
+        session.commit()
+
+        # Recalculate remaining active metrics
+        remaining_class_count = (
+            session.query(TimeBlock)
+            .filter(
+                TimeBlock.user_id == user_id,
+                TimeBlock.type == BlockType.CLASS,
+                TimeBlock.deleted == False,
+            )
+            .count()
+        )
+
+        remaining_total_blocks = (
+            session.query(TimeBlock)
+            .filter(
+                TimeBlock.user_id == user_id,
+                TimeBlock.deleted == False,
+            )
+            .count()
+        )
+
+        preserved_shifts_count = (
+            session.query(TimeBlock)
+            .filter(
+                TimeBlock.user_id == user_id,
+                TimeBlock.type == BlockType.SHIFT,
+                TimeBlock.deleted == False,
+            )
+            .count()
+        )
+
+        preserved_study_count = (
+            session.query(TimeBlock)
+            .filter(
+                TimeBlock.user_id == user_id,
+                TimeBlock.type == BlockType.STUDY,
+                TimeBlock.deleted == False,
+            )
+            .count()
+        )
+
+        return {
+            "deleted_count": deleted_count,
+            "remaining_count": remaining_class_count,
+            "remaining_total_blocks": remaining_total_blocks,
+            "preserved_shifts_count": preserved_shifts_count,
+            "preserved_study_count": preserved_study_count,
+        }
+
+
 # ---------------------------------------------------------------------------
 # Recurrence-Aware Conflict Engine
 # ---------------------------------------------------------------------------

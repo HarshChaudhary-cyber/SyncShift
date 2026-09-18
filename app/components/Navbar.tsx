@@ -9,6 +9,7 @@ import { api, NotificationLogItem } from '@/lib/api';
 import { openSyncShiftAssistant } from '@/components/assistant/SyncShiftAssistant';
 
 import OfflineBanner from '@/components/ui/OfflineBanner';
+import { isUniversityRole } from '@/components/RoleGuard';
 
 interface NavbarProps {
   onImportClick?: () => void;
@@ -33,41 +34,42 @@ export default function Navbar({ onImportClick }: NavbarProps) {
   const primaryNavLinks = [
     {
       name: 'Home',
-      href: '/dashboard',
+      href: '/student/dashboard',
       icon: '🏠',
-      isActive: pathname === '/dashboard',
+      isActive: pathname === '/dashboard' || pathname === '/student/dashboard',
     },
     {
       name: 'My Schedule',
-      href: '/calendar',
+      href: '/student/calendar',
       icon: '📅',
-      isActive: pathname.startsWith('/calendar'),
+      isActive: pathname.startsWith('/student/calendar') || pathname.startsWith('/calendar'),
     },
     {
       name: 'My Courses',
-      href: '/student/academics',
+      href: '/student/courses',
       icon: '🎓',
-      isActive: pathname.startsWith('/student'),
+      isActive: pathname.startsWith('/student/courses') || pathname.startsWith('/student/academics'),
     },
     {
       name: 'Plan',
-      href: '/planner',
+      href: '/student/planner',
       icon: '📖',
-      isActive: pathname.startsWith('/planner'),
+      isActive: pathname.startsWith('/student/planner') || pathname.startsWith('/planner'),
     },
   ];
 
+  const isUniv = isUniversityRole(user?.institution_role);
   const secondaryNavLinks = [
     { name: 'Analytics', href: '/analytics', icon: '📊' },
-    { name: 'University Portal', href: '/university', icon: '🏛️' },
-    { name: 'Settings', href: '/settings', icon: '⚙️' },
+    ...(isUniv ? [{ name: 'University Portal', href: '/university/dashboard', icon: '🏛️' }] : []),
+    { name: 'Settings', href: '/student/settings', icon: '⚙️' },
   ];
 
   const handleImport = () => {
     if (onImportClick) {
       onImportClick();
     } else {
-      router.push('/calendar?import=true');
+      router.push('/student/calendar?import=true');
     }
   };
 
@@ -436,7 +438,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
 
           {user && (
             <Link
-              href="/settings"
+              href="/student/notifications"
               className="relative p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               aria-label="Settings & Notifications"
             >

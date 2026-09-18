@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import CurrentUser, create_access_token, get_current_user
 from app.models.course import Course
+from app.models.institution import InstitutionMembership
 from app.models.notification import NotificationPrefs
 from app.models.study_task import StudyTask
 from app.models.time_block import TimeBlock
@@ -161,6 +162,8 @@ def register(
             timezone=new_user.timezone,
             display_name=new_user.display_name or new_user.name,
             avatar_url=new_user.avatar_url,
+            institution_id=None,
+            institution_role=None,
         )
     )
 
@@ -216,8 +219,19 @@ def login(
         action="LOGIN_SUCCESS",
         entity_type="user",
         entity_id=user.id,
-        description="Student successfully authenticated via password",
+        description="User successfully authenticated via password",
         request=request,
+    )
+
+    # Look up institution membership for role-based portal routing
+    membership = (
+        db.query(InstitutionMembership)
+        .filter(
+            InstitutionMembership.user_id == user.id,
+            InstitutionMembership.deleted_at.is_(None),
+            InstitutionMembership.status == "active",
+        )
+        .first()
     )
 
     return DataResponse(
@@ -228,6 +242,8 @@ def login(
             token=token,
             display_name=user.display_name or user.name,
             avatar_url=user.avatar_url,
+            institution_id=membership.institution_id if membership else None,
+            institution_role=membership.role if membership else None,
         )
     )
 
@@ -250,6 +266,17 @@ def get_current_user_profile(
     display_name = user.display_name or user.name or current_user.display_name
     avatar_url = user.avatar_url or current_user.avatar_url
 
+    # Look up institution membership for role-based portal routing
+    membership = (
+        db.query(InstitutionMembership)
+        .filter(
+            InstitutionMembership.user_id == user.id,
+            InstitutionMembership.deleted_at.is_(None),
+            InstitutionMembership.status == "active",
+        )
+        .first()
+    )
+
     return DataResponse(
         data=UserProfileData(
             user_id=user.id,
@@ -265,6 +292,8 @@ def get_current_user_profile(
             oauth_provider=user.oauth_provider,
             has_password=bool(user.password_hash),
             created_at=user.created_at,
+            institution_id=membership.institution_id if membership else None,
+            institution_role=membership.role if membership else None,
         )
     )
 

@@ -12,6 +12,8 @@ Creates a complete, realistic, and fictional institutional ecosystem:
 - Timetable & Published Version 1: Official schedule with scheduled course meetings
 - Users & Personas:
     * Administrator: Dr. Robert Vance (admin@northbridge.edu / Northbridge2026!)
+    * Faculty: Prof. Sarah Jenkins (faculty@northbridge.edu / Faculty2026!)
+    * Faculty: Prof. Alan Miller (alan.miller@northbridge.edu / Faculty2026!)
     * Student: Alex Taylor (alex.taylor@student.northbridge.edu / Student2026!)
     * Student: Jordan Lee (jordan.lee@student.northbridge.edu / Student2026!)
 - Enrollments: Alex (CS301-A, CS302-A); Jordan (CS301-A, IT305-B)
@@ -189,12 +191,13 @@ def seed():
 
         # 6. Faculty Profiles
         faculty_data = [
-            ("Dr. Sarah Jenkins", "sarah.jenkins@northbridge.edu", dept_map["CS"].id, "Associate Professor", "EMP-CS-01"),
-            ("Prof. Alan Miller", "alan.miller@northbridge.edu", dept_map["IT"].id, "Senior Lecturer", "EMP-IT-02"),
-            ("Dr. Maya Patel", "maya.patel@northbridge.edu", dept_map["BUS"].id, "Assistant Professor", "EMP-BUS-03"),
+            ("Prof. Sarah Jenkins", "faculty@northbridge.edu", dept_map["CS"].id, "Professor of Computer Science", "EMP-CS-00", "faculty"),
+            ("Dr. Sarah Jenkins", "sarah.jenkins@northbridge.edu", dept_map["CS"].id, "Associate Professor", "EMP-CS-01", "professor"),
+            ("Prof. Alan Miller", "alan.miller@northbridge.edu", dept_map["IT"].id, "Senior Lecturer", "EMP-IT-02", "professor"),
+            ("Dr. Maya Patel", "maya.patel@northbridge.edu", dept_map["BUS"].id, "Assistant Professor", "EMP-BUS-03", "professor"),
         ]
         faculty_map = {}
-        for fname, femail, fdept, ftitle, fcode in faculty_data:
+        for fname, femail, fdept, ftitle, fcode, frole in faculty_data:
             fac_user = db.query(User).filter(User.email == femail).first()
             if not fac_user:
                 fac_user = User(
@@ -215,7 +218,7 @@ def seed():
                 fac_mem = InstitutionMembership(
                     institution_id=inst.id,
                     user_id=fac_user.id,
-                    role="professor",
+                    role=frole,
                     status="active",
                 )
                 db.add(fac_mem)
@@ -527,6 +530,7 @@ def seed():
         print("  Demo Seed Completed Successfully!")
         print("  Persona Credentials:")
         print("  - Admin:   admin@northbridge.edu            / Northbridge2026!")
+        print("  - Faculty: faculty@northbridge.edu          / Faculty2026!")
         print("  - Student: alex.taylor@student.northbridge.edu / Student2026!")
         print("  - Student: jordan.lee@student.northbridge.edu   / Student2026!")
         print("=" * 65)

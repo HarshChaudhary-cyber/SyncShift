@@ -8,7 +8,7 @@ export default function BlocksPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/calendar');
+    router.replace('/student/calendar');
   }, [router]);
 
   return (

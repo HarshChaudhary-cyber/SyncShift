@@ -151,7 +151,7 @@ export default function WorkStudyCard({
             </div>
 
             <Link
-              href="/planner"
+              href="/student/planner"
               className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold transition shrink-0 cursor-pointer shadow-sm"
             >
               Plan study
@@ -177,7 +177,7 @@ export default function WorkStudyCard({
               </button>
             ) : (
               <Link
-                href="/planner"
+                href="/student/planner"
                 className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold transition shrink-0"
               >
                 Create study goal

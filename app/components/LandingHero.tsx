@@ -74,7 +74,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
             Sign up
           </Link>
           <Link
-            href="/calendar"
+            href="/student/calendar"
             className="text-xs font-medium px-3 py-1.5 rounded-md border border-neutral-700 hover:border-neutral-600 bg-neutral-800 text-neutral-200 transition-colors"
           >
             Calendar App →
@@ -84,7 +84,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
         {/* Mobile hamburger button */}
         <div className="flex md:hidden items-center gap-2">
           <Link
-            href="/calendar"
+            href="/student/calendar"
             className="text-xs font-medium px-2.5 py-1.5 rounded-md bg-indigo-600 text-white"
           >
             App →
@@ -252,7 +252,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
                 )}
               </div>
               <span className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400">
-                app.syncshift.dev/calendar
+                app.syncshift.dev/student/calendar
               </span>
               <div className="w-12" aria-hidden="true" />
             </div>

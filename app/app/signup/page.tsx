@@ -47,10 +47,10 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // If already authenticated, redirect to dashboard
+  // If already authenticated, redirect to student dashboard
   useEffect(() => {
     if (status === 'authenticated') {
-      router.replace('/dashboard');
+      router.replace('/student/dashboard');
     }
   }, [status, router]);
 
@@ -124,7 +124,7 @@ export default function SignupPage() {
 
     try {
       await authRegister(email.trim(), password, timezone, weeklyLimit);
-      router.replace('/dashboard');
+      router.replace('/student/dashboard');
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.status === 409 || err.code === 'email_exists') {
@@ -188,7 +188,7 @@ export default function SignupPage() {
 
           {/* OAuth Buttons & Divider placed ABOVE email form */}
           <div className="px-4 sm:px-5 pt-2 pb-0">
-            <OAuthButtons onSuccessRedirect="/calendar" />
+            <OAuthButtons onSuccessRedirect="/student/dashboard" />
             <OAuthDivider text="OR" />
           </div>
 

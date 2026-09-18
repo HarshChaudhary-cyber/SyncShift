@@ -46,7 +46,7 @@ export default function NextUpCard({ nextUp, loading }: NextUpCardProps) {
         <div className="pt-4 border-t border-[var(--border-color)] flex items-center justify-between text-xs text-[var(--text-muted)]">
           <span>All caught up</span>
           <Link
-            href="/calendar"
+            href="/student/calendar"
             className="text-xs font-semibold text-indigo-500 hover:text-indigo-400 transition flex items-center gap-1 cursor-pointer"
           >
             <span>View calendar</span>
@@ -133,7 +133,7 @@ export default function NextUpCard({ nextUp, loading }: NextUpCardProps) {
         </span>
 
         <Link
-          href="/calendar"
+          href="/student/calendar"
           className="text-xs font-bold text-indigo-500 hover:text-indigo-400 transition flex items-center gap-1 cursor-pointer"
         >
           <span>Open calendar</span>

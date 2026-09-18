@@ -2,15 +2,25 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { api, NotificationLogItem } from '@/lib/api';
 import { useAuthContext } from '@/context/AuthContext';
+import { isUniversityRole } from '@/components/RoleGuard';
 
 export default function NotificationCenterPage() {
-  const { user } = useAuthContext();
+  const { user, status } = useAuthContext();
   const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (status === 'authenticated' && user && pathname === '/notifications') {
+      const isUniv = isUniversityRole(user.institution_role);
+      router.replace(isUniv ? '/university/notifications' : '/student/notifications');
+    }
+  }, [status, user, pathname, router]);
 
   const [activeTab, setActiveTab] = useState<'unread' | 'all'>('unread');
+
   const [notifications, setNotifications] = useState<NotificationLogItem[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -129,7 +139,10 @@ export default function NotificationCenterPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border-color)] pb-6">
           <div>
             <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-1">
-              <Link href="/dashboard" className="hover:text-indigo-400 transition">
+              <Link
+                href={isUniversityRole(user?.institution_role) ? "/university/dashboard" : "/student/dashboard"}
+                className="hover:text-indigo-400 transition"
+              >
                 Home
               </Link>
               <span>/</span>
@@ -219,7 +232,7 @@ export default function NotificationCenterPage() {
                   : "When your university updates your timetable, you'll see exact details here."}
               </p>
               <Link
-                href="/calendar"
+                href="/student/calendar"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition"
               >
                 <span>📅 View My Schedule</span>

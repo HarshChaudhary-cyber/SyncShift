@@ -10,6 +10,7 @@ import {
   AcademicTerm,
   getErrorMessage,
 } from '@/lib/api';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 export default function TimetablesPage() {
   const { institution, isAdmin } = useUniversity();
@@ -190,18 +191,22 @@ export default function TimetablesPage() {
           </div>
 
           {/* Academic Term Filter */}
-          <select
-            value={selectedTerm}
-            onChange={(e) => setSelectedTerm(e.target.value)}
-            className="px-3 py-1.5 text-xs rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Academic Terms</option>
-            {terms.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name} ({t.academic_year})
-              </option>
-            ))}
-          </select>
+          <div className="w-56">
+            <CustomSelect
+              options={[
+                { value: 'all', label: 'All Academic Terms' },
+                ...terms.map((t) => ({
+                  value: String(t.id),
+                  label: `${t.name} (${t.academic_year})`,
+                })),
+              ]}
+              value={selectedTerm}
+              onChange={(val) => setSelectedTerm(String(val))}
+              size="sm"
+              searchable
+              portalTheme="university"
+            />
+          </div>
         </div>
 
         {/* Search input */}
@@ -370,21 +375,17 @@ export default function TimetablesPage() {
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">Academic Term *</label>
-                <select
-                  value={form.academic_term_id}
-                  onChange={(e) => setForm({ ...form, academic_term_id: parseInt(e.target.value, 10) })}
-                  required
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value={0} disabled>
-                    Select an Academic Term
-                  </option>
-                  {terms.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} ({t.academic_year}) — {t.status}
-                    </option>
-                  ))}
-                </select>
+                <CustomSelect
+                  options={terms.map((t) => ({
+                    value: String(t.id),
+                    label: `${t.name} (${t.academic_year}) — ${t.status}`,
+                  }))}
+                  value={form.academic_term_id ? String(form.academic_term_id) : ''}
+                  onChange={(val) => setForm({ ...form, academic_term_id: parseInt(val, 10) })}
+                  placeholder="Select an Academic Term..."
+                  searchable
+                  portalTheme="university"
+                />
               </div>
 
               <div>
@@ -412,14 +413,15 @@ export default function TimetablesPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">Initial Status</label>
-                <select
+                <CustomSelect
+                  options={[
+                    { value: 'draft', label: 'Draft (Work in progress)' },
+                    { value: 'active', label: 'Active (Authoritative for enrolled students)' },
+                  ]}
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="draft">Draft (Work in progress)</option>
-                  <option value="active">Active (Authoritative for enrolled students)</option>
-                </select>
+                  onChange={(val) => setForm({ ...form, status: String(val) })}
+                  portalTheme="university"
+                />
                 <p className="text-[11px] text-[var(--text-tertiary)] mt-1">
                   Setting a timetable as Active will automatically promote it as the official schedule for enrolled students.
                 </p>

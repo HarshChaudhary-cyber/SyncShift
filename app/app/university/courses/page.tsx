@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useUniversity } from '../layout';
 import AcademicResourcesNav from '@/components/university/AcademicResourcesNav';
+import CustomSelect from '@/components/ui/CustomSelect';
 import {
   api,
   AcademicCourse,
@@ -202,32 +203,36 @@ export default function CoursesPage() {
           />
         </div>
 
-        <div className="w-48">
-          <select
+        <div className="w-52">
+          <CustomSelect
+            options={[
+              { value: 'all', label: 'All Departments' },
+              ...departments.map((d) => ({
+                value: String(d.id),
+                label: `${d.name} (${d.code})`,
+              })),
+            ]}
             value={deptFilter}
-            onChange={(e) => setDeptFilter(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Departments</option>
-            {departments.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name} ({d.code})
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setDeptFilter(String(val))}
+            size="sm"
+            searchable
+            portalTheme="university"
+          />
         </div>
 
-        <div className="w-36">
-          <select
+        <div className="w-40">
+          <CustomSelect
+            options={[
+              { value: 'all', label: 'All Status' },
+              { value: 'active', label: 'Active' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'archived', label: 'Archived' },
+            ]}
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="draft">Draft</option>
-            <option value="archived">Archived</option>
-          </select>
+            onChange={(val) => setStatusFilter(String(val))}
+            size="sm"
+            portalTheme="university"
+          />
         </div>
       </div>
 
@@ -383,17 +388,17 @@ export default function CoursesPage() {
                   <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                     Department *
                   </label>
-                  <select
-                    value={form.department_id}
-                    onChange={(e) => setForm({ ...form, department_id: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:ring-2 focus:ring-indigo-500"
-                  >
-                    {departments.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name} ({d.code})
-                      </option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    options={departments.map((d) => ({
+                      value: String(d.id),
+                      label: `${d.name} (${d.code})`,
+                    }))}
+                    value={form.department_id ? String(form.department_id) : ''}
+                    onChange={(val) => setForm({ ...form, department_id: Number(val) })}
+                    placeholder="Select Department..."
+                    searchable
+                    portalTheme="university"
+                  />
                 </div>
               </div>
 
@@ -430,31 +435,33 @@ export default function CoursesPage() {
                   <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                     Level
                   </label>
-                  <select
+                  <CustomSelect
+                    options={[
+                      { value: 'undergraduate', label: 'Undergraduate' },
+                      { value: 'postgraduate', label: 'Postgraduate' },
+                      { value: 'doctorate', label: 'Doctorate' },
+                      { value: 'diploma', label: 'Diploma' },
+                    ]}
                     value={form.level || 'undergraduate'}
-                    onChange={(e) => setForm({ ...form, level: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="undergraduate">Undergraduate</option>
-                    <option value="postgraduate">Postgraduate</option>
-                    <option value="doctorate">Doctorate</option>
-                    <option value="diploma">Diploma</option>
-                  </select>
+                    onChange={(val) => setForm({ ...form, level: String(val) })}
+                    portalTheme="university"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                     Status
                   </label>
-                  <select
+                  <CustomSelect
+                    options={[
+                      { value: 'active', label: 'Active' },
+                      { value: 'draft', label: 'Draft' },
+                      { value: 'archived', label: 'Archived' },
+                    ]}
                     value={form.status || 'active'}
-                    onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="active">Active</option>
-                    <option value="draft">Draft</option>
-                    <option value="archived">Archived</option>
-                  </select>
+                    onChange={(val) => setForm({ ...form, status: String(val) })}
+                    portalTheme="university"
+                  />
                 </div>
               </div>
 
@@ -468,18 +475,19 @@ export default function CoursesPage() {
                     <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                       Required Room Type
                     </label>
-                    <select
+                    <CustomSelect
+                      options={[
+                        { value: '', label: 'Any Room' },
+                        { value: 'classroom', label: 'Classroom' },
+                        { value: 'lecture_hall', label: 'Lecture Hall' },
+                        { value: 'laboratory', label: 'Laboratory' },
+                        { value: 'seminar_room', label: 'Seminar Room' },
+                        { value: 'auditorium', label: 'Auditorium' },
+                      ]}
                       value={form.required_room_type || ''}
-                      onChange={(e) => setForm({ ...form, required_room_type: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="">Any Room</option>
-                      <option value="classroom">Classroom</option>
-                      <option value="lecture_hall">Lecture Hall</option>
-                      <option value="laboratory">Laboratory</option>
-                      <option value="seminar_room">Seminar Room</option>
-                      <option value="auditorium">Auditorium</option>
-                    </select>
+                      onChange={(val) => setForm({ ...form, required_room_type: String(val) })}
+                      portalTheme="university"
+                    />
                   </div>
 
                   <div>

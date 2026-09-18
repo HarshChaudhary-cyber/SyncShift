@@ -63,7 +63,7 @@ class InstitutionOut(InstitutionBase):
 class MembershipCreate(BaseModel):
     user_id: Optional[int] = None
     email: Optional[str] = None
-    role: str = Field(default="student", pattern="^(student|professor|admin|super_admin)$")
+    role: str = Field(default="student", pattern="^(student|faculty|professor|admin|super_admin)$")
     status: str = Field(default="active", pattern="^(active|inactive|pending)$")
 
     @model_validator(mode="after")

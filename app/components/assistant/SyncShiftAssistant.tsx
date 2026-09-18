@@ -24,6 +24,8 @@ import {
 import {
   api,
   ActionPreview,
+  AlternativeSlot,
+  ToolProgressStep,
   AssistantChatResponse,
   AssistantConfirmResponse,
   AssistantConversationItem,
@@ -36,6 +38,8 @@ interface ChatMessage {
   timestamp: string;
   action?: ActionPreview | null;
   choices?: Record<string, any>[] | null;
+  alternatives?: AlternativeSlot[] | null;
+  tool_progress?: ToolProgressStep[] | null;
   confirmed?: boolean;
   isConfirming?: boolean;
   confirmError?: string | null;
@@ -255,6 +259,8 @@ export default function SyncShiftAssistant() {
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         action: response.action,
         choices: response.choices,
+        alternatives: response.alternatives,
+        tool_progress: response.tool_progress,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
@@ -706,9 +712,71 @@ export default function SyncShiftAssistant() {
                     )}
                   </div>
 
+                  {/* Tool Progress Badges */}
+                  {msg.tool_progress && msg.tool_progress.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {msg.tool_progress.map((step, tIdx) => (
+                        <span
+                          key={tIdx}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800/80 border border-slate-700/60 text-slate-400"
+                        >
+                          {step.status === 'success' ? (
+                            <CheckCircleIcon className="w-2.5 h-2.5 text-emerald-400" />
+                          ) : step.status === 'error' ? (
+                            <XMarkIcon className="w-2.5 h-2.5 text-red-400" />
+                          ) : (
+                            <ArrowPathIcon className="w-2.5 h-2.5 animate-spin text-indigo-400" />
+                          )}
+                          {step.label || step.tool}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Conflict-Free Alternatives Panel */}
+                  {msg.alternatives && msg.alternatives.length > 0 && (
+                    <div className="mt-2 p-3 rounded-xl bg-slate-900/80 border border-amber-500/20 space-y-2">
+                      <p className="text-[11px] font-semibold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <CalendarIcon className="w-3.5 h-3.5" />
+                        Conflict-Free Alternatives
+                      </p>
+                      <div className="space-y-1.5">
+                        {msg.alternatives.map((alt) => (
+                          <button
+                            key={alt.option_number}
+                            onClick={() =>
+                              handleSendMessage(
+                                `Apply Option ${alt.option_number}: ${alt.day_name} ${alt.start_time}–${alt.end_time}`
+                              )
+                            }
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-slate-800/80 hover:bg-indigo-600/20 border border-slate-700 hover:border-indigo-500/50 text-left transition group"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-bold text-indigo-400 group-hover:text-indigo-300">
+                                {alt.option_label}
+                              </span>
+                              <span className="text-xs text-white font-semibold">
+                                {alt.day_name}
+                              </span>
+                              <span className="text-xs text-slate-300">
+                                {alt.start_time}–{alt.end_time}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                              <ClockIcon className="w-3 h-3" />
+                              {alt.duration_minutes}m
+                              <ArrowRightIcon className="w-3 h-3 text-indigo-400 ml-1" />
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <span className="text-[10px] text-slate-500 mt-1 px-1">{msg.timestamp}</span>
                 </div>
               ))}
+
 
               {/* Loading indicator */}
               {isLoading && (

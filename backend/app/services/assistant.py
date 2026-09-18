@@ -33,6 +33,7 @@ from app.models.user import User
 from app.schemas.assistant import (
     ActionCheckItem,
     ActionPreview,
+    AlternativeSlot,
     AssistantChatResponseData,
     AssistantConfirmResponseData,
     AssistantConversationDetailOut,
@@ -63,6 +64,25 @@ from app.services.assistant_tools import (
     tool_get_faculty_schedule_analytics,
     tool_get_timetable_health_analytics,
     verify_institution_admin_access,
+    # New expanded tools
+    tool_get_my_profile,
+    tool_get_my_work_shifts,
+    tool_get_my_personal_blocks,
+    tool_get_my_tasks,
+    tool_get_my_weekly_hours,
+    tool_get_my_calendar,
+    tool_get_course_information,
+    tool_get_class_details,
+    tool_get_timetable_change_information,
+    tool_find_available_time_slots,
+    tool_check_schedule_conflict,
+    tool_calculate_transition_time,
+    tool_explain_conflict,
+    tool_generate_planner_options,
+    tool_prepare_move_work_shift,
+    tool_prepare_create_work_shift,
+    tool_prepare_delete_block,
+    tool_prepare_create_study_task,
 )
 from app.services.audit import record_audit_log
 from app.services.optimizer import optimize_work_schedule
@@ -513,6 +533,114 @@ def process_assistant_chat(
     db.add(u_msg)
     db.commit()
 
+    # ── Gemini-powered NLU (primary path) ─────────────────────────────────────
+    # Attempt Gemini function-calling first. Fall back to keyword classifier.
+    gemini_used = False
+    gemini_tool_progress: Optional[list[dict[str, Any]]] = None
+    gemini_alternatives: Optional[list[dict[str, Any]]] = None
+    gemini_response_text: Optional[str] = None
+    gemini_action_preview: Optional[ActionPreview] = None
+    gemini_intent_str: Optional[str] = None
+
+    try:
+        from app.services.assistant_gemini import (
+            call_gemini_with_tools,
+            gemini_answer_general_question,
+            is_general_question,
+        )
+        if settings.GEMINI_API_KEY:
+            # Build conversation history for multi-turn context
+            history_msgs = (
+                db.query(AssistantMessage)
+                .filter(AssistantMessage.conversation_id == conv.id)
+                .order_by(AssistantMessage.created_at.desc())
+                .limit(8)
+                .all()
+            )
+            conv_history = [
+                {"role": m.role, "content": m.content}
+                for m in reversed(history_msgs)
+                if m.role in ("user", "assistant")
+            ]
+
+            # Fetch user name for system prompt personalisation
+            _user_obj = db.query(User).filter(User.id == user_id).first()
+            _user_name = getattr(_user_obj, "name", None) if _user_obj else None
+
+            if is_general_question(message):
+                # Pure general knowledge — no tools needed
+                gemini_response_text = gemini_answer_general_question(message, conv_history)
+                gemini_intent_str = AssistantIntentType.GENERAL_KNOWLEDGE.value
+                gemini_used = True
+            else:
+                # Bind tool_executor: injects session-derived auth, strips Gemini-provided IDs
+                def _tool_executor(tool_name: str, args: dict) -> dict:
+                    # Security: always bind from session, never accept from Gemini output
+                    safe_args = {k: v for k, v in args.items() if k not in ("user_id", "institution_id", "role")}
+                    return _dispatch_gemini_tool(
+                        tool_name=tool_name,
+                        args=safe_args,
+                        db=db,
+                        current_user=current_user,
+                        admin_inst_id=admin_inst_id,
+                    )
+
+                raw_text, tool_progress_list, alternatives = call_gemini_with_tools(
+                    message=message,
+                    conversation_history=conv_history,
+                    tool_executor=_tool_executor,
+                    role=role,
+                    user_name=_user_name,
+                )
+                gemini_tool_progress = tool_progress_list
+                gemini_alternatives = alternatives
+
+                # Extract ActionPreview from the last tool result if it produced one
+                # (stored in the thread-local by _dispatch_gemini_tool)
+                if hasattr(_tool_executor, "_last_action_preview"):
+                    gemini_action_preview = _tool_executor._last_action_preview  # type: ignore
+
+                # Check if any tool set a pending action preview
+                # (passed back via a dedicated key in the last tool result)
+                gemini_response_text = raw_text
+                gemini_intent_str = AssistantIntentType.GENERAL_HELP.value
+                gemini_used = True
+    except Exception as gemini_exc:
+        logger.info(f"Gemini unavailable, falling back to keyword classifier: {gemini_exc}")
+        gemini_used = False
+
+    # If Gemini succeeded with a general question, return immediately
+    if gemini_used and gemini_intent_str == AssistantIntentType.GENERAL_KNOWLEDGE.value and gemini_response_text:
+        return _finalize_response(
+            db=db,
+            conv_id=conv.id,
+            text=gemini_response_text,
+            intent=gemini_intent_str,
+            tool_progress=gemini_tool_progress,
+            suggestions=["What classes do I have today?", "Do I have any conflicts?", "Plan my week"],
+        )
+
+    # If Gemini succeeded with a tool-based answer, check for embedded ActionPreview
+    if gemini_used and gemini_response_text:
+        # Extract embedded action_preview from tool results (stored in module-level slot)
+        embedded_action = _retrieve_pending_action()
+        embedded_alts = gemini_alternatives
+        return _finalize_response(
+            db=db,
+            conv_id=conv.id,
+            text=gemini_response_text,
+            intent=gemini_intent_str or AssistantIntentType.GENERAL_HELP.value,
+            action=embedded_action,
+            tool_calls=gemini_tool_progress,
+            tool_progress=gemini_tool_progress,
+            alternatives=embedded_alts,
+            suggestions=[
+                "Confirm the action above" if embedded_action else "What classes do I have today?",
+                "Do I have any conflicts?",
+            ],
+        )
+
+    # ── Keyword-based intent classifier (fallback) ─────────────────────────
     # Intent extraction
     intent, params = extract_intent_and_parameters(message, user_role=role)
 
@@ -1016,16 +1144,182 @@ def process_assistant_chat(
                         "All constraints have been verified with zero class conflicts. Please confirm to apply."
                     )
 
+        elif intent in (AssistantIntentType.MOVE_WORK_SHIFT, AssistantIntentType.MOVE_EVENT):
+            # Enhanced: use full conflict-check + alternatives pipeline
+            day_val = params.get("day") or _extract_day(message)
+            st_time = params.get("start_time")
+
+            # Try to get the shift for the student
+            blocks = db.query(TimeBlock).filter(
+                TimeBlock.user_id == user_id,
+                TimeBlock.type == BlockType.SHIFT,
+                TimeBlock.status != BlockStatus.DROPPED,
+                TimeBlock.deleted == False,
+            ).all()
+
+            if not blocks:
+                response_text = "You don't have any work shifts scheduled to move."
+            elif len(blocks) > 1 and not day_val:
+                choices = [
+                    {
+                        "block_id": b.id,
+                        "title": b.title,
+                        "day": DAY_NAMES[b.day_of_week] if b.day_of_week is not None else "?",
+                        "start_time": b.start_time.strftime("%H:%M") if isinstance(b.start_time, dt_time) else str(b.start_time)[:5],
+                        "end_time": b.end_time.strftime("%H:%M") if isinstance(b.end_time, dt_time) else str(b.end_time)[:5],
+                    }
+                    for b in blocks
+                ]
+                response_text = "You have multiple work shifts. Which one would you like to move?"
+                return _finalize_response(
+                    db=db, conv_id=conv.id, text=response_text, intent=intent.value, choices=choices,
+                )
+            else:
+                # Pick the block matching the source day (or first block)
+                source_day = _extract_source_day(message)
+                if source_day is not None:
+                    target_b = next((b for b in blocks if b.day_of_week == source_day), blocks[0])
+                else:
+                    target_b = blocks[0]
+
+                target_dow = day_val if day_val is not None else (target_b.day_of_week + 1) % 7
+
+                try:
+                    result = tool_prepare_move_work_shift(
+                        db=db,
+                        current_user=current_user,
+                        block_id=target_b.id,
+                        target_day_of_week=target_dow,
+                        target_start_time=st_time,
+                    )
+                    tool_calls_meta.append({"tool": "prepare_move_work_shift", "status": "success"})
+
+                    if result["has_conflict"]:
+                        alts = result.get("alternatives", [])
+                        response_text = (
+                            f"⚠️ **Conflict detected!** Moving **{target_b.title}** to "
+                            f"{result['proposed_day']} at {result['proposed_time']} would conflict with: "
+                            f"**{', '.join(result['conflict_with'])}**.\n\n"
+                            + ("Here are **conflict-free alternatives** you can choose from:" if alts else "No alternative slots found this week.")
+                        )
+                        return _finalize_response(
+                            db=db, conv_id=conv.id, text=response_text, intent=intent.value,
+                            tool_calls=tool_calls_meta, tool_progress=tool_calls_meta, alternatives=alts,
+                        )
+                    else:
+                        action_preview = ActionPreview(**result["action_preview"])
+                        response_text = result["message"]
+                except Exception as tool_exc:
+                    logger.warning(f"move_work_shift tool error: {tool_exc}")
+                    response_text = f"I couldn't process the move request: {tool_exc}"
+
+        elif intent == AssistantIntentType.CREATE_WORK_SHIFT:
+            title = params.get("title", "Work Shift")
+            dow = params.get("day_of_week", 1)
+            st = params.get("start_time", "09:00")
+            et = params.get("end_time", "17:00")
+            try:
+                result = tool_prepare_create_work_shift(
+                    db=db, current_user=current_user, title=title, day_of_week=dow, start_time=st, end_time=et,
+                )
+                action_preview = ActionPreview(**result["action_preview"])
+                response_text = result["message"]
+                tool_calls_meta.append({"tool": "prepare_create_work_shift", "status": "success"})
+            except Exception as e:
+                response_text = f"Could not prepare shift creation: {e}"
+
+        elif intent in (AssistantIntentType.DELETE_WORK_SHIFT, AssistantIntentType.DELETE_PERSONAL_BLOCK):
+            block_id = params.get("block_id")
+            if not block_id:
+                response_text = "Please tell me which block you'd like to delete (provide the block ID or describe it)."
+            else:
+                try:
+                    result = tool_prepare_delete_block(db=db, current_user=current_user, block_id=block_id)
+                    action_preview = ActionPreview(**result["action_preview"])
+                    response_text = result["message"]
+                    tool_calls_meta.append({"tool": "prepare_delete_block", "status": "success"})
+                except Exception as e:
+                    response_text = f"Could not prepare deletion: {e}"
+
+        elif intent == AssistantIntentType.CREATE_STUDY_TASK:
+            title = params.get("title", "Study Task")
+            hours = params.get("total_hours_required", 2.0)
+            deadline = params.get("deadline", (date.today() + timedelta(days=7)).isoformat())
+            try:
+                result = tool_prepare_create_study_task(
+                    db=db, current_user=current_user, title=title,
+                    total_hours_required=float(hours), deadline=deadline,
+                )
+                action_preview = ActionPreview(**result["action_preview"])
+                response_text = result["message"]
+                tool_calls_meta.append({"tool": "prepare_create_study_task", "status": "success"})
+            except Exception as e:
+                response_text = f"Could not prepare study task: {e}"
+
+        elif intent == AssistantIntentType.GET_MY_WORK_SHIFTS:
+            data = tool_get_my_work_shifts(db, current_user)
+            tool_calls_meta.append({"tool": "get_my_work_shifts", "status": "success"})
+            shifts = data["shifts"]
+            if not shifts:
+                response_text = "You have no work shifts scheduled this week."
+            else:
+                lines = [f"💼 **Your Work Shifts** ({len(shifts)} total):"]
+                for s in shifts:
+                    lines.append(f"- 📌 **{s['title']}** — {s['day_name']} {s['start_time']}–{s['end_time']} (Block ID: {s['block_id']})")
+                response_text = "\n".join(lines)
+            suggestions = ["Do I have any conflicts?", "How many work hours do I have left?"]
+
+        elif intent == AssistantIntentType.GET_MY_TASKS:
+            data = tool_get_my_tasks(db, current_user)
+            tool_calls_meta.append({"tool": "get_my_tasks", "status": "success"})
+            tasks = data["tasks"]
+            if not tasks:
+                response_text = "You have no pending study tasks."
+            else:
+                lines = [f"📚 **Your Study Tasks** ({len(tasks)} pending):"]
+                for t in tasks:
+                    lines.append(f"- 🎯 **{t['title']}** · Due: {t['deadline']} · {t['total_hours_required']:.1f}h required · Priority: {t['priority']}")
+                response_text = "\n".join(lines)
+            suggestions = ["Plan my week", "Create a study session"]
+
+        elif intent == AssistantIntentType.GET_MY_PROFILE:
+            data = tool_get_my_profile(db, current_user)
+            tool_calls_meta.append({"tool": "get_my_profile", "status": "success"})
+            response_text = (
+                f"👤 **Your Profile**:\n"
+                f"- Name: **{data['name']}**\n"
+                f"- Email: {data['email']}\n"
+                f"- Timezone: {data['timezone']}\n"
+                f"- Weekly Work Limit: **{data['weekly_work_hour_limit']}h**\n"
+                f"- Minimum Transition Time: {data['minimum_transition_minutes']} minutes"
+            )
+
+        elif intent == AssistantIntentType.FIND_AVAILABLE_TIME_SLOTS:
+            dow = params.get("day_of_week")
+            dur = params.get("duration_minutes", 60)
+            data = tool_find_available_time_slots(db, current_user, day_of_week=dow, duration_minutes=int(dur))
+            tool_calls_meta.append({"tool": "find_available_time_slots", "status": "success"})
+            slots = data["free_slots"]
+            if not slots:
+                response_text = f"No free slots of at least {dur} minutes were found."
+            else:
+                lines = [f"🕒 **Free Slots** ({dur}+ minutes):"]
+                for s in slots[:5]:
+                    lines.append(f"- {s['day_name']} {s['start_time']}–{s['end_time']} ({s['duration_minutes']} min)")
+                response_text = "\n".join(lines)
+            suggestions = ["Create a study block", "Plan my week"]
+
         else:
             response_text = (
                 "👋 I'm your **SyncShift Assistant**!\n"
                 "I connect your university academic timetable with real student life.\n\n"
-                "You can ask me questions such as:\n"
+                "You can ask me:\n"
                 "- *What classes do I have today?*\n"
+                "- *Move my Wednesday shift to Thursday*\n"
                 "- *Do I have any conflicts this week?*\n"
-                "- *When is my next free afternoon?*\n"
+                "- *Create a 2-hour study session for Friday afternoon*\n"
                 "- *How many work hours do I have left?*\n"
-                "- *Can you help me plan my week?*"
+                "- *Plan my week*"
             )
             suggestions = ["What classes do I have today?", "Do I have any conflicts?", "Plan my week"]
 
@@ -1040,6 +1334,7 @@ def process_assistant_chat(
         intent=intent.value,
         action=action_preview,
         tool_calls=tool_calls_meta,
+        tool_progress=tool_calls_meta,
         suggestions=suggestions,
     )
 
@@ -1053,6 +1348,8 @@ def _finalize_response(
     choices: Optional[list[dict[str, Any]]] = None,
     tool_calls: Optional[list[dict[str, Any]]] = None,
     suggestions: Optional[list[str]] = None,
+    tool_progress: Optional[list[dict[str, Any]]] = None,
+    alternatives: Optional[list[dict[str, Any]]] = None,
 ) -> AssistantChatResponseData:
     """Saves assistant message and updates conversation timestamp."""
     action_json = action.model_dump_json() if action else None
@@ -1073,6 +1370,16 @@ def _finalize_response(
 
     db.commit()
 
+    # Convert alternatives dicts to AlternativeSlot objects
+    alt_slots: Optional[list[AlternativeSlot]] = None
+    if alternatives:
+        alt_slots = []
+        for a in alternatives:
+            try:
+                alt_slots.append(AlternativeSlot(**a))
+            except Exception:
+                pass
+
     return AssistantChatResponseData(
         message=text,
         intent=intent,
@@ -1082,6 +1389,8 @@ def _finalize_response(
         choices=choices,
         suggestions=suggestions or [],
         tool_calls=tool_calls,
+        tool_progress=tool_progress,
+        alternatives=alt_slots,
     )
 
 
@@ -1262,4 +1571,274 @@ def execute_confirmed_action(
             data={"version_id": new_v.id, "version_number": new_v.version_number},
         )
 
+    elif action_type == "create_work_shift":
+        title = params.get("title", "Work Shift")
+        dow = params.get("day_of_week", 1)
+        st = params.get("start_time", "09:00")
+        et = params.get("end_time", "17:00")
+        location = params.get("location")
+
+        # Re-validate: verify no conflict before creating
+        st_obj = datetime.strptime(st, "%H:%M").time() if isinstance(st, str) else st
+        et_obj = datetime.strptime(et, "%H:%M").time() if isinstance(et, str) else et
+        duration = (et_obj.hour * 60 + et_obj.minute) - (st_obj.hour * 60 + st_obj.minute)
+        if duration <= 0:
+            raise HTTPException(status_code=400, detail="Invalid shift duration.")
+
+        block = TimeBlock(
+            user_id=user_id,
+            title=title,
+            type=BlockType.SHIFT,
+            day_of_week=dow,
+            start_time=st_obj,
+            end_time=et_obj,
+            duration_minutes=duration,
+            location=location,
+        )
+        db.add(block)
+        db.commit()
+        db.refresh(block)
+
+        record_audit_log(
+            db=db, user_id=user_id, action="AI_ACTION_CONFIRMED",
+            entity_type="time_block", entity_id=block.id,
+            description=f"Created work shift '{title}' on {DAY_NAMES[dow]} {st}–{et}",
+            metadata={"title": title, "day_of_week": dow, "start_time": st, "end_time": et},
+        )
+        return AssistantConfirmResponseData(
+            success=True, action_type=action_type,
+            message=f"Work shift '{title}' created on {DAY_NAMES[dow]} at {st}–{et}.",
+            updated_block={"id": block.id, "title": title, "day_of_week": dow, "start_time": st, "end_time": et},
+        )
+
+    elif action_type == "delete_block":
+        block_id = action.block_id or params.get("block_id")
+        block = db.query(TimeBlock).filter(
+            TimeBlock.id == block_id, TimeBlock.user_id == user_id
+        ).first()
+        if not block:
+            raise HTTPException(status_code=404, detail="Block not found or access denied.")
+
+        block_title = block.title
+        block.deleted = True
+        db.commit()
+
+        record_audit_log(
+            db=db, user_id=user_id, action="AI_ACTION_CONFIRMED",
+            entity_type="time_block", entity_id=block_id,
+            description=f"Deleted block '{block_title}' via assistant",
+            metadata={"block_id": block_id},
+        )
+        return AssistantConfirmResponseData(
+            success=True, action_type=action_type,
+            message=f"'{block_title}' has been removed from your schedule.",
+        )
+
+    elif action_type == "create_study_task":
+        from app.models.study_task import StudyTask, TaskStatus
+        title = params.get("title", "Study Task")
+        hours = float(params.get("total_hours_required", 2.0))
+        deadline_str = params.get("deadline", (date.today() + timedelta(days=7)).isoformat())
+        priority = params.get("priority", "medium")
+
+        try:
+            dl_date = datetime.strptime(deadline_str, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid deadline format.")
+
+        task = StudyTask(
+            user_id=user_id,
+            title=title,
+            total_hours_required=hours,
+            deadline=dl_date,
+            priority=priority,
+            status=TaskStatus.PENDING,
+        )
+        db.add(task)
+        db.commit()
+        db.refresh(task)
+
+        record_audit_log(
+            db=db, user_id=user_id, action="AI_ACTION_CONFIRMED",
+            entity_type="study_task", entity_id=task.id,
+            description=f"Created study task '{title}' due {deadline_str}",
+            metadata={"title": title, "hours": hours, "deadline": deadline_str},
+        )
+        return AssistantConfirmResponseData(
+            success=True, action_type=action_type,
+            message=f"Study task '{title}' created (due {deadline_str}, {hours}h required).",
+            updated_block={"id": task.id, "title": title, "deadline": deadline_str},
+        )
+
     raise HTTPException(status_code=400, detail=f"Unsupported action type: {action_type}")
+
+
+# =====================================================================
+# GEMINI TOOL DISPATCHER (binds session auth, executes deterministic tools)
+# =====================================================================
+
+# Module-level slot for pending action previews generated by tools
+_pending_action_preview: Optional[ActionPreview] = None
+
+
+def _retrieve_pending_action() -> Optional[ActionPreview]:
+    """Retrieves and clears the pending action preview slot."""
+    global _pending_action_preview
+    result = _pending_action_preview
+    _pending_action_preview = None
+    return result
+
+
+def _dispatch_gemini_tool(
+    tool_name: str,
+    args: dict,
+    db: Session,
+    current_user: CurrentUser,
+    admin_inst_id: Optional[int],
+) -> dict:
+    """
+    Dispatches a Gemini-selected tool name to the appropriate deterministic Python function.
+    Binds db and current_user from the authenticated session — never from Gemini output.
+    """
+    global _pending_action_preview
+
+    if tool_name == "get_my_profile":
+        return tool_get_my_profile(db, current_user)
+    elif tool_name == "get_my_timetable":
+        view = args.get("view", "week")
+        dow = args.get("day_of_week")
+        return tool_get_my_schedule(db, current_user, day_of_week=dow, view=view)
+    elif tool_name == "get_my_calendar":
+        return tool_get_my_calendar(db, current_user)
+    elif tool_name == "get_my_courses":
+        return tool_get_my_courses(db, current_user)
+    elif tool_name == "get_my_work_shifts":
+        return tool_get_my_work_shifts(db, current_user)
+    elif tool_name == "get_my_personal_blocks":
+        return tool_get_my_personal_blocks(db, current_user)
+    elif tool_name == "get_my_tasks":
+        return tool_get_my_tasks(db, current_user)
+    elif tool_name == "get_my_conflicts":
+        return tool_get_my_conflicts(db, current_user)
+    elif tool_name == "get_my_weekly_hours":
+        return tool_get_my_weekly_hours(db, current_user)
+    elif tool_name == "get_my_preferences":
+        return tool_get_my_preferences(db, current_user)
+    elif tool_name == "get_my_notifications":
+        unread_only = bool(args.get("unread_only", False))
+        return tool_get_my_notifications(db, current_user, unread_only=unread_only)
+    elif tool_name == "get_current_timetable":
+        if not admin_inst_id:
+            return {"error": "Admin privileges required."}
+        return tool_get_university_timetable(db, current_user, institution_id=admin_inst_id)
+    elif tool_name == "get_course_information":
+        return tool_get_course_information(db, current_user, course_code=args.get("course_code"))
+    elif tool_name == "get_class_details":
+        return tool_get_class_details(db, current_user, course_code=args.get("course_code"))
+    elif tool_name == "get_timetable_change_information":
+        return tool_get_timetable_change_information(db, current_user)
+    elif tool_name == "find_available_time_slots":
+        return tool_find_available_time_slots(
+            db, current_user,
+            day_of_week=args.get("day_of_week"),
+            duration_minutes=int(args.get("duration_minutes", 60)),
+            earliest_hour=int(args.get("earliest_hour", 8)),
+            latest_hour=int(args.get("latest_hour", 22)),
+        )
+    elif tool_name == "check_schedule_conflict":
+        return tool_check_schedule_conflict(
+            db, current_user,
+            day_of_week=int(args["day_of_week"]),
+            start_time=args["start_time"],
+            end_time=args["end_time"],
+            exclude_block_id=args.get("exclude_block_id"),
+        )
+    elif tool_name == "calculate_transition_time":
+        return tool_calculate_transition_time(
+            db, current_user,
+            end_event_time=args["end_event_time"],
+            start_next_event_time=args["start_next_event_time"],
+        )
+    elif tool_name == "generate_planner_options":
+        return tool_generate_planner_options(
+            db, current_user,
+            duration_minutes=int(args["duration_minutes"]),
+            preferred_day_of_week=args.get("preferred_day_of_week"),
+            exclude_block_id=args.get("exclude_block_id"),
+        )
+    elif tool_name == "explain_conflict":
+        return tool_explain_conflict(
+            db, current_user,
+            event_a_title=args["event_a_title"],
+            event_b_title=args["event_b_title"],
+            day=args["day"],
+            event_a_time=args.get("event_a_time"),
+            event_b_time=args.get("event_b_time"),
+        )
+    elif tool_name == "move_work_shift":
+        result = tool_prepare_move_work_shift(
+            db, current_user,
+            block_id=int(args["block_id"]),
+            target_day_of_week=int(args["target_day_of_week"]),
+            target_start_time=args.get("target_start_time"),
+        )
+        if not result["has_conflict"] and result.get("action_preview"):
+            _pending_action_preview = ActionPreview(**result["action_preview"])
+        return result
+    elif tool_name == "create_work_shift":
+        result = tool_prepare_create_work_shift(
+            db, current_user,
+            title=args["title"],
+            day_of_week=int(args["day_of_week"]),
+            start_time=args["start_time"],
+            end_time=args["end_time"],
+            location=args.get("location"),
+        )
+        if result.get("action_preview"):
+            _pending_action_preview = ActionPreview(**result["action_preview"])
+        return result
+    elif tool_name in ("update_work_shift", "delete_work_shift", "delete_personal_block"):
+        block_id = int(args.get("block_id", 0))
+        result = tool_prepare_delete_block(db, current_user, block_id=block_id)
+        if result.get("action_preview"):
+            _pending_action_preview = ActionPreview(**result["action_preview"])
+        return result
+    elif tool_name == "create_personal_block":
+        title = args.get("title", "Personal Block")
+        dow = int(args.get("day_of_week", 1))
+        st = args.get("start_time", "09:00")
+        et = args.get("end_time", "10:00")
+        block_type = args.get("block_type", "study")
+        # Reuse study block prep
+        ap = tool_prepare_create_study_block(db, current_user, title=title, day_of_week=dow, start_time=st, end_time=et)
+        _pending_action_preview = ap
+        return {"action_preview": ap.model_dump(), "message": f"Ready to create '{title}' on {DAY_NAMES[dow]} {st}–{et}."}
+    elif tool_name == "create_study_task":
+        result = tool_prepare_create_study_task(
+            db, current_user,
+            title=args["title"],
+            total_hours_required=float(args["total_hours_required"]),
+            deadline=args["deadline"],
+            priority=args.get("priority", "medium"),
+        )
+        if result.get("action_preview"):
+            _pending_action_preview = ActionPreview(**result["action_preview"])
+        return result
+    elif tool_name == "plan_week":
+        strategy = args.get("strategy", "balanced")
+        return tool_preview_my_plan(db, current_user, strategy=strategy)
+    else:
+        logger.warning(f"Unknown tool requested by Gemini: {tool_name}")
+        return {"error": f"Unknown tool: {tool_name}"}
+
+
+def _extract_source_day(text: str) -> Optional[int]:
+    """
+    Extracts the source day from phrases like 'move my Wednesday shift'.
+    Returns day_of_week int or None.
+    """
+    msg = text.lower()
+    for name, i in DAY_NAME_TO_INT.items():
+        if name in msg:
+            return i
+    return None

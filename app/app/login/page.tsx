@@ -7,10 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthContext } from '@/context/AuthContext';
 import { ApiError } from '@/lib/api';
 import { OAuthButtons, OAuthDivider } from '@/components/auth/OAuthButtons';
+import { getPortalRedirect } from '@/components/RoleGuard';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { status, login } = useAuthContext();
+  const { status, user, login } = useAuthContext();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,12 +19,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // If already authenticated, redirect to dashboard immediately
+  // If already authenticated, redirect to the correct portal
   useEffect(() => {
-    if (status === 'authenticated') {
-      router.replace('/dashboard');
+    if (status === 'authenticated' && user) {
+      router.replace(getPortalRedirect(user.institution_role));
     }
-  }, [status, router]);
+  }, [status, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +44,11 @@ export default function LoginPage() {
 
     try {
       await login(email.trim(), password);
-      router.replace('/dashboard');
+      // After login, useAuth will have updated user profile — redirect based on role
+      // We need to get the profile after login to know the role
+      const { api } = await import('@/lib/api');
+      const profile = await api.getAuthMe();
+      router.replace(getPortalRedirect(profile.institution_role));
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.status === 401) {
@@ -204,7 +209,7 @@ export default function LoginPage() {
           {/* Divider & OAuth buttons */}
           <div className="px-5 sm:px-6 pb-5 pt-0">
             <OAuthDivider text="OR" />
-            <OAuthButtons onSuccessRedirect="/calendar" />
+            <OAuthButtons onSuccessRedirect="/student/dashboard" />
           </div>
 
           {/* Footer note */}

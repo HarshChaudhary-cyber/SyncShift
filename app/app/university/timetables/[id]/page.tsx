@@ -22,6 +22,7 @@ import {
 import CalendarWeekView, { TimeBlock } from '@/components/CalendarWeekView';
 import TimetableImpactModal from '@/components/university/TimetableImpactModal';
 import TimetablePublishModal from '@/components/university/TimetablePublishModal';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 const DAYS_OF_WEEK = [
   { value: 1, label: 'Monday', short: 'Mon' },
@@ -591,30 +592,37 @@ export default function TimetableDetailPage() {
 
         {viewMode === 'list' && (
           <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={filterDay}
-              onChange={(e) => setFilterDay(e.target.value)}
-              className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
-            >
-              <option value="all">All Days</option>
-              {DAYS_OF_WEEK.map((d) => (
-                <option key={d.value} value={d.value}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filterRoom}
-              onChange={(e) => setFilterRoom(e.target.value)}
-              className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
-            >
-              <option value="all">All Rooms</option>
-              {rooms.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.building ? `${r.building} - ` : ''}Room {r.room_number}
-                </option>
-              ))}
-            </select>
+            <div className="w-36">
+              <CustomSelect
+                options={[
+                  { value: 'all', label: 'All Days' },
+                  ...DAYS_OF_WEEK.map((d) => ({
+                    value: String(d.value),
+                    label: d.label,
+                  })),
+                ]}
+                value={filterDay}
+                onChange={(val) => setFilterDay(String(val))}
+                size="sm"
+                portalTheme="university"
+              />
+            </div>
+            <div className="w-48">
+              <CustomSelect
+                options={[
+                  { value: 'all', label: 'All Rooms' },
+                  ...rooms.map((r) => ({
+                    value: String(r.id),
+                    label: `${r.building ? `${r.building} - ` : ''}Room ${r.room_number}`,
+                  })),
+                ]}
+                value={filterRoom}
+                onChange={(val) => setFilterRoom(String(val))}
+                size="sm"
+                searchable
+                portalTheme="university"
+              />
+            </div>
           </div>
         )}
       </div>
@@ -795,21 +803,17 @@ export default function TimetableDetailPage() {
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                   Academic Section *
                 </label>
-                <select
-                  value={meetingForm.section_id}
-                  onChange={(e) => setMeetingForm({ ...meetingForm, section_id: Number(e.target.value) })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                  required
-                >
-                  <option value={0} disabled>
-                    Select an offering section
-                  </option>
-                  {sections.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.course_code ? `${s.course_code} - ` : ''}Sec {s.section_code} (Cap: {s.capacity || 'N/A'})
-                    </option>
-                  ))}
-                </select>
+                <CustomSelect
+                  options={sections.map((s) => ({
+                    value: String(s.id),
+                    label: `${s.course_code ? `${s.course_code} - ` : ''}Sec ${s.section_code} (Cap: ${s.capacity || 'N/A'})`,
+                  }))}
+                  value={meetingForm.section_id ? String(meetingForm.section_id) : ''}
+                  onChange={(val) => setMeetingForm({ ...meetingForm, section_id: Number(val) })}
+                  placeholder="Select an offering section..."
+                  searchable
+                  portalTheme="university"
+                />
                 {selectedSection && (
                   <p className="text-xs text-slate-400 mt-1">
                     Section Capacity: {selectedSection.capacity}
@@ -823,34 +827,30 @@ export default function TimetableDetailPage() {
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                     Day of Week *
                   </label>
-                  <select
-                    value={meetingForm.day_of_week}
-                    onChange={(e) => setMeetingForm({ ...meetingForm, day_of_week: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                  >
-                    {DAYS_OF_WEEK.map((d) => (
-                      <option key={d.value} value={d.value}>
-                        {d.label}
-                      </option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    options={DAYS_OF_WEEK.map((d) => ({
+                      value: String(d.value),
+                      label: d.label,
+                    }))}
+                    value={String(meetingForm.day_of_week)}
+                    onChange={(val) => setMeetingForm({ ...meetingForm, day_of_week: Number(val) })}
+                    portalTheme="university"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                     Meeting Type
                   </label>
-                  <select
+                  <CustomSelect
+                    options={MEETING_TYPES.map((t) => ({
+                      value: t.value,
+                      label: t.label,
+                    }))}
                     value={meetingForm.meeting_type}
-                    onChange={(e) => setMeetingForm({ ...meetingForm, meeting_type: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                  >
-                    {MEETING_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setMeetingForm({ ...meetingForm, meeting_type: String(val) })}
+                    portalTheme="university"
+                  />
                 </div>
               </div>
 
@@ -893,25 +893,24 @@ export default function TimetableDetailPage() {
                     <span className="text-[11px] text-amber-400 font-medium">⚠️ {capacityWarning}</span>
                   )}
                 </div>
-                <select
-                  value={meetingForm.room_id || ''}
-                  onChange={(e) =>
+                <CustomSelect
+                  options={[
+                    { value: '', label: 'No Room Assigned (Unscheduled Room)' },
+                    ...rooms.map((r) => ({
+                      value: String(r.id),
+                      label: `${r.building ? `${r.building} - ` : ''}Room ${r.room_number} (Capacity: ${r.capacity})`,
+                    })),
+                  ]}
+                  value={meetingForm.room_id ? String(meetingForm.room_id) : ''}
+                  onChange={(val) =>
                     setMeetingForm({
                       ...meetingForm,
-                      room_id: e.target.value ? Number(e.target.value) : undefined,
+                      room_id: val ? Number(val) : undefined,
                     })
                   }
-                  className={`w-full bg-slate-950 border rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none ${
-                    capacityWarning ? 'border-amber-500/70 focus:border-amber-500' : 'border-slate-800 focus:border-indigo-500'
-                  }`}
-                >
-                  <option value="">No Room Assigned (Unscheduled Room)</option>
-                  {rooms.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.building ? `${r.building} - ` : ''}Room {r.room_number} (Capacity: {r.capacity})
-                    </option>
-                  ))}
-                </select>
+                  searchable
+                  portalTheme="university"
+                />
               </div>
 
               {/* Faculty Override Select */}
@@ -919,23 +918,24 @@ export default function TimetableDetailPage() {
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                   Faculty Instructor (Optional Override)
                 </label>
-                <select
-                  value={meetingForm.faculty_id || ''}
-                  onChange={(e) =>
+                <CustomSelect
+                  options={[
+                    { value: '', label: 'Default to Section Instructor Assignment' },
+                    ...facultyList.map((f) => ({
+                      value: String(f.id),
+                      label: `${f.title ? `${f.title} ` : ''}${f.user_name || `Faculty #${f.id}`} ${f.user_email ? `(${f.user_email})` : ''}`,
+                    })),
+                  ]}
+                  value={meetingForm.faculty_id ? String(meetingForm.faculty_id) : ''}
+                  onChange={(val) =>
                     setMeetingForm({
                       ...meetingForm,
-                      faculty_id: e.target.value ? Number(e.target.value) : undefined,
+                      faculty_id: val ? Number(val) : undefined,
                     })
                   }
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="">Default to Section Instructor Assignment</option>
-                  {facultyList.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.title ? `${f.title} ` : ''}{f.user_name || `Faculty #${f.id}`} {f.user_email ? `(${f.user_email})` : ''}
-                    </option>
-                  ))}
-                </select>
+                  searchable
+                  portalTheme="university"
+                />
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">

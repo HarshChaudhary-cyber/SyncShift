@@ -14,6 +14,7 @@ import {
   CourseMeeting,
 } from '@/lib/api';
 import { showSuccessToast, showErrorToast } from '@/lib/toast';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 export default function StudentAcademicsPage() {
   const { institution, profile, refresh: refreshProfile } = useStudentAcademic();
@@ -268,20 +269,17 @@ export default function StudentAcademicsPage() {
         </div>
 
         {/* Term filter for both tabs */}
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-[var(--text-secondary)] font-medium">Term:</label>
-          <select
-            value={selectedTermId || ''}
-            onChange={(e) => setSelectedTermId(e.target.value ? Number(e.target.value) : undefined)}
-            className="px-3 py-1.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition"
-          >
-            <option value="">All Terms</option>
-            {terms.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-2 w-48">
+          <CustomSelect
+            options={[
+              { value: '', label: 'All Terms' },
+              ...terms.map((t) => ({ value: String(t.id), label: t.name })),
+            ]}
+            value={selectedTermId ? String(selectedTermId) : ''}
+            onChange={(val) => setSelectedTermId(val ? Number(val) : undefined)}
+            size="sm"
+            portalTheme="student"
+          />
         </div>
       </div>
 
@@ -391,7 +389,7 @@ export default function StudentAcademicsPage() {
 
                   <div className="pt-4 mt-3 border-t border-[var(--border-color)] flex items-center justify-between">
                     <Link
-                      href="/calendar"
+                      href="/student/calendar"
                       className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition flex items-center gap-1"
                     >
                       <span>📅 View on Calendar →</span>
@@ -430,18 +428,19 @@ export default function StudentAcademicsPage() {
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <select
-                value={selectedDeptId || ''}
-                onChange={(e) => setSelectedDeptId(e.target.value ? Number(e.target.value) : undefined)}
-                className="px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition w-full sm:w-auto"
-              >
-                <option value="">All Departments</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+              <div className="w-full sm:w-56">
+                <CustomSelect
+                  options={[
+                    { value: '', label: 'All Departments' },
+                    ...departments.map((d) => ({ value: String(d.id), label: d.name })),
+                  ]}
+                  value={selectedDeptId ? String(selectedDeptId) : ''}
+                  onChange={(val) => setSelectedDeptId(val ? Number(val) : undefined)}
+                  size="sm"
+                  searchable
+                  portalTheme="student"
+                />
+              </div>
 
               <button
                 onClick={fetchCatalog}
@@ -668,40 +667,33 @@ export default function StudentAcademicsPage() {
                   <label className="block text-slate-300 font-semibold mb-1">
                     Year of Study
                   </label>
-                  <select
-                    value={profileForm.year_of_study || 1}
-                    onChange={(e) => setProfileForm({ ...profileForm, year_of_study: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition"
-                  >
-                    {[1, 2, 3, 4, 5, 6].map((yr) => (
-                      <option key={yr} value={yr}>
-                        Year {yr}
-                      </option>
-                    ))}
-                  </select>
+                  <CustomSelect
+                    options={[1, 2, 3, 4, 5, 6].map((yr) => ({ value: String(yr), label: `Year ${yr}` }))}
+                    value={String(profileForm.year_of_study || 1)}
+                    onChange={(val) => setProfileForm({ ...profileForm, year_of_study: Number(val) })}
+                    portalTheme="student"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-slate-300 font-semibold mb-1">
                     Department
                   </label>
-                  <select
-                    value={profileForm.department_id || ''}
-                    onChange={(e) =>
+                  <CustomSelect
+                    options={[
+                      { value: '', label: 'None / Undeclared' },
+                      ...departments.map((d) => ({ value: String(d.id), label: d.name })),
+                    ]}
+                    value={profileForm.department_id ? String(profileForm.department_id) : ''}
+                    onChange={(val) =>
                       setProfileForm({
                         ...profileForm,
-                        department_id: e.target.value ? Number(e.target.value) : null,
+                        department_id: val ? Number(val) : null,
                       })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition"
-                  >
-                    <option value="">None / Undeclared</option>
-                    {departments.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </select>
+                    searchable
+                    portalTheme="student"
+                  />
                 </div>
               </div>
 

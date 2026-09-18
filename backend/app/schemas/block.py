@@ -113,3 +113,15 @@ class BlockOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ClearTimetableRequest(BaseModel):
+    only_imported: bool = Field(default=False, description="If true, only delete imported timetable blocks")
+
+
+class ClearTimetableResponseData(BaseModel):
+    deleted_count: int = Field(..., description="Number of timetable blocks soft-deleted")
+    remaining_count: int = Field(..., description="Number of active class blocks remaining")
+    remaining_total_blocks: int = Field(..., description="Number of active blocks of all types remaining")
+    preserved_shifts_count: int = Field(..., description="Number of active work shifts preserved")
+    preserved_study_count: int = Field(..., description="Number of active study sessions preserved")

@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { api, FilePreviewItem, FilePreviewResponse, IcsConfirmPayload } from '@/lib/api';
 import { useCalendar } from '@/context/CalendarContext';
 import DatePicker from '@/components/ui/DatePicker';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -672,19 +673,20 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
                                   </div>
                                   <div>
                                     <label className="text-[10px] text-[var(--text-muted)] block mb-0.5">Day</label>
-                                    <select
-                                      value={editForm.day_of_week}
-                                      onChange={e => setEditForm(prev => ({ ...prev, day_of_week: parseInt(e.target.value, 10) }))}
-                                      className="w-full px-2.5 py-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] text-xs text-[var(--text-primary)]"
-                                    >
-                                      <option value={0}>Monday</option>
-                                      <option value={1}>Tuesday</option>
-                                      <option value={2}>Wednesday</option>
-                                      <option value={3}>Thursday</option>
-                                      <option value={4}>Friday</option>
-                                      <option value={5}>Saturday</option>
-                                      <option value={6}>Sunday</option>
-                                    </select>
+                                    <CustomSelect
+                                      options={[
+                                        { value: '0', label: 'Monday' },
+                                        { value: '1', label: 'Tuesday' },
+                                        { value: '2', label: 'Wednesday' },
+                                        { value: '3', label: 'Thursday' },
+                                        { value: '4', label: 'Friday' },
+                                        { value: '5', label: 'Saturday' },
+                                        { value: '6', label: 'Sunday' },
+                                      ]}
+                                      value={String(editForm.day_of_week)}
+                                      onChange={(val) => setEditForm((prev) => ({ ...prev, day_of_week: parseInt(val, 10) }))}
+                                      size="sm"
+                                    />
                                   </div>
                                   <div>
                                     <label className="text-[10px] text-[var(--text-muted)] block mb-0.5">Start Time (HH:MM)</label>

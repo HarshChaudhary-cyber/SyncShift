@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useUniversity } from '../layout';
 import AcademicResourcesNav from '@/components/university/AcademicResourcesNav';
+import CustomSelect from '@/components/ui/CustomSelect';
 import {
   api,
   Room,
@@ -250,50 +251,52 @@ export default function RoomsPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-medium text-[var(--text-muted)]">Building:</label>
-          <select
+        <div className="w-48">
+          <CustomSelect
+            options={[
+              { value: 'all', label: 'All Buildings' },
+              ...availableBuildings.map((b) => ({
+                value: b,
+                label: b,
+              })),
+            ]}
             value={buildingFilter}
-            onChange={(e) => setBuildingFilter(e.target.value)}
-            className="px-2.5 py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Buildings</option>
-            {availableBuildings.map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setBuildingFilter(String(val))}
+            size="sm"
+            searchable
+            portalTheme="university"
+          />
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-medium text-[var(--text-muted)]">Type:</label>
-          <select
+        <div className="w-48">
+          <CustomSelect
+            options={[
+              { value: 'all', label: 'All Room Types' },
+              ...ROOM_TYPES.map((t) => ({
+                value: t.value,
+                label: t.label,
+              })),
+            ]}
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-2.5 py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Room Types</option>
-            {ROOM_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setTypeFilter(String(val))}
+            size="sm"
+            portalTheme="university"
+          />
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-medium text-[var(--text-muted)]">Status:</label>
-          <select
+        <div className="w-40">
+          <CustomSelect
+            options={[
+              { value: 'all', label: 'All Statuses' },
+              { value: 'active', label: 'Active' },
+              { value: 'maintenance', label: 'Maintenance' },
+              { value: 'archived', label: 'Archived' },
+            ]}
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-2.5 py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="maintenance">Maintenance</option>
-            <option value="archived">Archived</option>
-          </select>
+            onChange={(val) => setStatusFilter(String(val))}
+            size="sm"
+            portalTheme="university"
+          />
         </div>
 
         {(search || buildingFilter !== 'all' || typeFilter !== 'all' || statusFilter !== 'all') && (
@@ -490,17 +493,15 @@ export default function RoomsPage() {
                   <label className="text-xs font-medium text-[var(--text-secondary)]">
                     Room Type
                   </label>
-                  <select
+                  <CustomSelect
+                    options={ROOM_TYPES.map((t) => ({
+                      value: t.value,
+                      label: t.label,
+                    }))}
                     value={form.room_type || 'classroom'}
-                    onChange={(e) => setForm({ ...form, room_type: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500 capitalize"
-                  >
-                    {ROOM_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setForm({ ...form, room_type: String(val) })}
+                    portalTheme="university"
+                  />
                 </div>
 
                 <div className="space-y-1">
@@ -534,15 +535,16 @@ export default function RoomsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-[var(--text-secondary)]">Status</label>
-                  <select
+                  <CustomSelect
+                    options={[
+                      { value: 'active', label: 'Active' },
+                      { value: 'maintenance', label: 'Maintenance' },
+                      { value: 'archived', label: 'Archived' },
+                    ]}
                     value={form.status || 'active'}
-                    onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="active">Active</option>
-                    <option value="maintenance">Maintenance</option>
-                    <option value="archived">Archived</option>
-                  </select>
+                    onChange={(val) => setForm({ ...form, status: String(val) })}
+                    portalTheme="university"
+                  />
                 </div>
 
                 <div className="space-y-1">

@@ -28,6 +28,8 @@ export interface UserProfile {
   oauth_provider?: string | null;
   has_password?: boolean;
   created_at?: string | null;
+  institution_id?: number | null;
+  institution_role?: 'student' | 'professor' | 'admin' | 'super_admin' | string | null;
 }
 
 export interface UserProfileUpdatePayload {
@@ -142,6 +144,24 @@ export interface ActionPreview {
   } | null;
 }
 
+export interface AlternativeSlot {
+  option_number: number;
+  option_label: string;
+  day_of_week: number;
+  day_name: string;
+  start_time: string;
+  end_time: string;
+  duration_minutes: number;
+  label: string;
+  action_preview?: ActionPreview | null;
+}
+
+export interface ToolProgressStep {
+  tool: string;
+  status: 'running' | 'success' | 'error';
+  label?: string;
+}
+
 export interface AssistantChatResponse {
   conversation_id?: number | null;
   message: string;
@@ -150,6 +170,8 @@ export interface AssistantChatResponse {
   action?: ActionPreview | null;
   choices?: Record<string, any>[] | null;
   suggestions: string[];
+  tool_progress?: ToolProgressStep[] | null;
+  alternatives?: AlternativeSlot[] | null;
 }
 
 export interface AssistantMessageItem {
@@ -696,7 +718,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers || {});
   
   if (!headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${getAuthToken()}`);
+    const token = getAuthToken();
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
   }
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
@@ -2089,115 +2114,162 @@ export interface UniversityNotificationSummaryOut {
 export interface AnalyticsTermOption {
   id: number;
   name: string;
-  code: string;
+  code?: string;
+  academic_year?: string;
   status: string;
-  is_default: boolean;
+  is_default?: boolean;
+  is_active?: boolean;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface AnalyticsOverviewKPIs {
-  active_students: number;
-  enrolled_students: number;
-  active_courses: number;
-  active_sections: number;
-  scheduled_classes: number;
-  unscheduled_sections: number;
-  active_rooms: number;
-  scheduled_room_utilization_rate: number;
-  faculty_involved: number;
-  timetable_conflicts: number;
-  recent_timetable_changes: number;
-  students_affected_by_changes: number;
+  // Legacy & convenience aliases
+  active_students?: number;
+  enrolled_students?: number;
+  active_courses?: number;
+  active_sections?: number;
+  scheduled_classes?: number;
+  unscheduled_sections?: number;
+  active_rooms?: number;
+  scheduled_room_utilization_rate?: number;
+  faculty_involved?: number;
+  timetable_conflicts?: number;
+  recent_timetable_changes?: number;
+  students_affected_by_changes?: number;
+
+  // Backend model fields
+  active_students_count?: number;
+  enrolled_students_count?: number;
+  total_enrollments_count?: number;
+  active_courses_count?: number;
+  active_sections_count?: number;
+  scheduled_classes_count?: number;
+  unscheduled_sections_count?: number;
+  active_rooms_count?: number;
+  average_room_utilization_pct?: number;
+  active_faculty_count?: number;
+  total_conflicts_count?: number;
+  published_timetable_version?: number | null;
 }
 
 export interface SectionDemandItem {
   section_id: number;
   section_code: string;
-  course_id: number;
+  course_id?: number;
   course_code: string;
-  course_title: string;
+  course_title?: string;
+  course_name?: string;
   department_id?: number | null;
   department_name?: string | null;
   capacity: number;
   enrolled_count: number;
   remaining_seats: number;
-  utilization_rate: number;
-  demand_status: 'high_demand' | 'moderate' | 'low_utilization' | 'over_capacity' | string;
+  utilization_rate?: number;
+  utilization_pct?: number;
+  demand_status: 'high_demand' | 'moderate' | 'low_utilization' | 'over_capacity' | 'full' | string;
 }
 
 export interface EnrollmentAnalyticsData {
-  term_id: number;
-  term_name: string;
-  total_enrolled_students: number;
-  total_sections: number;
-  total_capacity: number;
-  total_seats_filled: number;
-  average_section_utilization: number;
-  high_demand_sections: SectionDemandItem[];
-  low_utilization_sections: SectionDemandItem[];
-  all_sections: SectionDemandItem[];
+  term_id?: number;
+  term_name?: string;
+  total_enrolled_students?: number;
+  total_sections?: number;
+  total_capacity?: number;
+  total_seats_filled?: number;
+  total_enrolled?: number;
+  average_section_utilization?: number;
+  overall_capacity_utilization_pct?: number;
+  high_demand_sections?: SectionDemandItem[];
+  low_utilization_sections?: SectionDemandItem[];
+  all_sections?: SectionDemandItem[];
 }
 
 export interface RoomUtilizationItem {
   room_id: number;
-  room_name: string;
+  room_name?: string;
+  room_number?: string;
   building?: string | null;
+  room_type?: string;
   capacity: number;
-  scheduled_hours: number;
-  scheduled_meetings_count: number;
-  operating_hours_baseline: number;
-  scheduled_utilization_rate: number;
-  utilization_category: 'high' | 'balanced' | 'low' | 'unused' | string;
+  scheduled_hours?: number;
+  weekly_scheduled_hours?: number;
+  scheduled_meetings_count?: number;
+  meetings_count?: number;
+  operating_hours_baseline?: number;
+  scheduled_utilization_rate?: number;
+  scheduled_utilization_pct?: number;
+  utilization_category?: 'high' | 'balanced' | 'low' | 'unused' | string;
+  status?: string;
 }
 
 export interface DailyRoomUtilization {
   day_of_week: number;
   day_name: string;
-  total_scheduled_hours: number;
+  total_scheduled_hours?: number;
+  scheduled_hours?: number;
   meeting_count: number;
 }
 
 export interface RoomAnalyticsData {
-  term_id: number;
-  term_name: string;
-  total_rooms: number;
-  used_rooms: number;
-  overall_scheduled_utilization_rate: number;
-  operating_hours_baseline_per_room: number;
-  most_used_rooms: RoomUtilizationItem[];
-  least_used_rooms: RoomUtilizationItem[];
-  all_rooms: RoomUtilizationItem[];
-  daily_utilization: DailyRoomUtilization[];
-  utilization_label_notice: string;
+  term_id?: number;
+  term_name?: string;
+  total_rooms?: number;
+  active_rooms?: number;
+  used_rooms?: number;
+  overall_scheduled_utilization_rate?: number;
+  average_utilization_pct?: number;
+  total_weekly_capacity_hours?: number;
+  total_weekly_scheduled_hours?: number;
+  operating_hours_baseline_per_room?: number;
+  most_used_rooms?: RoomUtilizationItem[];
+  least_used_rooms?: RoomUtilizationItem[];
+  all_rooms?: RoomUtilizationItem[];
+  rooms?: RoomUtilizationItem[];
+  daily_utilization?: DailyRoomUtilization[];
+  daily_distribution?: DailyRoomUtilization[];
+  utilization_label_notice?: string;
 }
 
 export interface FacultyScheduleItem {
   faculty_id: number;
   user_id: number;
   name: string;
+  email?: string;
   department_id?: number | null;
   department_name?: string | null;
   title?: string | null;
-  scheduled_teaching_hours: number;
-  sections_count: number;
-  meetings_count: number;
-  schedule_conflicts_count: number;
+  scheduled_teaching_hours?: number;
+  weekly_teaching_hours?: number;
+  sections_count?: number;
+  meetings_count?: number;
+  schedule_conflicts_count?: number;
+  has_schedule_conflicts?: boolean;
 }
 
 export interface FacultyAnalyticsData {
-  term_id: number;
-  term_name: string;
-  total_faculty_count: number;
-  active_teaching_faculty_count: number;
-  total_scheduled_teaching_hours: number;
-  average_teaching_hours_per_faculty: number;
-  faculty_schedules: FacultyScheduleItem[];
+  term_id?: number;
+  term_name?: string;
+  total_faculty?: number;
+  total_faculty_count?: number;
+  teaching_faculty_count?: number;
+  active_teaching_faculty_count?: number;
+  total_scheduled_teaching_hours?: number;
+  average_teaching_hours?: number;
+  average_teaching_hours_per_faculty?: number;
+  faculty_schedules?: FacultyScheduleItem[];
+  faculty_list?: FacultyScheduleItem[];
 }
 
 export interface TimetableConflictSummary {
-  room_collisions: number;
-  faculty_collisions: number;
-  student_class_collisions: number;
-  student_work_collisions: number;
+  room_collisions?: number;
+  room_double_bookings?: number;
+  faculty_collisions?: number;
+  faculty_double_bookings?: number;
+  student_class_collisions?: number;
+  student_class_conflicts?: number;
+  student_work_collisions?: number;
+  student_work_shift_clashes?: number;
   total_conflicts: number;
 }
 
@@ -2205,50 +2277,67 @@ export interface TimetableChangeHistoryItem {
   version_id: number;
   version_number: number;
   version_name?: string | null;
+  change_summary?: string | null;
   published_at?: string | null;
-  changes_count: number;
-  affected_students: number;
-  notifications_generated: number;
+  published_by_name?: string | null;
+  changes_count?: number;
+  affected_students?: number;
+  students_notified_count?: number;
+  urgent_conflicts_count?: number;
+  notifications_generated?: number;
   summary_status?: string | null;
 }
 
 export interface TimetableHealthAnalyticsData {
-  term_id: number;
-  term_name: string;
+  term_id?: number;
+  term_name?: string;
   timetable_id?: number | null;
   timetable_name?: string | null;
-  timetable_status: string;
-  is_published: boolean;
+  timetable_status?: string;
+  is_published?: boolean;
+  published_version_number?: number | null;
+  draft_versions_count?: number;
+  scheduled_sections_count?: number;
+  unscheduled_sections_count?: number;
+  total_meetings_count?: number;
   conflicts: TimetableConflictSummary;
-  recent_versions: TimetableChangeHistoryItem[];
-  total_recent_changes: number;
-  total_affected_students: number;
-  total_notifications_sent: number;
+  recent_versions?: TimetableChangeHistoryItem[];
+  recent_history?: TimetableChangeHistoryItem[];
+  total_recent_changes?: number;
+  total_affected_students?: number;
+  total_notifications_sent?: number;
 }
 
 export interface DepartmentComparisonItem {
   department_id: number;
-  department_name: string;
-  department_code: string;
+  name?: string;
+  department_name?: string;
+  code?: string;
+  department_code?: string;
   courses_count: number;
   sections_count: number;
   total_capacity: number;
   total_enrolled: number;
-  average_utilization_rate: number;
-  scheduled_hours: number;
+  average_utilization_rate?: number;
+  capacity_utilization_pct?: number;
+  scheduled_hours?: number;
+  weekly_scheduled_hours?: number;
 }
 
 export interface UniversityDashboardAnalyticsResponse {
   institution_id: number;
-  term_id: number;
-  term_name: string;
-  calculated_at: string;
-  data_freshness_label: string;
+  institution_name?: string;
+  term_id?: number;
+  term_name?: string;
+  calculated_at?: string;
+  generated_at?: string;
+  data_freshness_label?: string;
+  active_term?: AnalyticsTermOption | null;
   available_terms: AnalyticsTermOption[];
   overview: AnalyticsOverviewKPIs;
   enrollment: EnrollmentAnalyticsData;
   rooms: RoomAnalyticsData;
-  faculty: FacultyAnalyticsData;
+  faculty?: FacultyAnalyticsData;
   timetable: TimetableHealthAnalyticsData;
   departments: DepartmentComparisonItem[];
 }

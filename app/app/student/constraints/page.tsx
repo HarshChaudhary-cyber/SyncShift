@@ -10,6 +10,7 @@ import {
   StudentPreferenceUpdatePayload,
 } from '@/lib/api';
 import { showSuccessToast, showErrorToast } from '@/lib/toast';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 const PRESET_CONSTRAINTS = [
   {
@@ -412,37 +413,39 @@ export default function StudentConstraintsPage() {
                   <label className="block text-slate-300 font-semibold mb-1">
                     Ideal Break Length
                   </label>
-                  <select
+                  <CustomSelect
+                    options={[
+                      { value: 'short', label: 'Short (15–20 minutes)' },
+                      { value: 'medium', label: 'Medium (30–45 minutes)' },
+                      { value: 'long', label: 'Long (60+ minutes)' },
+                    ]}
                     value={prefForm.break_preference}
-                    onChange={(e) => setPrefForm({ ...prefForm, break_preference: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition"
-                  >
-                    <option value="short">Short (15–20 minutes)</option>
-                    <option value="medium">Medium (30–45 minutes)</option>
-                    <option value="long">Long (60+ minutes)</option>
-                  </select>
+                    onChange={(val) => setPrefForm({ ...prefForm, break_preference: String(val) })}
+                    portalTheme="student"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-slate-300 font-semibold mb-1">
                     Max Days on Campus / Week
                   </label>
-                  <select
-                    value={prefForm.max_days_per_week || ''}
-                    onChange={(e) =>
+                  <CustomSelect
+                    options={[
+                      { value: '', label: 'No Maximum (Default)' },
+                      { value: '2', label: '2 Days' },
+                      { value: '3', label: '3 Days' },
+                      { value: '4', label: '4 Days' },
+                      { value: '5', label: '5 Days' },
+                    ]}
+                    value={prefForm.max_days_per_week ? String(prefForm.max_days_per_week) : ''}
+                    onChange={(val) =>
                       setPrefForm({
                         ...prefForm,
-                        max_days_per_week: e.target.value ? Number(e.target.value) : null,
+                        max_days_per_week: val ? Number(val) : null,
                       })
                     }
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition"
-                  >
-                    <option value="">No Maximum (Default)</option>
-                    <option value="2">2 Days</option>
-                    <option value="3">3 Days</option>
-                    <option value="4">4 Days</option>
-                    <option value="5">5 Days</option>
-                  </select>
+                    portalTheme="student"
+                  />
                 </div>
               </div>
 
@@ -541,10 +544,18 @@ export default function StudentConstraintsPage() {
                 <label className="block text-slate-300 font-semibold mb-1">
                   Constraint Type
                 </label>
-                <select
+                <CustomSelect
+                  options={[
+                    ...PRESET_CONSTRAINTS.map((p) => ({
+                      value: p.type,
+                      label: p.label,
+                      sublabel: p.desc,
+                    })),
+                    { value: 'custom', label: 'Custom Rule', sublabel: 'Define a customized constraint rule' },
+                  ]}
                   value={selectedType}
-                  onChange={(e) => {
-                    const newType = e.target.value;
+                  onChange={(val) => {
+                    const newType = String(val);
                     setSelectedType(newType);
                     const preset = PRESET_CONSTRAINTS.find((p) => p.type === newType);
                     if (preset) {
@@ -552,15 +563,8 @@ export default function StudentConstraintsPage() {
                       setConstraintName(preset.label);
                     }
                   }}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 transition"
-                >
-                  {PRESET_CONSTRAINTS.map((p) => (
-                    <option key={p.type} value={p.type}>
-                      {p.label}
-                    </option>
-                  ))}
-                  <option value="custom">Custom Rule</option>
-                </select>
+                  portalTheme="student"
+                />
                 <p className="text-[11px] text-slate-400 mt-1">
                   {PRESET_CONSTRAINTS.find((p) => p.type === selectedType)?.desc}
                 </p>

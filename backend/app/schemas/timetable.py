@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class TimetableBase(BaseModel):
     name: str = Field(..., max_length=255, description="Name of the timetable, e.g. Fall 2026 Baseline Schedule")
     description: Optional[str] = Field(None, max_length=500)
-    status: Optional[str] = Field("draft", pattern="^(draft|active|archived)$")
+    status: Optional[str] = Field("draft", pattern="^(draft|active|archived|published)$")
 
 
 class TimetableCreate(TimetableBase):
@@ -16,7 +16,7 @@ class TimetableCreate(TimetableBase):
 class TimetableUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=255)
     description: Optional[str] = Field(None, max_length=500)
-    status: Optional[str] = Field(None, pattern="^(draft|active|archived)$")
+    status: Optional[str] = Field(None, pattern="^(draft|active|archived|published)$")
 
 
 class TimetableOut(TimetableBase):

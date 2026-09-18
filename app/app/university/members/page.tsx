@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useUniversity } from '../layout';
 import { api, InstitutionMembership } from '@/lib/api';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 export default function UniversityMembersPage() {
   const { institution, isAdmin } = useUniversity();
@@ -227,15 +228,16 @@ export default function UniversityMembersPage() {
                 <label className="block text-xs font-semibold uppercase text-[var(--text-secondary)] mb-1">
                   Assigned Role <span className="text-red-400">*</span>
                 </label>
-                <select
+                <CustomSelect
+                  options={[
+                    { value: 'student', label: 'Student (Standard academic access)' },
+                    { value: 'professor', label: 'Professor (Faculty & course coordination)' },
+                    { value: 'admin', label: 'Administrator (Full university management)' },
+                  ]}
                   value={role}
-                  onChange={(e) => setRole(e.target.value as 'student' | 'professor' | 'admin')}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="student">Student (Standard academic access)</option>
-                  <option value="professor">Professor (Faculty & course coordination)</option>
-                  <option value="admin">Administrator (Full university management)</option>
-                </select>
+                  onChange={(val) => setRole(val as 'student' | 'professor' | 'admin')}
+                  portalTheme="university"
+                />
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">

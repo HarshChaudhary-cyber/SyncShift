@@ -7,7 +7,7 @@ export default function StudentRootPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/student/academics');
+    router.replace('/student/dashboard');
   }, [router]);
 
   return null;

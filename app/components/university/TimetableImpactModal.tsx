@@ -5,6 +5,7 @@ import {
   TimetableImpactResponse,
   StudentImpactDetail,
 } from '@/lib/api';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface TimetableImpactModalProps {
   isOpen: boolean;
@@ -290,19 +291,21 @@ export default function TimetableImpactModal({
                 </div>
 
                 {activeTab === 'students' && (
-                  <div className="flex items-center gap-1.5 pb-2">
-                    <select
+                  <div className="flex items-center gap-1.5 pb-2 w-64">
+                    <CustomSelect
+                      options={[
+                        { value: 'all', label: `All Students (${students.length})` },
+                        { value: 'conflicts_only', label: `New Conflicts Only (${summary?.new_conflicts ?? 0})` },
+                        { value: 'work', label: `Work Conflicts (${summary?.work_conflicts ?? 0})` },
+                        { value: 'class', label: `Class Clashes (${summary?.class_conflicts ?? 0})` },
+                        { value: 'availability', label: `Blackouts (${summary?.availability_conflicts ?? 0})` },
+                        { value: 'resolved', label: `Resolved (${summary?.resolved_conflicts ?? 0})` },
+                      ]}
                       value={conflictFilter}
-                      onChange={(e) => setConflictFilter(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-indigo-500"
-                    >
-                      <option value="all">All Students ({students.length})</option>
-                      <option value="conflicts_only">New Conflicts Only ({summary?.new_conflicts ?? 0})</option>
-                      <option value="work">Work Conflicts ({summary?.work_conflicts ?? 0})</option>
-                      <option value="class">Class Clashes ({summary?.class_conflicts ?? 0})</option>
-                      <option value="availability">Blackouts ({summary?.availability_conflicts ?? 0})</option>
-                      <option value="resolved">Resolved ({summary?.resolved_conflicts ?? 0})</option>
-                    </select>
+                      onChange={(val) => setConflictFilter(String(val))}
+                      size="sm"
+                      portalTheme="university"
+                    />
                   </div>
                 )}
               </div>

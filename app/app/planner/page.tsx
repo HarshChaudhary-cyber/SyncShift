@@ -13,7 +13,7 @@ import WeeklyPlanHero from '@/components/planner/WeeklyPlanHero';
 import PlanOptionsModal from '@/components/planner/PlanOptionsModal';
 import { showSuccessToast, showErrorToast } from '@/lib/toast';
 
-function PlannerContent() {
+export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) {
   const router = useRouter();
   const { status } = useAuthContext();
   const { refreshWeek } = useCalendar();
@@ -236,19 +236,16 @@ function PlannerContent() {
   const activeTasks = tasks.filter((t) => t.status !== 'done');
   const completedTasks = tasks.filter((t) => t.status === 'done');
 
-  return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col selection:bg-purple-500/30 selection:text-purple-200">
-      <Navbar />
-
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
-        {/* N5 Weekly Smart Planning Hero */}
-        <WeeklyPlanHero
-          onPlanClick={handleTriggerSmartPlanning}
-          isLoading={isSmartPlanningLoading}
-          contextSummary={smartPreview?.context_summary}
-          onRevertClick={handleRevertSmartPlan}
-          hasAppliedPlan={hasAppliedSmartPlan}
-        />
+  const content = (
+    <div className="max-w-5xl w-full mx-auto space-y-6">
+      {/* N5 Weekly Smart Planning Hero */}
+      <WeeklyPlanHero
+        onPlanClick={handleTriggerSmartPlanning}
+        isLoading={isSmartPlanningLoading}
+        contextSummary={smartPreview?.context_summary}
+        onRevertClick={handleRevertSmartPlan}
+        hasAppliedPlan={hasAppliedSmartPlan}
+      />
 
         {/* Study Tasks Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 sm:p-6 shadow-xl backdrop-blur-md">
@@ -549,7 +546,6 @@ function PlannerContent() {
             )}
           </div>
         )}
-      </main>
 
       {/* Add Task Modal */}
       <AddTaskModal
@@ -590,14 +586,32 @@ function PlannerContent() {
       />
     </div>
   );
+
+  if (!showNavbar) {
+    return content;
+  }
+
+  return (
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col selection:bg-purple-500/30 selection:text-purple-200">
+      <Navbar />
+      <main className="flex-1 w-full px-4 sm:px-6 py-6 sm:py-8">
+        {content}
+      </main>
+    </div>
+  );
 }
 
 export default function PlannerPage() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/student/planner');
+  }, [router]);
+
   return (
     <ProtectedRoute>
-      <CalendarProvider>
-        <PlannerContent />
-      </CalendarProvider>
+      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
     </ProtectedRoute>
   );
 }

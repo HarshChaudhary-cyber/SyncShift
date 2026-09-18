@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useUniversity } from '../layout';
 import AcademicResourcesNav from '@/components/university/AcademicResourcesNav';
+import CustomSelect from '@/components/ui/CustomSelect';
 import {
   api,
   AcademicCourse,
@@ -239,46 +240,52 @@ export default function SectionsPage() {
       {/* Filters Bar */}
       <div className="flex flex-wrap items-center gap-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] p-3.5 rounded-xl">
         <div className="w-56">
-          <select
+          <CustomSelect
+            options={[
+              { value: 'all', label: 'All Courses' },
+              ...courses.map((c) => ({
+                value: String(c.id),
+                label: `${c.code} — ${c.name}`,
+              })),
+            ]}
             value={courseFilter}
-            onChange={(e) => setCourseFilter(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Courses</option>
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.code} — {c.name}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setCourseFilter(String(val))}
+            size="sm"
+            searchable
+            portalTheme="university"
+          />
         </div>
 
-        <div className="w-52">
-          <select
+        <div className="w-56">
+          <CustomSelect
+            options={[
+              { value: 'all', label: 'All Academic Terms' },
+              ...terms.map((t) => ({
+                value: String(t.id),
+                label: `${t.name} (${t.academic_year})`,
+              })),
+            ]}
             value={termFilter}
-            onChange={(e) => setTermFilter(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Academic Terms</option>
-            {terms.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name} ({t.academic_year})
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setTermFilter(String(val))}
+            size="sm"
+            searchable
+            portalTheme="university"
+          />
         </div>
 
-        <div className="w-36">
-          <select
+        <div className="w-40">
+          <CustomSelect
+            options={[
+              { value: 'all', label: 'All Status' },
+              { value: 'active', label: 'Active' },
+              { value: 'cancelled', label: 'Cancelled' },
+              { value: 'completed', label: 'Completed' },
+            ]}
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="completed">Completed</option>
-          </select>
+            onChange={(val) => setStatusFilter(String(val))}
+            size="sm"
+            portalTheme="university"
+          />
         </div>
       </div>
 
@@ -441,36 +448,36 @@ export default function SectionsPage() {
                   <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                     Course *
                   </label>
-                  <select
+                  <CustomSelect
                     disabled={Boolean(editingSection)}
-                    value={form.course_id}
-                    onChange={(e) => setForm({ ...form, course_id: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                  >
-                    {courses.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.code} — {c.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={courses.map((c) => ({
+                      value: String(c.id),
+                      label: `${c.code} — ${c.name}`,
+                    }))}
+                    value={form.course_id ? String(form.course_id) : ''}
+                    onChange={(val) => setForm({ ...form, course_id: Number(val) })}
+                    searchable
+                    placeholder="Select course..."
+                    portalTheme="university"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                     Academic Term *
                   </label>
-                  <select
+                  <CustomSelect
                     disabled={Boolean(editingSection)}
-                    value={form.academic_term_id}
-                    onChange={(e) => setForm({ ...form, academic_term_id: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                  >
-                    {terms.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name} ({t.academic_year})
-                      </option>
-                    ))}
-                  </select>
+                    options={terms.map((t) => ({
+                      value: String(t.id),
+                      label: `${t.name} (${t.academic_year})`,
+                    }))}
+                    value={form.academic_term_id ? String(form.academic_term_id) : ''}
+                    onChange={(val) => setForm({ ...form, academic_term_id: Number(val) })}
+                    searchable
+                    placeholder="Select academic term..."
+                    portalTheme="university"
+                  />
                 </div>
               </div>
 
@@ -508,15 +515,16 @@ export default function SectionsPage() {
                   <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                     Status
                   </label>
-                  <select
+                  <CustomSelect
+                    options={[
+                      { value: 'active', label: 'Active' },
+                      { value: 'cancelled', label: 'Cancelled' },
+                      { value: 'completed', label: 'Completed' },
+                    ]}
                     value={form.status || 'active'}
-                    onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="active">Active</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="completed">Completed</option>
-                  </select>
+                    onChange={(val) => setForm({ ...form, status: String(val) })}
+                    portalTheme="university"
+                  />
                 </div>
               </div>
 
@@ -627,32 +635,35 @@ export default function SectionsPage() {
                     <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                       Faculty Member *
                     </label>
-                    <select
-                      value={assigningFacultyId}
-                      onChange={(e) => setAssigningFacultyId(Number(e.target.value))}
-                      className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:ring-2 focus:ring-indigo-500"
-                    >
-                      {facultyList.map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.user_name} ({f.title || 'Faculty'})
-                        </option>
-                      ))}
-                    </select>
+                    <CustomSelect
+                      options={facultyList.map((f) => ({
+                        value: String(f.id),
+                        label: `${f.user_name} (${f.title || 'Faculty'})`,
+                      }))}
+                      value={assigningFacultyId ? String(assigningFacultyId) : ''}
+                      onChange={(val) => setAssigningFacultyId(Number(val))}
+                      size="sm"
+                      searchable
+                      placeholder="Select faculty member..."
+                      portalTheme="university"
+                    />
                   </div>
 
                   <div>
                     <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                       Role
                     </label>
-                    <select
+                    <CustomSelect
+                      options={[
+                        { value: 'instructor', label: 'Instructor' },
+                        { value: 'co_instructor', label: 'Co-Instructor' },
+                        { value: 'teaching_assistant', label: 'Teaching Assistant' },
+                      ]}
                       value={assigningRole}
-                      onChange={(e) => setAssigningRole(e.target.value)}
-                      className="w-full px-3 py-1.5 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="instructor">Instructor</option>
-                      <option value="co_instructor">Co-Instructor</option>
-                      <option value="teaching_assistant">Teaching Assistant</option>
-                    </select>
+                      onChange={(val) => setAssigningRole(String(val))}
+                      size="sm"
+                      portalTheme="university"
+                    />
                   </div>
                 </div>
 

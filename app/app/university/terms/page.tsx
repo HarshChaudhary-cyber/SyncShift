@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useUniversity } from '../layout';
 import AcademicResourcesNav from '@/components/university/AcademicResourcesNav';
+import CustomSelect from '@/components/ui/CustomSelect';
 import { api, AcademicTerm, AcademicTermCreatePayload } from '@/lib/api';
 
 export default function AcademicTermsPage() {
@@ -330,16 +331,17 @@ export default function AcademicTermsPage() {
                   <label className="block text-xs font-semibold uppercase text-[var(--text-secondary)] mb-1">
                     Term Structure
                   </label>
-                  <select
+                  <CustomSelect
+                    options={[
+                      { value: 'semester', label: 'Semester' },
+                      { value: 'trimester', label: 'Trimester' },
+                      { value: 'quarter', label: 'Quarter' },
+                      { value: 'custom', label: 'Custom' },
+                    ]}
                     value={form.term_type}
-                    onChange={(e) => setForm({ ...form, term_type: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="semester">Semester</option>
-                    <option value="trimester">Trimester</option>
-                    <option value="quarter">Quarter</option>
-                    <option value="custom">Custom</option>
-                  </select>
+                    onChange={(val) => setForm({ ...form, term_type: String(val) })}
+                    portalTheme="university"
+                  />
                 </div>
               </div>
 
@@ -375,17 +377,18 @@ export default function AcademicTermsPage() {
                 <label className="block text-xs font-semibold uppercase text-[var(--text-secondary)] mb-1">
                   Status
                 </label>
-                <select
+                <CustomSelect
+                  options={[
+                    { value: 'upcoming', label: 'Upcoming' },
+                    { value: 'active', label: 'Active (Current)' },
+                    { value: 'draft', label: 'Draft' },
+                    { value: 'completed', label: 'Completed' },
+                    { value: 'archived', label: 'Archived' },
+                  ]}
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="upcoming">Upcoming</option>
-                  <option value="active">Active (Current)</option>
-                  <option value="draft">Draft</option>
-                  <option value="completed">Completed</option>
-                  <option value="archived">Archived</option>
-                </select>
+                  onChange={(val) => setForm({ ...form, status: String(val) })}
+                  portalTheme="university"
+                />
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">

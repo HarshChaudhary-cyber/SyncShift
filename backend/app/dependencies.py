@@ -191,6 +191,9 @@ class InstitutionContext:
     def is_admin(self) -> bool:
         return self.membership.role in ("admin", "super_admin")
 
+    def is_faculty_or_admin(self) -> bool:
+        return self.membership.role in ("faculty", "professor", "admin", "super_admin")
+
 
 def get_institution_context(
     institution_id: int,
@@ -252,6 +255,23 @@ def require_institution_admin(
             detail={
                 "code": "forbidden",
                 "message": f"Action requires administrator privileges. Your current role is '{context.role}'",
+            },
+        )
+    return context
+
+
+def require_institution_faculty_or_admin(
+    context: InstitutionContext = Depends(get_institution_context),
+) -> InstitutionContext:
+    """
+    Ensure the current user has 'faculty', 'professor', 'admin', or 'super_admin' role in this institution.
+    """
+    if not context.is_faculty_or_admin():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "forbidden",
+                "message": f"Action requires faculty or administrator privileges. Your current role is '{context.role}'",
             },
         )
     return context
