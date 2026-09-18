@@ -1,0 +1,35 @@
+services:
+  frontend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: syncshift-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: syncshift-backend
+    ports:
+      - "8000:8000"
+    environment:
+      ENV: development
+      DATABASE_URL: sqlite:////data/syncshift.db
+      JWT_SECRET: ${JWT_SECRET:-syncshift-dev-secret-key-32-chars-minimum!!}
+      SECRET_KEY: ${SECRET_KEY:-syncshift-dev-secret-key-32-chars-minimum!!}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
+    volumes:
+      - sqlite_data:/data
+    restart: unless-stopped
+
+volumes:
+  sqlite_data:

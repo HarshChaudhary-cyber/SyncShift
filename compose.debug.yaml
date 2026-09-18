@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 -m uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    ports:
+      - "8000:8000"
+      - "5678:5678"
+    environment:
+      ENV: development
+      DATABASE_URL: sqlite:////data/syncshift.db
+      JWT_SECRET: ${JWT_SECRET:-syncshift-dev-secret-key-32-chars-minimum!!}
+      SECRET_KEY: ${SECRET_KEY:-syncshift-dev-secret-key-32-chars-minimum!!}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
+    volumes:
+      - sqlite_data:/data
+
+volumes:
+  sqlite_data:
