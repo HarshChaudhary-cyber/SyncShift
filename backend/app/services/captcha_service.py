@@ -22,7 +22,7 @@ async def verify_captcha_token(token: Optional[str], client_ip: Optional[str] = 
     """
     # 1. Allow mock tokens for automated tests and development
     if token:
-        if token.startswith("mock_captcha_pass") or token.startswith("test_captcha_pass") or token == "1x00000000000000000000AA":
+        if token.startswith("mock_captcha_pass") or token.startswith("test_captcha_pass") or token == "1x00000000000000000000AA" or token.startswith("XXXX."):
             return True
         if token.startswith("mock_captcha_fail") or token.startswith("test_captcha_fail") or token == "2x00000000000000000000AB":
             raise HTTPException(

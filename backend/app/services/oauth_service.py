@@ -77,17 +77,28 @@ async def verify_google_id_token(id_token: str) -> dict:
         claims = jwt.decode(id_token, jwks)
         claims.validate()
     except Exception:
-        # Fallback to Google's tokeninfo endpoint for additional compatibility
+        # Fallback to Google's tokeninfo / userinfo endpoints for additional compatibility
         try:
             async with httpx.AsyncClient(timeout=8.0) as client:
+                # 1. Try tokeninfo with id_token
                 r = await client.get(f"{GOOGLE_TOKENINFO_URL}?id_token={id_token}")
                 if r.status_code == 200:
                     claims = r.json()
                 else:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail={"code": "invalid_token", "message": "Invalid or expired Google id_token"},
-                    )
+                    # 2. Try tokeninfo with access_token
+                    r2 = await client.get(f"{GOOGLE_TOKENINFO_URL}?access_token={id_token}")
+                    if r2.status_code == 200:
+                        claims = r2.json()
+                    else:
+                        # 3. Try userinfo endpoint with Bearer auth
+                        r3 = await client.get("https://www.googleapis.com/oauth2/v3/userinfo", headers={"Authorization": f"Bearer {id_token}"})
+                        if r3.status_code == 200:
+                            claims = r3.json()
+                        else:
+                            raise HTTPException(
+                                status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail={"code": "invalid_token", "message": "Invalid or expired Google token"},
+                            )
         except httpx.RequestError as exc:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

@@ -41,6 +41,16 @@ def init_db() -> None:
                     conn.execute(text("ALTER TABLE users ADD COLUMN minimum_transition_minutes INTEGER DEFAULT 15"))
                 if "deleted_at" not in cols:
                     conn.execute(text("ALTER TABLE users ADD COLUMN deleted_at DATETIME"))
+                if "microsoft_id" not in cols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN microsoft_id VARCHAR(255)"))
+                if "google_id" not in cols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN google_id VARCHAR(255)"))
+                if "oauth_provider" not in cols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN oauth_provider VARCHAR(50)"))
+                if "avatar_url" not in cols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500)"))
+                if "display_name" not in cols:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN display_name VARCHAR(255)"))
     except Exception as e:
         print("Warning during init_db column check:", e)
 

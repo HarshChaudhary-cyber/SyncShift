@@ -64,6 +64,25 @@ app.add_middleware(
 )
 
 
+def _cors_headers(request: Request) -> dict[str, str]:
+    origin = request.headers.get("origin")
+    headers = {
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Methods": "*",
+    }
+    if origin:
+        if (
+            "*" in settings.BACKEND_CORS_ORIGINS
+            or origin in settings.BACKEND_CORS_ORIGINS
+            or "localhost" in origin
+            or "127.0.0.1" in origin
+        ):
+            headers["Access-Control-Allow-Origin"] = origin
+            headers["Vary"] = "Origin"
+    return headers
+
+
 # ---------------------------------------------------------------------------
 # Error Handling: Enforces Rule 1 & Rule 4 format { error: { code, message } }
 # ---------------------------------------------------------------------------
@@ -89,6 +108,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                 "message": "; ".join(error_messages) if error_messages else "Request validation failed",
             }
         },
+        headers=_cors_headers(request),
     )
 
 
@@ -109,6 +129,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": payload},
+        headers=_cors_headers(request),
     )
 
 
@@ -117,6 +138,8 @@ async def global_exception_handler(request: Request, exc: Exception):
     """
     Catch-all 500 error handler.
     """
+    import traceback
+    traceback.print_exc()
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
@@ -125,6 +148,7 @@ async def global_exception_handler(request: Request, exc: Exception):
                 "message": "An unexpected internal server error occurred",
             }
         },
+        headers=_cors_headers(request),
     )
 
 
@@ -133,7 +157,29 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ---------------------------------------------------------------------------
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        headers = _cors_headers(request)
+        headers.update({
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+        })
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": {
+                    "code": "internal_error",
+                    "message": "An unexpected internal server error occurred",
+                }
+            },
+            headers=headers,
+        )
+
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
