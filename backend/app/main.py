@@ -28,6 +28,7 @@ from app.routers import (
     student_planning_router,
     university_analytics_router,
 )
+from app.services.rate_limiter import close_redis_connection, is_redis_available
 from app.services.reminders import start_reminder_scheduler, stop_reminder_scheduler
 
 app = FastAPI(
@@ -44,11 +45,14 @@ def on_startup():
     print("Connected to DB:", settings.DATABASE_URL[:20])
     init_db()
     start_reminder_scheduler()
+    redis_status = "Available" if is_redis_available() else "Unavailable (fallback mode active)"
+    print(f"Distributed Rate Limiter Redis: {redis_status}")
 
 
 @app.on_event("shutdown")
 def on_shutdown():
     stop_reminder_scheduler()
+    close_redis_connection()
 
 
 
@@ -126,10 +130,14 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             "message": str(exc.detail),
         }
 
+    headers = _cors_headers(request)
+    if exc.headers:
+        headers.update(exc.headers)
+
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": payload},
-        headers=_cors_headers(request),
+        headers=headers,
     )
 
 

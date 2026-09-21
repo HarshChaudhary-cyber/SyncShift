@@ -367,6 +367,17 @@ def update_current_user_profile(
         request=request,
     )
 
+    # Look up institution membership for role-based portal routing
+    membership = (
+        db.query(InstitutionMembership)
+        .filter(
+            InstitutionMembership.user_id == user.id,
+            InstitutionMembership.deleted_at.is_(None),
+            InstitutionMembership.status == "active",
+        )
+        .first()
+    )
+
     return DataResponse(
         data=UserProfileData(
             user_id=user.id,
@@ -382,6 +393,8 @@ def update_current_user_profile(
             oauth_provider=user.oauth_provider,
             has_password=bool(user.password_hash),
             created_at=user.created_at,
+            institution_id=membership.institution_id if membership else None,
+            institution_role=membership.role if membership else None,
         )
     )
 
@@ -603,7 +616,12 @@ def export_user_data(
 
 
 @router.post("/oauth/google", response_model=DataResponse[AuthResponseData])
-async def oauth_google(body: OAuthGoogleRequest, request: Request, db: Session = Depends(get_db)):
+async def oauth_google(
+    body: OAuthGoogleRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    _rl: None = Depends(rate_limit(10, 60, "oauth")),
+):
     """
     Authenticate or register user using Google ID token.
     Extracts sub (google_id), email, name, and picture.
@@ -690,7 +708,12 @@ async def oauth_google(body: OAuthGoogleRequest, request: Request, db: Session =
 
 
 @router.post("/oauth/microsoft", response_model=DataResponse[AuthResponseData])
-async def oauth_microsoft(body: OAuthMicrosoftRequest, request: Request, db: Session = Depends(get_db)):
+async def oauth_microsoft(
+    body: OAuthMicrosoftRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    _rl: None = Depends(rate_limit(10, 60, "oauth")),
+):
     """
     Authenticate or register user using Microsoft OpenID Connect ID token.
     Extracts oid/sub (microsoft_id), email, and display name.

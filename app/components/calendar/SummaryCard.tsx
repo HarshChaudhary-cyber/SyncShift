@@ -69,7 +69,7 @@ export default function SummaryCard() {
 
         {/* Warning Badge if over limit */}
         {isOver && (
-          <div className="sm:max-w-xs flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-500/10 border border-rose-500/40 text-rose-300 text-xs font-medium animate-pulse">
+          <div className="sm:max-w-xs flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/40 text-rose-700 dark:text-rose-300 text-xs font-medium animate-pulse">
             <span className="text-base">⚠️</span>
             <span>
               <strong>Over Limit:</strong> {totals.shift_hours.toFixed(1)} hours/week (visa limit: {limit}h)

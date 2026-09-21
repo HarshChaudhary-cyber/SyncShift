@@ -291,16 +291,16 @@ export default function TodayWidget({
     return (
       <section
         aria-label="Today's Timetable"
-        className={`w-full bg-rose-950/30 border border-rose-900/60 rounded-xl p-4 sm:p-5 text-neutral-200 ${className}`}
+        className={`w-full bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 rounded-xl p-4 sm:p-5 text-rose-800 dark:text-neutral-200 ${className}`}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <span className="text-xl">⚠️</span>
             <div>
-              <h2 className="text-sm font-semibold text-rose-200">
+              <h2 className="text-sm font-semibold text-rose-900 dark:text-rose-200">
                 Couldn&apos;t load today&apos;s schedule
               </h2>
-              <p className="text-xs text-rose-300/80 mt-0.5">
+              <p className="text-xs text-rose-700 dark:text-rose-300/80 mt-0.5">
                 {error || 'Unable to connect to timetable service.'}
               </p>
             </div>
@@ -310,7 +310,7 @@ export default function TodayWidget({
               setLoading(true);
               fetchToday();
             }}
-            className="self-start sm:self-auto px-3.5 py-1.5 bg-rose-900/60 hover:bg-rose-800 text-rose-100 text-xs font-medium rounded-lg border border-rose-700/60 transition cursor-pointer"
+            className="self-start sm:self-auto px-3.5 py-1.5 bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/60 dark:hover:bg-rose-800 text-rose-800 dark:text-rose-100 text-xs font-medium rounded-lg border border-rose-300 dark:border-rose-700/60 transition cursor-pointer"
           >
             Retry
           </button>

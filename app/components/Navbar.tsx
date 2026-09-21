@@ -162,7 +162,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
             <button
               type="button"
               onClick={() => openSyncShiftAssistant()}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-600/30 border border-indigo-500/30 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-950 dark:hover:text-white bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 border border-indigo-200 dark:border-indigo-500/30 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
               title="Open SyncShift Assistant"
             >
               <span>✨</span>
@@ -178,7 +178,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                   pathname.startsWith('/analytics') ||
                   pathname.startsWith('/university') ||
                   pathname.startsWith('/settings')
-                    ? 'bg-[var(--bg-secondary)] text-indigo-400 font-bold border border-indigo-500/30'
+                    ? 'bg-[var(--bg-secondary)] text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-500/30'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
                 }`}
               >
@@ -254,7 +254,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-[var(--text-primary)]">Notifications</span>
                       {unreadCount > 0 && (
-                        <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 text-[10px] font-bold">
+                        <span className="px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold">
                           {unreadCount} unread
                         </span>
                       )}
@@ -268,7 +268,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                             setUnreadCount(0);
                           } catch {}
                         }}
-                        className="text-[11px] font-medium text-[var(--text-secondary)] hover:text-indigo-400 transition cursor-pointer"
+                        className="text-[11px] font-medium text-[var(--text-secondary)] hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer"
                       >
                         Mark all read ✓
                       </button>
@@ -337,7 +337,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                     <Link
                       href="/notifications"
                       onClick={() => setNotificationsOpen(false)}
-                      className="text-indigo-400 hover:text-indigo-300 font-semibold transition"
+                      className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-semibold transition"
                     >
                       Open Notification Center →
                     </Link>
@@ -494,7 +494,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                 setMobileMenuOpen(false);
                 openSyncShiftAssistant();
               }}
-              className="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 transition flex items-center gap-2 cursor-pointer"
+              className="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition flex items-center gap-2 cursor-pointer"
             >
               <span>✨</span>
               <span>Ask SyncShift</span>

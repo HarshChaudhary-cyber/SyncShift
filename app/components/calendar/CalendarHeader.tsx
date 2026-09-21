@@ -48,7 +48,7 @@ export default function CalendarHeader({
             {formattedDateRange}
           </span>
         </div>
-        <p className="text-xs text-indigo-400 font-medium">
+        <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
           See your classes, work, and personal time together.
         </p>
       </div>

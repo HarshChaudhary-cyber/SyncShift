@@ -131,23 +131,23 @@ export default function PortalSidebar({
   const accentClasses = {
     indigo: {
       activeBg: 'bg-indigo-500/15',
-      activeText: 'text-indigo-400',
+      activeText: 'text-indigo-600 dark:text-indigo-400',
       activeBorder: 'border-indigo-500',
       hoverBg: 'hover:bg-indigo-500/8',
       brandGradient: 'from-indigo-500 to-blue-600',
       brandBg: 'bg-indigo-500/10',
       brandBorder: 'border-indigo-500/30',
-      brandText: 'text-indigo-400',
+      brandText: 'text-indigo-600 dark:text-indigo-400',
     },
     emerald: {
       activeBg: 'bg-emerald-500/15',
-      activeText: 'text-emerald-400',
+      activeText: 'text-emerald-600 dark:text-emerald-400',
       activeBorder: 'border-emerald-500',
       hoverBg: 'hover:bg-emerald-500/8',
       brandGradient: 'from-emerald-500 to-teal-600',
       brandBg: 'bg-emerald-500/10',
       brandBorder: 'border-emerald-500/30',
-      brandText: 'text-emerald-400',
+      brandText: 'text-emerald-600 dark:text-emerald-400',
     },
   }[accentColor];
 
@@ -229,7 +229,7 @@ export default function PortalSidebar({
           {!collapsed && (
             <button
               onClick={() => openSyncShiftAssistant()}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-500/25 text-indigo-300 hover:text-white hover:border-indigo-400 transition cursor-pointer"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-500/25 text-indigo-700 dark:text-indigo-300 hover:text-indigo-950 dark:hover:text-white hover:border-indigo-400 transition cursor-pointer"
             >
               <span>✨</span>
               <span>Ask SyncShift</span>

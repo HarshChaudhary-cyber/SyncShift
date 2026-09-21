@@ -180,7 +180,7 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
                 className={`text-[10px] mt-0.5 ${
                   reviewCount > 0
                     ? 'text-amber-600/80 dark:text-amber-400'
-                    : 'text-zinc-500'
+                    : 'text-slate-500 dark:text-zinc-400'
                 }`}
               >
                 {reviewCount > 0 ? 'Needs manual check' : 'Clean mapping'}
@@ -226,7 +226,7 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
                   <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
                   Detected Conflicts ({conflictCount})
                 </span>
-                <span className="text-[11px] text-zinc-400 font-normal">
+                <span className="text-[11px] text-slate-500 dark:text-zinc-400 font-normal">
                   Class ↔ Shift overlap
                 </span>
               </div>
@@ -278,11 +278,11 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
                   <span className="w-2 h-2 rounded-full bg-amber-500" />
                   {reviewCount} event{reviewCount === 1 ? '' : 's'} need manual review
                 </span>
-                <span className="text-[11px] text-zinc-400 font-normal">
+                <span className="text-[11px] text-slate-500 dark:text-zinc-400 font-normal">
                   Flagged, not dropped
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              <p className="text-[11px] text-slate-600 dark:text-zinc-400">
                 These events could not be placed onto the weekly timetable automatically (e.g. all-day event, missing lecture hours). You can add them manually with &quot;+ Add Class&quot;.
               </p>
               <div className="space-y-1.5 max-h-40 overflow-y-auto">
@@ -309,7 +309,7 @@ export const ImportSummaryModal: React.FC<ImportSummaryModalProps> = ({
             <div className="space-y-2">
               <div className="flex items-center justify-between text-zinc-700 dark:text-zinc-300 font-semibold">
                 <span>Imported Classes ({importedCount})</span>
-                <span className="text-[10px] text-zinc-400 font-normal">
+                <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-normal">
                   Saved to calendar
                 </span>
               </div>

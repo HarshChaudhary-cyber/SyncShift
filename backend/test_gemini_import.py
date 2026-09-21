@@ -87,7 +87,9 @@ def test_gemini_not_configured():
 
 def test_gemini_successful_answer_is_preserved():
     """A successful Gemini answer should return the model text unchanged."""
-    with patch("google.generativeai.configure"), patch("google.generativeai.GenerativeModel") as mock_model:
+    with patch.object(settings, "GEMINI_API_KEY", "test-key"), patch(
+        "google.generativeai.configure"
+    ), patch("google.generativeai.GenerativeModel") as mock_model:
         mock_response = type("Resp", (), {"candidates": [type("Cand", (), {"content": type("Content", (), {"parts": [type("Part", (), {"text": "Gemini API connection successful"})()]})})()]})()
         mock_model.return_value.start_chat.return_value.send_message.return_value = mock_response
 

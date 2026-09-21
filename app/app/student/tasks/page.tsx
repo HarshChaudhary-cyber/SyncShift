@@ -88,17 +88,17 @@ export default function StudentTasksPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm">
           <p className="text-xs font-medium text-[var(--text-muted)]">Pending Tasks</p>
-          <p className="text-2xl font-black text-amber-400 mt-1">{pendingCount}</p>
+          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">{pendingCount}</p>
           <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Awaiting completion</p>
         </div>
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm">
           <p className="text-xs font-medium text-[var(--text-muted)]">Estimated Study Time</p>
-          <p className="text-2xl font-black text-indigo-400 mt-1">{totalEstimatedHours.toFixed(1)} hrs</p>
+          <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">{totalEstimatedHours.toFixed(1)} hrs</p>
           <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Required for pending tasks</p>
         </div>
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm">
           <p className="text-xs font-medium text-[var(--text-muted)]">Completed</p>
-          <p className="text-2xl font-black text-emerald-400 mt-1">{completedCount}</p>
+          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{completedCount}</p>
           <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Finished tasks</p>
         </div>
       </div>
@@ -176,8 +176,8 @@ export default function StudentTasksPage() {
                           <span
                             className={`ml-2 px-1.5 py-0.2 rounded text-[10px] font-semibold uppercase ${
                               task.priority === 'high'
-                                ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                                : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                                ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20'
+                                : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20'
                             }`}
                           >
                             {task.priority}
@@ -188,7 +188,7 @@ export default function StudentTasksPage() {
                   </div>
                   <button
                     onClick={() => handleDelete(task.id, task.title)}
-                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition cursor-pointer"
                     title="Delete task"
                   >
                     🗑️

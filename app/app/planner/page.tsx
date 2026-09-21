@@ -275,7 +275,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
 
         {/* Error state */}
         {error && (
-          <div className="p-4 bg-red-950/40 border border-red-800/80 rounded-2xl text-xs text-red-300 flex items-center justify-between">
+          <div className="p-4 bg-rose-50 dark:bg-red-950/40 border border-rose-200 dark:border-red-800/80 rounded-2xl text-xs text-rose-700 dark:text-red-300 flex items-center justify-between">
             <span>⚠️ {error}</span>
             <button onClick={() => fetchTasks(false)} className="underline font-semibold cursor-pointer">
               Try again
@@ -285,7 +285,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
 
         {/* Plan generation error state */}
         {planError && (
-          <div className="p-4 bg-red-950/40 border border-red-800/80 rounded-2xl text-xs text-red-300 flex items-center justify-between gap-3">
+          <div className="p-4 bg-rose-50 dark:bg-red-950/40 border border-rose-200 dark:border-red-800/80 rounded-2xl text-xs text-rose-700 dark:text-red-300 flex items-center justify-between gap-3">
             <span>⚠️ We couldn't generate study recommendations right now.</span>
             <button
               onClick={() => {

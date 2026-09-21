@@ -383,15 +383,15 @@ export default function UniversityInsightsPage() {
 
             {/* 4. Actionable Alerts Bar */}
             {highDemandList.length > 0 && (
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">⚡</span>
                   <div>
-                    <p className="text-sm font-bold text-amber-300">
+                    <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
                       {highDemandList.length}{' '}
                       {highDemandList.length === 1 ? 'section is' : 'sections are'} nearing capacity (&ge;90%)
                     </p>
-                    <p className="text-xs text-amber-400/80 mt-0.5">
+                    <p className="text-xs text-amber-700 dark:text-amber-400/80 mt-0.5">
                       Consider opening additional section seats or adjusting classroom assignments.
                     </p>
                   </div>
@@ -401,7 +401,7 @@ export default function UniversityInsightsPage() {
                     setActiveTab('demand');
                     setSectionSearch(highDemandList[0]?.section_code || '');
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-semibold transition cursor-pointer self-end sm:self-auto"
+                  className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 dark:text-amber-200 text-xs font-semibold transition cursor-pointer self-end sm:self-auto"
                 >
                   Inspect High Demand →
                 </button>
@@ -409,14 +409,14 @@ export default function UniversityInsightsPage() {
             )}
 
             {totalConflicts > 0 && (
-              <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🚨</span>
                   <div>
-                    <p className="text-sm font-bold text-rose-300">
+                    <p className="text-sm font-bold text-rose-800 dark:text-rose-300">
                       {totalConflicts} scheduling conflicts require attention
                     </p>
-                    <p className="text-xs text-rose-400/80 mt-0.5">
+                    <p className="text-xs text-rose-700 dark:text-rose-400/80 mt-0.5">
                       {roomColls} room collisions,{' '}
                       {facColls} faculty collisions,{' '}
                       {classColls} student class clashes.
@@ -425,7 +425,7 @@ export default function UniversityInsightsPage() {
                 </div>
                 <Link
                   href="/university/timetables"
-                  className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 text-xs font-semibold transition cursor-pointer self-end sm:self-auto"
+                  className="px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-900 dark:bg-rose-500/20 dark:hover:bg-rose-500/30 dark:text-rose-200 text-xs font-semibold transition cursor-pointer self-end sm:self-auto"
                 >
                   Open Timetable Editor →
                 </Link>
@@ -508,14 +508,14 @@ export default function UniversityInsightsPage() {
                 </p>
               </div>
               <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-xs">
-                <span className="text-xs text-amber-400 uppercase font-semibold">High Demand (&ge;90%)</span>
-                <p className="text-2xl font-bold text-amber-300 mt-1">
+                <span className="text-xs text-amber-700 dark:text-amber-400 uppercase font-semibold">High Demand (&ge;90%)</span>
+                <p className="text-2xl font-bold text-amber-800 dark:text-amber-300 mt-1">
                   {highDemandList.length} sections
                 </p>
               </div>
               <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-xs">
-                <span className="text-xs text-blue-400 uppercase font-semibold">Low Utilization (&le;30%)</span>
-                <p className="text-2xl font-bold text-blue-300 mt-1">
+                <span className="text-xs text-blue-700 dark:text-blue-400 uppercase font-semibold">Low Utilization (&le;30%)</span>
+                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-1">
                   {lowUtilList.length} sections
                 </p>
               </div>
@@ -523,8 +523,8 @@ export default function UniversityInsightsPage() {
 
             {/* High Demand Spotlight */}
             {highDemandList.length > 0 && (
-              <div className="bg-[var(--bg-card)] border border-amber-500/30 rounded-2xl p-5 shadow-xs">
-                <h3 className="text-sm font-bold text-amber-300 flex items-center gap-2 mb-3">
+              <div className="bg-[var(--bg-card)] border border-amber-300 dark:border-amber-500/30 rounded-2xl p-5 shadow-xs">
+                <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2 mb-3">
                   <span>🔥</span> Sections Nearing Full Capacity
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -534,14 +534,14 @@ export default function UniversityInsightsPage() {
                     return (
                       <div
                         key={sec.section_id}
-                        className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20 flex flex-col justify-between"
+                        className="p-3.5 rounded-xl bg-amber-50/50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 flex flex-col justify-between"
                       >
                         <div>
                           <div className="flex items-center justify-between">
                             <span className="font-mono text-xs font-bold text-[var(--text-primary)]">
                               {sec.course_code} - {sec.section_code}
                             </span>
-                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-transparent">
                               {util}% full
                             </span>
                           </div>
@@ -549,7 +549,7 @@ export default function UniversityInsightsPage() {
                         </div>
                         <div className="mt-3 flex items-center justify-between text-xs text-[var(--text-muted)]">
                           <span>{sec.enrolled_count} / {sec.capacity} enrolled</span>
-                          <span className="font-semibold text-amber-400">{sec.remaining_seats} seats left</span>
+                          <span className="font-semibold text-amber-700 dark:text-amber-400">{sec.remaining_seats} seats left</span>
                         </div>
                       </div>
                     );
@@ -824,10 +824,10 @@ export default function UniversityInsightsPage() {
                               <span
                                 className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                                   category === 'high'
-                                    ? 'bg-emerald-500/10 text-emerald-300'
+                                    ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
                                     : category === 'balanced'
-                                    ? 'bg-blue-500/10 text-blue-300'
-                                    : 'bg-slate-500/10 text-slate-300'
+                                    ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300'
+                                    : 'bg-slate-100 dark:bg-slate-500/10 text-slate-700 dark:text-slate-300'
                                 }`}
                               >
                                 {category}
@@ -972,14 +972,14 @@ export default function UniversityInsightsPage() {
                             <td className="py-2.5 px-3 text-right font-semibold text-[var(--text-primary)]">
                               {changesCount}
                             </td>
-                            <td className="py-2.5 px-3 text-right font-semibold text-purple-400">
+                            <td className="py-2.5 px-3 text-right font-semibold text-purple-600 dark:text-purple-400">
                               {affectedCount}
                             </td>
-                            <td className="py-2.5 px-3 text-right font-semibold text-indigo-400">
+                            <td className="py-2.5 px-3 text-right font-semibold text-indigo-600 dark:text-indigo-400">
                               {notifCount}
                             </td>
                             <td className="py-2.5 px-3">
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-300">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
                                 {statusLabel}
                               </span>
                             </td>

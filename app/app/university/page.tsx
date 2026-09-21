@@ -239,27 +239,27 @@ export default function UniversityDashboardPage() {
       )}
 
       {/* 1. Timetable as the Main Centerpiece */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950/60 via-purple-950/40 to-slate-900 border border-indigo-500/30 p-6 sm:p-8 shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-50/80 via-purple-50/50 to-slate-100 dark:from-indigo-950/60 dark:via-purple-950/40 dark:to-slate-900 border border-indigo-200 dark:border-indigo-500/30 p-6 sm:p-8 shadow-sm dark:shadow-xl">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
             <div className="flex items-center gap-2.5 flex-wrap">
               <span className="text-2xl">🗓️</span>
-              <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+              <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/40">
                 Official University Timetable
               </span>
               {activeTimetable?.status === 'active' && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
                   Active Baseline Schedule
                 </span>
               )}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               {activeTimetable ? activeTimetable.name : 'University Timetable Schedule'}
             </h1>
 
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
               {activeTimetable
                 ? `See and manage your university's official class schedule. Scheduled meetings automatically appear on enrolled students' calendars and enforce room and instructor availability.`
                 : `Create your university's baseline timetable to schedule courses, assign rooms, and provide students with their authoritative academic calendar.`}
@@ -267,15 +267,15 @@ export default function UniversityDashboardPage() {
 
             {/* Quick Metrics Badge Row */}
             {activeTimetable && (
-              <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-slate-300">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/80">
+              <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-slate-700 dark:text-slate-300">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 shadow-2xs">
                   <span>📅</span> {activeTimetable.term_name || dashboardData?.active_term?.name || 'Academic Term'}
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/80 font-medium">
-                  <span className="text-indigo-400 font-bold">{activeTimetable.meetings_count || 0}</span> Scheduled Classes
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 font-medium shadow-2xs">
+                  <span className="text-indigo-700 dark:text-indigo-400 font-bold">{activeTimetable.meetings_count || 0}</span> Scheduled Classes
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/80 font-medium">
-                  <span className="text-purple-400 font-bold">{activeTimetable.sections_count || 0}</span> Sections Covered
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 font-medium shadow-2xs">
+                  <span className="text-purple-700 dark:text-purple-400 font-bold">{activeTimetable.sections_count || 0}</span> Sections Covered
                 </span>
               </div>
             )}
@@ -294,7 +294,7 @@ export default function UniversityDashboardPage() {
                 </Link>
                 <Link
                   href="/university/timetables"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-xs transition cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white hover:bg-slate-50 dark:bg-slate-800/90 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs transition cursor-pointer shadow-xs"
                 >
                   <span>All Timetables</span>
                 </Link>
@@ -330,7 +330,7 @@ export default function UniversityDashboardPage() {
             className="flex flex-col items-start p-3.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-indigo-500/40 transition group cursor-pointer"
           >
             <span className="text-2xl mb-2">🗓️</span>
-            <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-400 transition">
+            <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
               View Timetable
             </span>
             <span className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -343,7 +343,7 @@ export default function UniversityDashboardPage() {
             className="flex flex-col items-start p-3.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-indigo-500/40 transition group cursor-pointer"
           >
             <span className="text-2xl mb-2">🕒</span>
-            <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-400 transition">
+            <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
               Add Class Meeting
             </span>
             <span className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -356,7 +356,7 @@ export default function UniversityDashboardPage() {
             className="flex flex-col items-start p-3.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-indigo-500/40 transition group cursor-pointer"
           >
             <span className="text-2xl mb-2">📚</span>
-            <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-400 transition">
+            <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
               Academic Resources
             </span>
             <span className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -369,7 +369,7 @@ export default function UniversityDashboardPage() {
             className="flex flex-col items-start p-3.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-indigo-500/40 transition group cursor-pointer"
           >
             <span className="text-2xl mb-2">👥</span>
-            <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-400 transition">
+            <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
               View Students
             </span>
             <span className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -382,7 +382,7 @@ export default function UniversityDashboardPage() {
             className="flex flex-col items-start p-3.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-indigo-500/40 transition group cursor-pointer"
           >
             <span className="text-2xl mb-2">📊</span>
-            <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-400 transition">
+            <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
               University Insights
             </span>
             <span className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -401,7 +401,7 @@ export default function UniversityDashboardPage() {
           <div>
             <div className="flex items-center justify-between">
               <span className="text-2xl">📅</span>
-              <span className="text-xs font-semibold uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+              <span className="text-xs font-semibold uppercase text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/20">
                 Active Term
               </span>
             </div>
@@ -414,7 +414,7 @@ export default function UniversityDashboardPage() {
                 : 'Configure instructional periods'}
             </p>
           </div>
-          <span className="mt-4 text-xs font-semibold text-indigo-400 group-hover:underline">
+          <span className="mt-4 text-xs font-semibold text-indigo-600 dark:text-indigo-400 group-hover:underline">
             Manage Terms →
           </span>
         </Link>
@@ -426,7 +426,7 @@ export default function UniversityDashboardPage() {
           <div>
             <div className="flex items-center justify-between">
               <span className="text-2xl">🏛️</span>
-              <span className="text-xs font-semibold uppercase text-[var(--text-muted)]">
+              <span className="text-xs font-semibold uppercase text-[var(--text-muted)] bg-[var(--bg-secondary)] px-2 py-0.5 rounded-full border border-[var(--border-color)]">
                 Building Blocks
               </span>
             </div>
@@ -437,7 +437,7 @@ export default function UniversityDashboardPage() {
               Academic Departments Registered
             </p>
           </div>
-          <span className="mt-4 text-xs font-semibold text-indigo-400 group-hover:underline">
+          <span className="mt-4 text-xs font-semibold text-indigo-600 dark:text-indigo-400 group-hover:underline">
             Manage Academic Resources →
           </span>
         </Link>
@@ -449,7 +449,7 @@ export default function UniversityDashboardPage() {
           <div>
             <div className="flex items-center justify-between">
               <span className="text-2xl">👥</span>
-              <span className="text-xs font-semibold uppercase text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full">
+              <span className="text-xs font-semibold uppercase text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-500/20">
                 Campus Users
               </span>
             </div>
@@ -460,7 +460,7 @@ export default function UniversityDashboardPage() {
               Enrolled Students & Faculty
             </p>
           </div>
-          <span className="mt-4 text-xs font-semibold text-indigo-400 group-hover:underline">
+          <span className="mt-4 text-xs font-semibold text-indigo-600 dark:text-indigo-400 group-hover:underline">
             Manage Student Directory →
           </span>
         </Link>
@@ -472,7 +472,7 @@ export default function UniversityDashboardPage() {
           <div>
             <div className="flex items-center justify-between">
               <span className="text-2xl">📊</span>
-              <span className="text-xs font-semibold uppercase text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
+              <span className="text-xs font-semibold uppercase text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-500/20">
                 Decision Analytics
               </span>
             </div>
@@ -483,7 +483,7 @@ export default function UniversityDashboardPage() {
               Room usage, capacity bottlenecks & student impact
             </p>
           </div>
-          <span className="mt-4 text-xs font-semibold text-indigo-400 group-hover:underline">
+          <span className="mt-4 text-xs font-semibold text-indigo-600 dark:text-indigo-400 group-hover:underline">
             Explore Insights →
           </span>
         </Link>

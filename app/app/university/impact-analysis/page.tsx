@@ -144,7 +144,7 @@ export default function UniversityImpactAnalysisPage() {
         ) : timetables.length === 0 ? (
           <div className="py-8 text-center space-y-2">
             <p className="text-xs text-[var(--text-secondary)]">No timetables found in this institution.</p>
-            <Link href="/university/timetables" className="text-xs font-semibold text-emerald-400 underline">
+            <Link href="/university/timetables" className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 underline">
               Create a timetable first
             </Link>
           </div>
@@ -262,7 +262,7 @@ export default function UniversityImpactAnalysisPage() {
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm space-y-5 animate-in fade-in duration-200">
           <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)]">
             <h2 className="text-base font-bold text-[var(--text-primary)]">Impact Analysis Results</h2>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
               Simulation Complete
             </span>
           </div>
@@ -271,25 +271,25 @@ export default function UniversityImpactAnalysisPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)]">
               <p className="text-[11px] text-[var(--text-muted)]">Affected Students</p>
-              <p className="text-2xl font-black text-amber-400 mt-1">
+              <p className="text-2xl font-black text-amber-700 dark:text-amber-400 mt-1">
                 {impactResult.summary.students_affected}
               </p>
             </div>
             <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)]">
               <p className="text-[11px] text-[var(--text-muted)]">New Conflicts</p>
-              <p className="text-2xl font-black text-rose-400 mt-1">
+              <p className="text-2xl font-black text-rose-700 dark:text-rose-400 mt-1">
                 {impactResult.summary.new_conflicts}
               </p>
             </div>
             <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)]">
               <p className="text-[11px] text-[var(--text-muted)]">Work / Life Conflicts</p>
-              <p className="text-2xl font-black text-yellow-400 mt-1">
+              <p className="text-2xl font-black text-amber-700 dark:text-yellow-400 mt-1">
                 {impactResult.summary.work_conflicts + impactResult.summary.personal_conflicts}
               </p>
             </div>
             <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)]">
               <p className="text-[11px] text-[var(--text-muted)]">Resolved Conflicts</p>
-              <p className="text-2xl font-black text-indigo-400 mt-1">
+              <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
                 {impactResult.summary.resolved_conflicts}
               </p>
             </div>
@@ -314,8 +314,8 @@ export default function UniversityImpactAnalysisPage() {
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                         impact.is_new_conflict
-                          ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                          : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20'
+                          : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20'
                       }`}
                     >
                       {impact.conflict_type}
@@ -324,7 +324,7 @@ export default function UniversityImpactAnalysisPage() {
                 ))}
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs text-emerald-300">
+              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/25 text-xs text-emerald-800 dark:text-emerald-300">
                 ✓ No enrolled student schedule conflicts detected for this proposed change!
               </div>
             )}

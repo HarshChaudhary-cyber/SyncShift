@@ -89,10 +89,10 @@ export default function WorkStudyCard({
           <span
             className={`text-xs font-bold px-2 py-0.5 rounded-md ${
               workOverLimit
-                ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30'
                 : workPct >= 80
-                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30'
+                : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30'
             }`}
           >
             {workPct}%
@@ -115,7 +115,7 @@ export default function WorkStudyCard({
 
         <p className="text-[11px] text-[var(--text-muted)]">
           {workOverLimit ? (
-            <span className="text-rose-400 font-semibold">
+            <span className="text-rose-600 dark:text-rose-400 font-semibold">
               ⚠ {workOverHours}h over configured limit
             </span>
           ) : (
@@ -139,7 +139,7 @@ export default function WorkStudyCard({
         {upcomingTask ? (
           <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl p-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <span className="text-[10px] uppercase font-bold text-purple-400 block tracking-wider">
+              <span className="text-[10px] uppercase font-bold text-purple-700 dark:text-purple-400 block tracking-wider">
                 Upcoming Goal · Due {upcomingTask.deadline}
               </span>
               <p className="text-xs font-semibold text-[var(--text-primary)] truncate">

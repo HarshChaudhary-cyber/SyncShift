@@ -29,11 +29,11 @@ export default function StudentTimetablePage() {
     return (
       <div className="space-y-4">
         <h1 className="text-xl font-bold text-[var(--text-primary)]">My Timetable</h1>
-        <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3">
+        <div className="p-6 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl flex items-start gap-3">
           <span className="text-2xl">📋</span>
           <div className="text-sm space-y-2">
-            <p className="font-bold text-amber-300">No University Linked</p>
-            <p className="text-amber-200/80">
+            <p className="font-bold text-amber-800 dark:text-amber-300">No University Linked</p>
+            <p className="text-amber-900/80 dark:text-amber-200/80">
               Your account is not associated with an institution. Please contact your university administrator or registrar to link your student profile.
             </p>
           </div>

@@ -115,7 +115,7 @@ export default function AddTaskModal({
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-red-950/40 border border-red-800/80 rounded-xl text-xs text-red-300">
+            <div className="p-3 bg-rose-50 dark:bg-red-950/40 border border-rose-200 dark:border-red-800/80 rounded-xl text-xs text-rose-700 dark:text-red-300">
               ⚠️ {error}
             </div>
           )}

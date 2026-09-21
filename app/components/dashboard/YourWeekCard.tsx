@@ -55,15 +55,15 @@ export default function YourWeekCard({ onPlanStudy }: YourWeekCardProps) {
   const getHealthBadgeStyle = (category: string) => {
     switch (category) {
       case 'Excellent':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+        return 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30';
       case 'Healthy':
-        return 'bg-teal-500/10 text-teal-400 border-teal-500/30';
+        return 'bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-500/30';
       case 'Moderate':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+        return 'bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-500/30';
       case 'Needs attention':
-        return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
+        return 'bg-orange-50 dark:bg-orange-500/10 text-orange-800 dark:text-orange-400 border-orange-200 dark:border-orange-500/30';
       default:
-        return 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+        return 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30';
     }
   };
 
@@ -85,7 +85,7 @@ export default function YourWeekCard({ onPlanStudy }: YourWeekCardProps) {
 
         <Link
           href="/analytics"
-          className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1 self-start sm:self-auto"
+          className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition flex items-center gap-1 self-start sm:self-auto"
         >
           <span>View Analytics</span>
           <span>→</span>
@@ -116,7 +116,7 @@ export default function YourWeekCard({ onPlanStudy }: YourWeekCardProps) {
             <span
               className={`text-xl sm:text-2xl font-black font-mono ${
                 analytics.work_limit.over_limit
-                  ? 'text-rose-400'
+                  ? 'text-rose-600 dark:text-rose-400'
                   : 'text-[var(--text-primary)]'
               }`}
             >
@@ -134,7 +134,7 @@ export default function YourWeekCard({ onPlanStudy }: YourWeekCardProps) {
             Study
           </span>
           <div className="flex items-baseline gap-1">
-            <span className="text-xl sm:text-2xl font-black text-purple-400 font-mono">
+            <span className="text-xl sm:text-2xl font-black text-purple-600 dark:text-purple-400 font-mono">
               {analytics.hours.study_hours}
             </span>
             <span className="text-xs text-[var(--text-muted)] font-mono">h planned</span>
@@ -150,10 +150,10 @@ export default function YourWeekCard({ onPlanStudy }: YourWeekCardProps) {
             <span
               className={`text-xl sm:text-2xl font-black font-mono ${
                 analytics.conflicts.hard > 0
-                  ? 'text-rose-400'
+                  ? 'text-rose-600 dark:text-rose-400'
                   : analytics.conflicts.warning > 0
-                  ? 'text-amber-400'
-                  : 'text-emerald-400'
+                  ? 'text-amber-700 dark:text-amber-400'
+                  : 'text-emerald-600 dark:text-emerald-400'
               }`}
             >
               {analytics.conflicts.total}
@@ -178,7 +178,7 @@ export default function YourWeekCard({ onPlanStudy }: YourWeekCardProps) {
             {nextTask ? (
               <p className="text-xs sm:text-sm font-semibold text-[var(--text-primary)]">
                 {nextTask.title}{' '}
-                <span className="text-purple-400 font-normal">
+                <span className="text-purple-700 dark:text-purple-400 font-normal">
                   ·{' '}
                   {nextTask.preferred_duration
                     ? `${nextTask.preferred_duration / 60}h`

@@ -115,7 +115,7 @@ export default function DemoSection() {
   return (
     <section
       id="demo"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#0a0a0a] border-t border-neutral-900/60 overflow-hidden"
+      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[var(--bg-primary)] border-t border-[var(--border-color)] overflow-hidden"
     >
       {/* Ambient background glow */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-900/10 rounded-full blur-[160px] pointer-events-none" />
@@ -130,7 +130,7 @@ export default function DemoSection() {
             transition={{ duration: 0.6 }}
             className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] text-xs font-semibold text-[var(--text-secondary)] mb-4 shadow-sm"
           >
-            <SparklesIcon className="w-4 h-4 text-indigo-400" />
+            <SparklesIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             <span>Interactive Live Demo</span>
           </motion.div>
 
@@ -181,13 +181,13 @@ export default function DemoSection() {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/80 border border-red-500/60 text-red-300 text-xs font-bold shadow-lg shadow-red-950/40"
+                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 dark:bg-red-950/80 border border-red-200 dark:border-red-500/60 text-red-700 dark:text-red-300 text-xs font-bold shadow-lg shadow-red-950/10"
                   >
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
                     </span>
-                    <ExclamationTriangleIcon className="w-4 h-4 text-red-400" />
+                    <ExclamationTriangleIcon className="w-4 h-4 text-red-600 dark:text-red-400" />
                     <span>1 Conflict Detected (Wed 14:00)</span>
                   </motion.div>
                 ) : (
@@ -196,9 +196,9 @@ export default function DemoSection() {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 text-xs font-bold"
+                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-500/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold"
                   >
-                    <CheckCircleIcon className="w-4 h-4 text-emerald-400" />
+                    <CheckCircleIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>0 Conflicts · Schedule Clean</span>
                   </motion.div>
                 )}

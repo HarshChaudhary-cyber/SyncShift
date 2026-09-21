@@ -126,7 +126,7 @@ function StudentCalendarContent() {
 
       {/* Error banner */}
       {error && blocks.length > 0 && (
-        <div className="p-3 bg-rose-950/50 border border-rose-700 rounded-lg text-xs text-rose-300 flex justify-between items-center">
+        <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-700 rounded-lg text-xs text-rose-700 dark:text-rose-300 flex justify-between items-center">
           <span>⚠ {error}</span>
           <button onClick={() => refreshWeek()} className="underline font-medium cursor-pointer ml-4">
             Retry
@@ -168,7 +168,7 @@ function StudentCalendarContent() {
 
       {/* No conflicts positive state */}
       {!loading && !error && blocks.length > 0 && conflicts.length === 0 && (
-        <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-800 dark:text-emerald-200 flex items-center justify-between gap-3 shadow-xs">
+        <div className="p-3.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/30 rounded-xl text-xs text-emerald-800 dark:text-emerald-200 flex items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-2.5 font-medium">
             <span className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">✓</span>
             <div>
@@ -183,14 +183,14 @@ function StudentCalendarContent() {
 
       {/* Conflict Alert Banner */}
       {conflicts.length > 0 && (
-        <div className="p-3.5 bg-rose-950/60 border border-rose-600/70 rounded-xl text-xs text-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+        <div className="p-3.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-600/70 rounded-xl text-xs text-rose-800 dark:text-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
           <div className="flex items-center gap-2.5">
             <span className="text-lg">⚠️</span>
             <div>
-              <span className="font-semibold text-rose-100 text-sm">
+              <span className="font-semibold text-rose-950 dark:text-rose-100 text-sm">
                 {conflicts.length} Schedule Conflict{conflicts.length > 1 ? 's' : ''} Detected
               </span>
-              <p className="text-rose-300 text-[11px] mt-0.5">
+              <p className="text-rose-700 dark:text-rose-300 text-[11px] mt-0.5">
                 {conflicts.map((c) => c.message || `${c.overlap_minutes}m overlap`).join(' · ')}
               </p>
             </div>

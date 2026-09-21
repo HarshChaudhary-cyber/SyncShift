@@ -446,7 +446,7 @@ export function BlockFormModal({
                     />
                     <span>🌙 Overnight shift</span>
                   </label>
-                  <span className="text-[10px] text-zinc-400 block ml-6">
+                  <span className="text-[10px] text-slate-500 dark:text-zinc-400 block ml-6">
                     Crosses midnight (+1 day)
                   </span>
                 </div>

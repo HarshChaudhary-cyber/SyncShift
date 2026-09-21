@@ -40,7 +40,7 @@ export default function AcademicSummaryCard({ academics, loading }: AcademicSumm
               {academics.institution_name}
             </h3>
             {academics.current_term && (
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20">
                 {academics.current_term}
               </span>
             )}
@@ -70,7 +70,7 @@ export default function AcademicSummaryCard({ academics, loading }: AcademicSumm
           <span className="text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-wider block mb-0.5">
             Enrolled Courses
           </span>
-          <span className="text-xl font-bold text-indigo-400">
+          <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
             {academics.enrolled_courses_count}
           </span>
         </div>
@@ -79,7 +79,7 @@ export default function AcademicSummaryCard({ academics, loading }: AcademicSumm
           <span className="text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-wider block mb-0.5">
             Total Credits
           </span>
-          <span className="text-xl font-bold text-emerald-400">
+          <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
             {academics.enrolled_credits}
           </span>
         </div>
@@ -88,7 +88,7 @@ export default function AcademicSummaryCard({ academics, loading }: AcademicSumm
           <span className="text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-wider block mb-0.5">
             Active Sections
           </span>
-          <span className="text-xl font-bold text-sky-400">
+          <span className="text-xl font-bold text-sky-600 dark:text-sky-400">
             {academics.enrolled_sections.length}
           </span>
         </div>
@@ -99,7 +99,7 @@ export default function AcademicSummaryCard({ academics, loading }: AcademicSumm
           </span>
           <Link
             href="/student/constraints"
-            className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 underline flex items-center gap-1"
+            className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 underline flex items-center gap-1"
           >
             Manage Rules →
           </Link>
@@ -121,7 +121,7 @@ export default function AcademicSummaryCard({ academics, loading }: AcademicSumm
                 <div className="min-w-0 pr-2">
                   <div className="font-bold text-[var(--text-primary)] truncate flex items-center gap-1.5">
                     <span>{sec.course_code}</span>
-                    <span className="px-1.5 py-0.2 bg-indigo-500/20 text-indigo-300 text-[10px] rounded font-mono">
+                    <span className="px-1.5 py-0.2 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-[10px] rounded font-mono border border-indigo-200/60 dark:border-transparent">
                       Sec {sec.section_code}
                     </span>
                   </div>
@@ -129,13 +129,13 @@ export default function AcademicSummaryCard({ academics, loading }: AcademicSumm
                     {sec.course_name}
                   </div>
                   {sec.instructors && sec.instructors.length > 0 && (
-                    <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                       Prof. {sec.instructors.join(', ')}
                     </div>
                   )}
                 </div>
                 <div className="text-right shrink-0">
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold border border-emerald-500/20">
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold border border-emerald-200 dark:border-emerald-500/20">
                     {sec.credits} cr
                   </span>
                 </div>
@@ -144,9 +144,9 @@ export default function AcademicSummaryCard({ academics, loading }: AcademicSumm
           </div>
         </div>
       ) : (
-        <div className="py-3 px-4 bg-slate-800/30 rounded-xl border border-dashed border-slate-700 text-center text-xs text-[var(--text-secondary)]">
+        <div className="py-3 px-4 bg-slate-100 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-[var(--text-secondary)]">
           No sections enrolled for this term.{' '}
-          <Link href="/student/academics" className="text-indigo-400 hover:underline font-semibold">
+          <Link href="/student/academics" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">
             Browse course catalog
           </Link>{' '}
           to enroll.

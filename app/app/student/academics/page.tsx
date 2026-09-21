@@ -250,7 +250,13 @@ export default function StudentAcademicsPage() {
           >
             <span>📑</span>
             <span>My Enrolled Sections</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-black/30 text-[10px]">
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                activeTab === 'enrolled'
+                  ? 'bg-black/25 text-white'
+                  : 'bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-secondary)]'
+              }`}
+            >
               {enrollments.length}
             </span>
           </button>
@@ -390,14 +396,14 @@ export default function StudentAcademicsPage() {
                   <div className="pt-4 mt-3 border-t border-[var(--border-color)] flex items-center justify-between">
                     <Link
                       href="/student/calendar"
-                      className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition flex items-center gap-1"
+                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition flex items-center gap-1"
                     >
                       <span>📅 View on Calendar →</span>
                     </Link>
                     <button
                       onClick={() => setDropConfirmModal(enr)}
                       disabled={droppingEnrollmentId === enr.id}
-                      className="px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 transition cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-700 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 transition cursor-pointer"
                     >
                       Drop Section
                     </button>

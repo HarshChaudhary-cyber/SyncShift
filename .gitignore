@@ -30,6 +30,8 @@ next-env.d.ts
 *.db
 *.sqlite3
 syncshift.db
+*.rdb
+dump.rdb
 
 # Environment variables & secrets
 .env

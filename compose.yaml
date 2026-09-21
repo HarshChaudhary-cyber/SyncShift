@@ -26,6 +26,8 @@ services:
     environment:
       ENV: development
       DATABASE_URL: sqlite:////data/syncshift.db
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,::1,172.16.0.0/12,10.0.0.0/8,192.168.0.0/16,testclient}
       JWT_SECRET: ${JWT_SECRET:-syncshift-dev-secret-key-32-chars-minimum!!}
       SECRET_KEY: ${SECRET_KEY:-syncshift-dev-secret-key-32-chars-minimum!!}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
@@ -37,9 +39,28 @@ services:
       MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
       CAPTCHA_SECRET_KEY: ${CAPTCHA_SECRET_KEY:-1x0000000000000000000000000000000AA}
       CAPTCHA_ENFORCE: ${CAPTCHA_ENFORCE:-false}
+    depends_on:
+      redis:
+        condition: service_healthy
     volumes:
       - sqlite_data:/data
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: syncshift-redis
+    restart: unless-stopped
+    command: redis-server --save "" --appendonly no
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis_data:/data
+
 volumes:
   sqlite_data:
+  redis_data:

@@ -602,7 +602,7 @@ export const CalendarWeekView: React.FC<CalendarWeekViewProps> = ({
                 return (
                   <div
                     key={hour}
-                    className="absolute right-2 -translate-y-1/2 text-[11px] font-mono text-zinc-400 dark:text-zinc-500"
+                    className="absolute right-2 -translate-y-1/2 text-[11px] font-mono font-medium text-slate-600 dark:text-slate-400"
                     style={{ top: toTopPct(hour * 60) }}
                   >
                     {display} {period}

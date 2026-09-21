@@ -191,10 +191,10 @@ export default function StudentConstraintsPage() {
   return (
     <div className="space-y-6">
       {/* 1. Constraint Precedence Hierarchy Banner */}
-      <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-2xl p-5 shadow-sm space-y-2">
+      <div className="bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-500/20 rounded-2xl p-5 shadow-sm space-y-2">
         <div className="flex items-center gap-2">
           <span className="text-xl">🛡️</span>
-          <h2 className="text-sm font-bold text-indigo-300">
+          <h2 className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
             Scheduling Constraint Precedence Hierarchy
           </h2>
         </div>
@@ -202,21 +202,21 @@ export default function StudentConstraintsPage() {
           SyncShift coordinates academic life, employment, and personal goals through an explicit 4-tier constraint system:
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-2 text-xs">
-          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-            <span className="text-rose-400 font-bold block mb-1">1. University Hard</span>
-            <span className="text-slate-400 text-[11px]">Room limits, faculty availability, course dependencies.</span>
+          <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <span className="text-rose-600 dark:text-rose-400 font-bold block mb-1">1. University Hard</span>
+            <span className="text-slate-600 dark:text-slate-400 text-[11px]">Room limits, faculty availability, course dependencies.</span>
           </div>
-          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-            <span className="text-amber-400 font-bold block mb-1">2. Student Hard</span>
-            <span className="text-slate-400 text-[11px]">Strict cut-off hours, max daily load, non-negotiable blackouts.</span>
+          <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <span className="text-amber-700 dark:text-amber-400 font-bold block mb-1">2. Student Hard</span>
+            <span className="text-slate-600 dark:text-slate-400 text-[11px]">Strict cut-off hours, max daily load, non-negotiable blackouts.</span>
           </div>
-          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-            <span className="text-sky-400 font-bold block mb-1">3. Fixed Work Shifts</span>
-            <span className="text-slate-400 text-[11px]">Existing job shifts marked non-flexible in calendar.</span>
+          <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <span className="text-sky-600 dark:text-sky-400 font-bold block mb-1">3. Fixed Work Shifts</span>
+            <span className="text-slate-600 dark:text-slate-400 text-[11px]">Existing job shifts marked non-flexible in calendar.</span>
           </div>
-          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-            <span className="text-emerald-400 font-bold block mb-1">4. Soft Preferences</span>
-            <span className="text-slate-400 text-[11px]">Preferred time of day, gap duration, compact layout.</span>
+          <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold block mb-1">4. Soft Preferences</span>
+            <span className="text-slate-600 dark:text-slate-400 text-[11px]">Preferred time of day, gap duration, compact layout.</span>
           </div>
         </div>
       </div>
@@ -228,7 +228,7 @@ export default function StudentConstraintsPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-base">🔒</span>
-                <h3 className="text-sm font-bold text-rose-400 uppercase tracking-wide">
+                <h3 className="text-sm font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wide">
                   Hard Constraints
                 </h3>
               </div>
@@ -262,7 +262,7 @@ export default function StudentConstraintsPage() {
               <div className="text-xs text-[var(--text-secondary)]">
                 No hard constraints configured yet.
               </div>
-              <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
                 Add rules such as no classes before 9am, maximum 6 hours of classes a day, or protecting your work shifts.
               </p>
             </div>
@@ -274,7 +274,7 @@ export default function StudentConstraintsPage() {
                   className={`p-4 rounded-xl border transition flex items-start justify-between gap-3 text-xs ${
                     c.is_active
                       ? 'bg-[var(--bg-secondary)] border-[var(--border-color)]'
-                      : 'bg-slate-900/30 border-slate-800 opacity-60'
+                      : 'bg-slate-100 dark:bg-slate-900/30 border-slate-300 dark:border-slate-800 opacity-60'
                   }`}
                 >
                   <div className="space-y-1 min-w-0">
@@ -285,15 +285,15 @@ export default function StudentConstraintsPage() {
                       <span
                         className={`px-2 py-0.2 rounded-full text-[10px] font-mono ${
                           c.is_hard
-                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                            : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                            ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20'
+                            : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20'
                         }`}
                       >
                         {c.is_hard ? 'HARD RULE' : 'SOFT RULE'}
                       </span>
                     </div>
 
-                    <div className="text-[11px] text-slate-400 font-mono">
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                       Type: {c.constraint_type}
                       {c.parameters && Object.keys(c.parameters).length > 0 && (
                         <span> • {JSON.stringify(c.parameters).replace(/[{"}]/g, '')}</span>
@@ -306,15 +306,15 @@ export default function StudentConstraintsPage() {
                       onClick={() => handleToggleActive(c)}
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${
                         c.is_active
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                          : 'bg-slate-800 text-slate-400 border border-slate-700'
+                          ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400 border border-slate-300 dark:border-slate-700'
                       }`}
                     >
                       {c.is_active ? 'Active' : 'Paused'}
                     </button>
                     <button
                       onClick={() => handleDeleteConstraint(c.id)}
-                      className="p-1 text-slate-400 hover:text-rose-400 transition cursor-pointer"
+                      className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer"
                       title="Delete constraint"
                     >
                       🗑️
@@ -331,7 +331,7 @@ export default function StudentConstraintsPage() {
           <div className="pb-3 border-b border-[var(--border-color)]">
             <div className="flex items-center gap-2">
               <span className="text-base">✨</span>
-              <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wide">
+              <h3 className="text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
                 Soft Preferences
               </h3>
             </div>
@@ -349,7 +349,7 @@ export default function StudentConstraintsPage() {
             <form onSubmit={handleSavePreferences} className="space-y-4 text-xs">
               {/* Preferred Time of Day */}
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1.5">
                   Preferred Time of Day for Classes
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -381,7 +381,7 @@ export default function StudentConstraintsPage() {
 
               {/* Schedule Density */}
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1.5">
                   Schedule Density & Grouping
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -410,7 +410,7 @@ export default function StudentConstraintsPage() {
               {/* Break Duration */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                     Ideal Break Length
                   </label>
                   <CustomSelect
@@ -426,7 +426,7 @@ export default function StudentConstraintsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                     Max Days on Campus / Week
                   </label>
                   <CustomSelect
@@ -451,7 +451,7 @@ export default function StudentConstraintsPage() {
 
               {/* Preferred Free Days */}
               <div>
-                <label className="block text-slate-300 font-semibold mb-1.5">
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1.5">
                   Preferred Days Off (No Classes)
                 </label>
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -470,8 +470,8 @@ export default function StudentConstraintsPage() {
                         onClick={() => toggleFreeDay(day.id)}
                         className={`px-3 py-1.5 rounded-xl font-semibold transition cursor-pointer ${
                           isSelected
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                            : 'bg-[var(--bg-secondary)] border border-[var(--border-color)] text-slate-400 hover:text-white'
+                            ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40'
+                            : 'bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                         }`}
                       >
                         {isSelected ? `✓ Free ${day.label}` : day.label}
@@ -484,10 +484,10 @@ export default function StudentConstraintsPage() {
               {/* Work-Study Balance Slider */}
               <div className="pt-2">
                 <div className="flex justify-between items-center mb-1">
-                  <label className="text-slate-300 font-semibold">
+                  <label className="text-slate-700 dark:text-slate-300 font-semibold">
                     Work / Study Balance Weight
                   </label>
-                  <span className="font-mono text-indigo-400 font-bold">
+                  <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">
                     {prefForm.work_study_balance_weight}%
                   </span>
                 </div>
@@ -501,7 +501,7 @@ export default function StudentConstraintsPage() {
                   }
                   className="w-full accent-indigo-500 cursor-pointer"
                 />
-                <p className="text-[11px] text-slate-400 mt-1 italic">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 italic">
                   {getBalanceLabel(prefForm.work_study_balance_weight || 50)}
                 </p>
               </div>
@@ -533,7 +533,7 @@ export default function StudentConstraintsPage() {
               </h3>
               <button
                 onClick={() => setAddModalOpen(false)}
-                className="text-slate-400 hover:text-white text-lg font-bold"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-lg font-bold"
               >
                 ✕
               </button>
@@ -541,7 +541,7 @@ export default function StudentConstraintsPage() {
 
             <form onSubmit={handleCreateConstraint} className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                   Constraint Type
                 </label>
                 <CustomSelect
@@ -565,13 +565,13 @@ export default function StudentConstraintsPage() {
                   }}
                   portalTheme="student"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                   {PRESET_CONSTRAINTS.find((p) => p.type === selectedType)?.desc}
                 </p>
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                   Rule Name / Label
                 </label>
                 <input
@@ -586,7 +586,7 @@ export default function StudentConstraintsPage() {
               {/* Dynamic parameters depending on type */}
               {(selectedType === 'earliest_start' || selectedType === 'latest_end') && (
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                     Cut-off Time
                   </label>
                   <input
@@ -600,7 +600,7 @@ export default function StudentConstraintsPage() {
 
               {selectedType === 'max_hours_per_day' && (
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                     Maximum Academic Hours
                   </label>
                   <input
@@ -618,7 +618,7 @@ export default function StudentConstraintsPage() {
 
               {selectedType === 'protect_work_shifts' && (
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                     Transition Buffer Around Shifts (Minutes)
                   </label>
                   <input

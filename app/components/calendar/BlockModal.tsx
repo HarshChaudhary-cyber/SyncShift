@@ -350,20 +350,20 @@ export default function BlockModal({
 
           {/* Server error */}
           {serverError && (
-            <div className="p-3 bg-rose-950/70 border border-rose-600/60 rounded-lg text-xs text-rose-200 leading-relaxed">
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/70 border border-rose-300 dark:border-rose-600/60 rounded-lg text-xs text-rose-700 dark:text-rose-200 leading-relaxed">
               ⚠ {serverError}
             </div>
           )}
 
           {/* Scope choice dialog overlay for recurring edit/delete */}
           {scopeAction ? (
-            <div className="p-4 bg-indigo-950/40 border border-indigo-500/40 rounded-xl space-y-4">
+            <div className="p-4 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/40 rounded-xl space-y-4">
               <div>
-                <div className="flex items-center gap-2 text-indigo-300 font-bold text-sm">
+                <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-bold text-sm">
                   <span>🔁</span>
                   <span>{scopeAction === 'edit' ? 'Edit Recurring Event' : 'Delete Recurring Event'}</span>
                 </div>
-                <p className="text-xs text-indigo-200/80 mt-1">
+                <p className="text-xs text-indigo-900/80 dark:text-indigo-200/80 mt-1">
                   {scopeAction === 'edit'
                     ? `Choose how to apply your changes to "${initialBlock?.title}":`
                     : `Choose which occurrences of "${initialBlock?.title}" to delete:`}
@@ -378,7 +378,7 @@ export default function BlockModal({
                   onClick={() => handleApplyScope('this')}
                   className="w-full text-left p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-indigo-500 transition cursor-pointer group"
                 >
-                  <div className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-400 flex items-center justify-between">
+                  <div className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 flex items-center justify-between">
                     <span>This event only</span>
                     <span className="text-[10px] font-mono text-[var(--text-muted)]">
                       {initialBlock?.occurrence_date || 'this occurrence'}
@@ -398,7 +398,7 @@ export default function BlockModal({
                   onClick={() => handleApplyScope('future')}
                   className="w-full text-left p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-indigo-500 transition cursor-pointer group"
                 >
-                  <div className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-400">
+                  <div className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
                     This and future events
                   </div>
                   <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -415,7 +415,7 @@ export default function BlockModal({
                   onClick={() => handleApplyScope('all')}
                   className="w-full text-left p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-indigo-500 transition cursor-pointer group"
                 >
-                  <div className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-400">
+                  <div className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
                     Entire series
                   </div>
                   <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
@@ -437,14 +437,14 @@ export default function BlockModal({
               </div>
             </div>
           ) : conflictWarning ? (
-            <div className="p-4 bg-amber-950/50 border border-amber-500/50 rounded-xl text-xs space-y-3">
-              <p className="font-semibold text-amber-300">⚠ Schedule Conflict</p>
-              <p className="text-amber-200 leading-relaxed">{conflictWarning}</p>
+            <div className="p-4 bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-500/50 rounded-xl text-xs space-y-3">
+              <p className="font-semibold text-amber-800 dark:text-amber-300">⚠ Schedule Conflict</p>
+              <p className="text-amber-900 dark:text-amber-200 leading-relaxed">{conflictWarning}</p>
               <div className="flex justify-end gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => { setConflictWarning(null); setPendingSubmit(null); }}
-                  className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-xs transition cursor-pointer"
+                  className="px-3 py-1.5 bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg text-xs transition cursor-pointer"
                 >
                   Go Back
                 </button>
@@ -452,7 +452,7 @@ export default function BlockModal({
                   type="button"
                   onClick={handleForceConfirm}
                   disabled={saving}
-                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 rounded-lg text-xs font-medium transition cursor-pointer"
+                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 rounded-lg text-xs font-medium transition cursor-pointer"
                 >
                   {saving ? 'Saving…' : 'Add Anyway'}
                 </button>
@@ -489,8 +489,8 @@ export default function BlockModal({
 
               {/* ── Title ── */}
               <div>
-                <label className="block text-xs text-neutral-400 mb-1.5 font-medium">
-                  Title <span className="text-rose-400">*</span>
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
+                  Title <span className="text-rose-500">*</span>
                 </label>
                 <input
                   {...register('title', { required: 'Title is required' })}
@@ -503,15 +503,15 @@ export default function BlockModal({
                   autoComplete="off"
                 />
                 {errors.title && (
-                  <p className="text-[11px] text-rose-400 mt-1">{errors.title.message}</p>
+                  <p className="text-[11px] text-rose-500 mt-1">{errors.title.message}</p>
                 )}
               </div>
 
               {/* ── Day + Location ── */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-neutral-400 mb-1.5 font-medium">
-                    Day <span className="text-rose-400">*</span>
+                  <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
+                    Day <span className="text-rose-500">*</span>
                   </label>
                   <CustomSelect
                     options={DAYS}
@@ -521,7 +521,7 @@ export default function BlockModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-neutral-400 mb-1.5 font-medium">
+                  <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
                     Location
                   </label>
                   <input
@@ -536,8 +536,8 @@ export default function BlockModal({
               {/* ── Start / End time ── */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-neutral-400 mb-1.5 font-medium">
-                    Start Time <span className="text-rose-400">*</span>
+                  <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
+                    Start Time <span className="text-rose-500">*</span>
                   </label>
                   <TimePicker
                     value={startTime}
@@ -545,12 +545,12 @@ export default function BlockModal({
                     error={Boolean(errors.start_time || isTimeInvalid)}
                   />
                   {errors.start_time && (
-                    <p className="text-[11px] text-rose-400 mt-0.5">{errors.start_time.message}</p>
+                    <p className="text-[11px] text-rose-500 mt-0.5">{errors.start_time.message}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs text-neutral-400 mb-1.5 font-medium">
-                    End Time <span className="text-rose-400">*</span>
+                  <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
+                    End Time <span className="text-rose-500">*</span>
                   </label>
                   <TimePicker
                     value={endTime}
@@ -558,19 +558,19 @@ export default function BlockModal({
                     error={Boolean(errors.end_time || isTimeInvalid)}
                   />
                   {errors.end_time && (
-                    <p className="text-[11px] text-rose-400 mt-0.5">{errors.end_time.message}</p>
+                    <p className="text-[11px] text-rose-500 mt-0.5">{errors.end_time.message}</p>
                   )}
                 </div>
               </div>
               {isTimeInvalid && (
-                <p className="text-[11px] text-rose-400 -mt-2 flex items-center gap-1">
+                <p className="text-[11px] text-rose-500 -mt-2 flex items-center gap-1">
                   <span>⚠</span> End time must be after start time
                 </p>
               )}
 
               {/* ── Recurrence Pattern ── */}
               <div>
-                <label className="block text-xs text-neutral-400 mb-1.5 font-medium">
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
                   Recurrence
                 </label>
                 <div className="grid grid-cols-3 gap-2 text-xs font-medium">
@@ -589,7 +589,7 @@ export default function BlockModal({
                       }
                       className={`p-2 rounded-lg border text-center transition cursor-pointer ${
                         watch('recurrence_pattern') === item.id
-                          ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 font-semibold ring-1 ring-indigo-500/40'
+                          ? 'bg-indigo-50 dark:bg-indigo-600/20 border-indigo-500 text-indigo-700 dark:text-indigo-300 font-semibold ring-1 ring-indigo-500/40'
                           : 'bg-[var(--bg-input)] border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
                       }`}
                     >
@@ -603,7 +603,7 @@ export default function BlockModal({
               {/* ── Effective Dates (Semester / Schedule Window) ── */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-neutral-400 mb-1.5 font-medium">
+                  <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
                     Effective From
                   </label>
                   <DatePicker
@@ -612,7 +612,7 @@ export default function BlockModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-neutral-400 mb-1.5 font-medium">
+                  <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
                     Effective Until
                   </label>
                   <DatePicker
@@ -625,7 +625,7 @@ export default function BlockModal({
                 </div>
               </div>
               {isDateInvalid && (
-                <p className="text-[11px] text-rose-400 -mt-2 flex items-center gap-1">
+                <p className="text-[11px] text-rose-500 -mt-2 flex items-center gap-1">
                   <span>⚠</span> End date must be on or after start date
                 </p>
               )}
@@ -633,11 +633,11 @@ export default function BlockModal({
               {/* ── Class-only: course dropdown ── */}
               {isClass && (
                 <div>
-                  <label className="block text-xs text-neutral-400 mb-1.5 font-medium">
+                  <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
                     Course
                   </label>
                   {coursesLoading ? (
-                    <div className="text-xs text-neutral-500 py-2">Loading courses…</div>
+                    <div className="text-xs text-[var(--text-muted)] py-2">Loading courses…</div>
                   ) : (
                     <CustomSelect
                       options={[
@@ -670,7 +670,7 @@ export default function BlockModal({
                     <button
                       type="button"
                       onClick={() => { setShowNewCourse(true); setValue('course_id', ''); }}
-                      className="mt-2 text-xs text-blue-400 hover:text-blue-300 underline transition cursor-pointer"
+                      className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline transition cursor-pointer"
                     >
                       Open new course form →
                     </button>
@@ -678,16 +678,16 @@ export default function BlockModal({
 
                   {/* Inline new-course form */}
                   {showNewCourse && (
-                    <div className="mt-3 p-3 bg-neutral-800/60 border border-neutral-700 rounded-xl space-y-3">
-                      <p className="text-xs font-semibold text-neutral-300">Create New Course</p>
+                    <div className="mt-3 p-3 bg-slate-100 dark:bg-neutral-800/60 border border-slate-300 dark:border-neutral-700 rounded-xl space-y-3">
+                      <p className="text-xs font-semibold text-slate-800 dark:text-neutral-300">Create New Course</p>
 
                       {newCourseError && (
-                        <p className="text-[11px] text-rose-400">{newCourseError}</p>
+                        <p className="text-[11px] text-rose-500">{newCourseError}</p>
                       )}
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[11px] text-neutral-400 mb-1">Code *</label>
+                          <label className="block text-[11px] text-slate-600 dark:text-neutral-400 mb-1">Code *</label>
                           <input
                             value={newCourse.code}
                             onChange={(e) => setNewCourse((p) => ({ ...p, code: e.target.value }))}
@@ -698,7 +698,7 @@ export default function BlockModal({
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] text-neutral-400 mb-1">Name *</label>
+                          <label className="block text-[11px] text-slate-600 dark:text-neutral-400 mb-1">Name *</label>
                           <input
                             value={newCourse.name}
                             onChange={(e) => setNewCourse((p) => ({ ...p, name: e.target.value }))}
@@ -711,7 +711,7 @@ export default function BlockModal({
 
                       {/* Color picker */}
                       <div>
-                        <label className="block text-[11px] text-neutral-400 mb-1.5">Color</label>
+                        <label className="block text-[11px] text-slate-600 dark:text-neutral-400 mb-1.5">Color</label>
                         <div className="flex items-center gap-2 flex-wrap">
                           {PRESET_COLORS.map((c) => (
                             <button
@@ -720,7 +720,7 @@ export default function BlockModal({
                               onClick={() => setNewCourse((p) => ({ ...p, color: c }))}
                               style={{ backgroundColor: c }}
                               className={`w-6 h-6 rounded-full shrink-0 cursor-pointer transition-transform hover:scale-110 ${
-                                newCourse.color === c ? 'ring-2 ring-white ring-offset-1 ring-offset-neutral-800 scale-110' : ''
+                                newCourse.color === c ? 'ring-2 ring-indigo-500 ring-offset-1 ring-offset-[var(--bg-card)] scale-110' : ''
                               }`}
                               aria-label={`Color ${c}`}
                             />
@@ -739,7 +739,7 @@ export default function BlockModal({
                         <button
                           type="button"
                           onClick={() => { setShowNewCourse(false); setNewCourseError(null); }}
-                          className="px-2.5 py-1 text-xs bg-neutral-700 hover:bg-neutral-600 rounded-lg transition cursor-pointer"
+                          className="px-2.5 py-1 text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 dark:bg-neutral-700 dark:hover:bg-neutral-600 dark:text-white rounded-lg transition cursor-pointer font-medium"
                         >
                           Cancel
                         </button>
@@ -747,7 +747,7 @@ export default function BlockModal({
                           type="button"
                           onClick={handleCreateCourse}
                           disabled={creatingCourse}
-                          className="px-2.5 py-1 text-xs bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg font-medium transition cursor-pointer"
+                          className="px-2.5 py-1 text-xs bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50 rounded-lg font-medium transition cursor-pointer"
                         >
                           {creatingCourse ? 'Creating…' : 'Create Course'}
                         </button>
@@ -761,11 +761,11 @@ export default function BlockModal({
               {!isClass && (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs text-neutral-400 mb-1.5 font-medium">
+                    <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
                       Hourly Wage ($/hr)
                     </label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm pointer-events-none">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-neutral-400 text-sm pointer-events-none">$</span>
                       <input
                         type="number"
                         min="0"
@@ -784,14 +784,14 @@ export default function BlockModal({
                         {...register('is_flexible')}
                         className="sr-only peer"
                       />
-                      <div className="w-9 h-5 bg-neutral-700 peer-checked:bg-emerald-600 rounded-full transition-colors" />
+                      <div className="w-9 h-5 bg-slate-300 dark:bg-neutral-700 peer-checked:bg-emerald-600 rounded-full transition-colors" />
                       <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-neutral-200 group-hover:text-white transition">
+                      <p className="text-xs font-medium text-[var(--text-primary)]">
                         I can move this shift
                       </p>
-                      <p className="text-[11px] text-neutral-500">
+                      <p className="text-[11px] text-[var(--text-muted)]">
                         Marks shift as flexible for scheduling
                       </p>
                     </div>

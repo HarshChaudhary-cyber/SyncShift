@@ -35,15 +35,15 @@ export default function ScheduleHealthCard({ health, loading }: ScheduleHealthCa
   const getBadgeClass = (cat: string) => {
     switch (cat) {
       case 'Excellent':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+        return 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30';
       case 'Healthy':
-        return 'bg-teal-500/10 text-teal-400 border-teal-500/30';
+        return 'bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-500/30';
       case 'Moderate':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+        return 'bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-500/30';
       case 'Needs attention':
-        return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
+        return 'bg-orange-50 dark:bg-orange-500/10 text-orange-800 dark:text-orange-400 border-orange-200 dark:border-orange-500/30';
       default:
-        return 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+        return 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30';
     }
   };
 
@@ -112,7 +112,7 @@ export default function ScheduleHealthCard({ health, loading }: ScheduleHealthCa
         </span>
         <Link
           href="/analytics"
-          className="text-xs font-bold text-indigo-500 hover:text-indigo-400 transition flex items-center gap-1 cursor-pointer"
+          className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition flex items-center gap-1 cursor-pointer"
         >
           <span>Improve my week</span>
           <span>→</span>

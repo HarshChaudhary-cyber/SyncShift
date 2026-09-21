@@ -8,6 +8,7 @@ import { useAuthContext } from '@/context/AuthContext';
 import { ApiError } from '@/lib/api';
 import { OAuthButtons, OAuthDivider } from '@/components/auth/OAuthButtons';
 import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
+import { getPortalRedirect } from '@/components/RoleGuard';
 import CustomSelect from '@/components/ui/CustomSelect';
 import { TIMEZONE_OPTIONS } from '@/lib/timezones';
 
@@ -33,7 +34,7 @@ const COMMON_TIMEZONES = [
 
 export default function SignupPage() {
   const router = useRouter();
-  const { status, register: authRegister } = useAuthContext();
+  const { status, user, register: authRegister } = useAuthContext();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -59,12 +60,12 @@ export default function SignupPage() {
     }
   }, []);
 
-  // If already authenticated, redirect to student dashboard
+  // If already authenticated, redirect to the correct portal
   useEffect(() => {
-    if (status === 'authenticated') {
-      router.replace('/student/dashboard');
+    if (status === 'authenticated' && user) {
+      router.replace(getPortalRedirect(user.institution_role));
     }
-  }, [status, router]);
+  }, [status, user, router]);
 
   // Real-time password strength evaluation
   const passwordCriteria = useMemo(() => {
@@ -200,7 +201,7 @@ export default function SignupPage() {
 
           {/* OAuth Buttons & Divider placed ABOVE email form */}
           <div className="px-4 sm:px-5 pt-2 pb-0">
-            <OAuthButtons onSuccessRedirect="/student/dashboard" captchaToken={captchaToken} />
+            <OAuthButtons captchaToken={captchaToken} />
             <OAuthDivider text="OR" />
           </div>
 
@@ -276,7 +277,7 @@ export default function SignupPage() {
                             : passwordScore === 2
                             ? 'bg-amber-500'
                             : 'bg-emerald-500'
-                          : 'bg-neutral-800'
+                          : 'bg-slate-200 dark:bg-neutral-800'
                       }`}
                     />
                     <div
@@ -285,33 +286,33 @@ export default function SignupPage() {
                           ? passwordScore === 2
                             ? 'bg-amber-500'
                             : 'bg-emerald-500'
-                          : 'bg-neutral-800'
+                          : 'bg-slate-200 dark:bg-neutral-800'
                       }`}
                     />
                     <div
                       className={`flex-1 rounded-full transition-colors ${
-                        passwordScore === 3 ? 'bg-emerald-500' : 'bg-neutral-800'
+                        passwordScore === 3 ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-neutral-800'
                       }`}
                     />
                   </div>
-                  <div className="flex justify-between items-center text-[10px] text-neutral-400">
+                  <div className="flex justify-between items-center text-[10px]">
                     <span
                       className={
-                        passwordCriteria.hasMinLength ? 'text-emerald-400' : 'text-neutral-500'
+                        passwordCriteria.hasMinLength ? 'text-emerald-700 dark:text-emerald-400 font-medium' : 'text-slate-500 dark:text-neutral-500'
                       }
                     >
                       {passwordCriteria.hasMinLength ? '✓' : '•'} 8+ chars
                     </span>
                     <span
                       className={
-                        passwordCriteria.hasUppercase ? 'text-emerald-400' : 'text-neutral-500'
+                        passwordCriteria.hasUppercase ? 'text-emerald-700 dark:text-emerald-400 font-medium' : 'text-slate-500 dark:text-neutral-500'
                       }
                     >
                       {passwordCriteria.hasUppercase ? '✓' : '•'} 1 uppercase
                     </span>
                     <span
                       className={
-                        passwordCriteria.hasNumber ? 'text-emerald-400' : 'text-neutral-500'
+                        passwordCriteria.hasNumber ? 'text-emerald-700 dark:text-emerald-400 font-medium' : 'text-slate-500 dark:text-neutral-500'
                       }
                     >
                       {passwordCriteria.hasNumber ? '✓' : '•'} 1 number
@@ -443,7 +444,7 @@ export default function SignupPage() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="flex items-start gap-2 text-xs text-rose-300 bg-rose-950/60 border border-rose-700/60 rounded-lg px-3 py-2 break-words"
+                  className="flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700/60 rounded-lg px-3 py-2 break-words"
                 >
                   <span className="shrink-0 mt-0.5">⚠️</span>
                   <span>{error}</span>

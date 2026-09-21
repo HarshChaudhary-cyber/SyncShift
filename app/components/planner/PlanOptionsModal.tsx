@@ -68,7 +68,7 @@ export default function PlanOptionsModal({
                   onClick={() => setSelectedOptionId(opt.id)}
                   className={`relative p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between text-left ${
                     isSelected
-                      ? 'bg-purple-950/20 border-purple-500/80 shadow-lg shadow-purple-950/30 ring-1 ring-purple-500/50'
+                      ? 'bg-purple-50/70 dark:bg-purple-950/20 border-purple-500/80 shadow-lg shadow-purple-950/30 ring-1 ring-purple-500/50'
                       : 'bg-[var(--bg-secondary)] border-[var(--border-color)] hover:border-purple-500/40 opacity-80 hover:opacity-100'
                   }`}
                 >
@@ -83,7 +83,7 @@ export default function PlanOptionsModal({
                       <h3 className="font-bold text-base text-[var(--text-primary)]">
                         {opt.name}
                       </h3>
-                      <div className="px-2.5 py-1 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 font-extrabold text-xs">
+                      <div className="px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-500/15 border border-purple-200 dark:border-purple-500/30 text-purple-700 dark:text-purple-300 font-extrabold text-xs">
                         {opt.score}/100
                       </div>
                     </div>
@@ -94,7 +94,7 @@ export default function PlanOptionsModal({
 
                   <div className="pt-4 mt-3 border-t border-[var(--border-color)]/60 flex items-center justify-between text-xs text-[var(--text-secondary)]">
                     <span>{opt.summary.added_study_blocks_count} study blocks</span>
-                    <span className="text-purple-400 font-semibold">{opt.summary.total_study_hours}h total</span>
+                    <span className="text-purple-600 dark:text-purple-400 font-semibold">{opt.summary.total_study_hours}h total</span>
                   </div>
                 </div>
               );
@@ -106,38 +106,38 @@ export default function PlanOptionsModal({
             <div className="rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-color)] p-5 space-y-5">
               {/* Change Impact Preview Bar */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                <div className="p-3 rounded-xl bg-purple-950/30 border border-purple-800/40">
-                  <div className="text-lg font-bold text-purple-300">
+                <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/40">
+                  <div className="text-lg font-bold text-purple-700 dark:text-purple-300">
                     +{selectedOption.summary.added_study_blocks_count}
                   </div>
-                  <div className="text-[11px] text-purple-400/80 uppercase tracking-wide font-medium">
+                  <div className="text-[11px] text-purple-800/80 dark:text-purple-400/80 uppercase tracking-wide font-medium">
                     Study Blocks Added
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-800/40">
-                  <div className="text-lg font-bold text-blue-300">
+                <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40">
+                  <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
                     {selectedOption.summary.unchanged_classes_count}
                   </div>
-                  <div className="text-[11px] text-blue-400/80 uppercase tracking-wide font-medium">
+                  <div className="text-[11px] text-blue-800/80 dark:text-blue-400/80 uppercase tracking-wide font-medium">
                     Classes Unchanged (Fixed)
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-800/40">
-                  <div className="text-lg font-bold text-amber-300">
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40">
+                  <div className="text-lg font-bold text-amber-800 dark:text-amber-300">
                     {selectedOption.summary.unchanged_fixed_commitments_count}
                   </div>
-                  <div className="text-[11px] text-amber-400/80 uppercase tracking-wide font-medium">
+                  <div className="text-[11px] text-amber-800/80 dark:text-amber-400/80 uppercase tracking-wide font-medium">
                     Fixed Shifts Intact
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-800/40">
-                  <div className="text-lg font-bold text-emerald-300">
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40">
+                  <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
                     0
                   </div>
-                  <div className="text-[11px] text-emerald-400/80 uppercase tracking-wide font-medium">
+                  <div className="text-[11px] text-emerald-800/80 dark:text-emerald-400/80 uppercase tracking-wide font-medium">
                     Conflicts Detected
                   </div>
                 </div>
@@ -176,7 +176,7 @@ export default function PlanOptionsModal({
                   </h4>
                   <button
                     onClick={() => setShowDetails(!showDetails)}
-                    className="text-xs text-purple-400 hover:text-purple-300 font-semibold underline cursor-pointer"
+                    className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-semibold underline cursor-pointer"
                   >
                     {showDetails ? 'Hide Session List' : 'View Session List'}
                   </button>
@@ -200,7 +200,7 @@ export default function PlanOptionsModal({
                         </div>
 
                         <div className="text-right shrink-0">
-                          <div className="font-semibold text-purple-300">
+                          <div className="font-semibold text-purple-700 dark:text-purple-300">
                             {blk.start_time.slice(0, 5)} – {blk.end_time.slice(0, 5)}
                           </div>
                           <div className="text-[var(--text-secondary)] text-[11px]">

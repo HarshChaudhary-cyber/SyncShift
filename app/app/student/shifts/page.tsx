@@ -87,12 +87,12 @@ function ShiftsContent() {
         </div>
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm">
           <p className="text-xs font-medium text-[var(--text-muted)]">Total Hours</p>
-          <p className="text-2xl font-black text-emerald-400 mt-1">{totalShiftHours.toFixed(1)} hrs</p>
+          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{totalShiftHours.toFixed(1)} hrs</p>
           <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Scheduled across all shifts</p>
         </div>
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm">
           <p className="text-xs font-medium text-[var(--text-muted)]">Privacy Guarantee</p>
-          <p className="text-sm font-semibold text-indigo-400 mt-1">100% Private</p>
+          <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 mt-1">100% Private</p>
           <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Hidden from university faculty & staff</p>
         </div>
       </div>
@@ -129,7 +129,7 @@ function ShiftsContent() {
               return (
                 <div key={shift.id} className="py-3.5 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-xs">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-bold text-xs">
                       💼
                     </div>
                     <div>
@@ -150,7 +150,7 @@ function ShiftsContent() {
                     </button>
                     <button
                       onClick={() => handleDelete(shift.id, shift.title)}
-                      className="px-2.5 py-1 text-xs font-medium rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition cursor-pointer"
+                      className="px-2.5 py-1 text-xs font-medium rounded-lg text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition cursor-pointer"
                     >
                       Delete
                     </button>

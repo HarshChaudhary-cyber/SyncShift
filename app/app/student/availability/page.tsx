@@ -212,9 +212,9 @@ export default function StudentAvailabilityPage() {
               <span>{day.name}</span>
               {count > 0 && (
                 <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                    isSelected ? 'bg-black/30 text-white' : 'bg-indigo-500/20 text-indigo-400'
-                  }`}
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                      isSelected ? 'bg-black/25 text-white' : 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400'
+                    }`}
                 >
                   {count}
                 </span>
@@ -336,7 +336,7 @@ export default function StudentAvailabilityPage() {
                     <button
                       type="button"
                       onClick={() => handleRemoveSlot(slot.origIndex)}
-                      className="px-2.5 py-1.5 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition cursor-pointer self-end sm:self-auto"
+                      className="px-2.5 py-1.5 rounded-xl text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition cursor-pointer self-end sm:self-auto"
                       title="Delete interval"
                     >
                       🗑️

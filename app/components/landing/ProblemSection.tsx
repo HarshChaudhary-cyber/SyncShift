@@ -12,7 +12,7 @@ const PAIN_POINTS = [
     desc: 'Universities shift seminar slots and lecture halls with zero regard for your employer’s fixed weekly shifts and manager’s rota.',
     accent: 'from-blue-500/20 to-blue-500/5',
     border: 'group-hover:border-blue-500/50',
-    iconColor: 'text-blue-400',
+    iconColor: 'text-blue-600 dark:text-blue-400',
     badge: 'Shift Lock-In',
   },
   {
@@ -22,7 +22,7 @@ const PAIN_POINTS = [
     desc: 'By the time course registration closes, you realize mandatory lab sessions collide directly with your highest-paying café shift.',
     accent: 'from-amber-500/20 to-amber-500/5',
     border: 'group-hover:border-amber-500/50',
-    iconColor: 'text-amber-400',
+    iconColor: 'text-amber-600 dark:text-amber-400',
     badge: 'Double Booking',
   },
   {
@@ -32,7 +32,7 @@ const PAIN_POINTS = [
     desc: 'Tracking the strict 20h/week student work limit across odd shifts and exams shouldn’t require mental math or messy spreadsheets.',
     accent: 'from-rose-500/20 to-rose-500/5',
     border: 'group-hover:border-rose-500/50',
-    iconColor: 'text-rose-400',
+    iconColor: 'text-rose-600 dark:text-rose-400',
     badge: 'Visa Risk',
   },
 ];
@@ -51,7 +51,7 @@ export default function ProblemSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/40 border border-red-800/40 text-xs font-semibold text-red-300 mb-4"
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 dark:bg-red-950/40 border border-rose-200 dark:border-red-800/40 text-xs font-semibold text-rose-700 dark:text-red-300 mb-4"
           >
             <span>The Student Worker Dilemma</span>
           </motion.div>

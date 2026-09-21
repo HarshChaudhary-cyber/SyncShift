@@ -445,6 +445,16 @@ def test_file_import_path_traversal_and_size_limits():
     assert "not allowed" in resp_exe.json()["error"]["message"].lower() or "unsupported" in resp_exe.json()["error"]["code"].lower()
 
 
+def _is_redis_alive() -> bool:
+    try:
+        import redis
+        r = redis.Redis.from_url(settings.REDIS_URL, socket_connect_timeout=0.5, socket_timeout=0.5)
+        return bool(r.ping())
+    except Exception:
+        return False
+
+
+@pytest.mark.skipif(not _is_redis_alive(), reason="Redis server is required for rate limit test")
 def test_password_change_rate_limiting():
     """Change password endpoint enforces rate limiting (5 attempts per minute)."""
     reset_rate_limits()

@@ -92,11 +92,11 @@ export default function EventHoverCard({
               <span className="flex items-center gap-1">
                 <span>⚠️</span> Schedule Conflict
               </span>
-              <span className="text-[10px] uppercase px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">
+              <span className="text-[10px] uppercase px-1.5 py-0.2 rounded bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 font-bold">
                 {activeConflict.severity || 'Overlap'}
               </span>
             </div>
-            <p className="text-rose-400 dark:text-rose-300 text-[11px] leading-tight">
+            <p className="text-rose-700 dark:text-rose-300 text-[11px] leading-tight">
               Overlaps {activeConflict.overlap_minutes}m
               {conflictingBlock ? ` with "${conflictingBlock.title}"` : ''}
             </p>

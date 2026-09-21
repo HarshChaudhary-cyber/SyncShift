@@ -80,11 +80,11 @@ export default function StudentCoursesPage() {
 
       {/* Show a prompt if no institution */}
       {!institution && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-3">
+        <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl flex items-start gap-3">
           <span className="text-xl">⚠️</span>
           <div className="text-xs space-y-1">
-            <div className="font-bold text-amber-300">No University Institution Linked</div>
-            <p className="text-amber-200/80">
+            <div className="font-bold text-amber-800 dark:text-amber-300">No University Institution Linked</div>
+            <p className="text-amber-900/80 dark:text-amber-200/80">
               Your account is not currently registered in an active institution. Please contact your academic department or registrar to enroll you in sections.
             </p>
           </div>

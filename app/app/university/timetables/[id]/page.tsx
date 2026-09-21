@@ -418,25 +418,25 @@ export default function TimetableDetailPage() {
         <div>
           <Link
             href="/university/timetables"
-            className="inline-flex items-center text-sm text-slate-400 hover:text-white transition-colors mb-2"
+            className="inline-flex items-center text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors mb-2"
           >
             ← Back to Timetables
           </Link>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">{timetable.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{timetable.name}</h1>
             <span
-              className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${
+              className={`px-2.5 py-0.5 text-xs font-semibold rounded-full ${
                 timetable.status === 'active'
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30'
                   : timetable.status === 'draft'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                  : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                  ? 'bg-amber-50 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30'
+                  : 'bg-slate-100 dark:bg-slate-500/20 text-slate-700 dark:text-slate-400 border border-slate-200 dark:border-slate-500/30'
               }`}
             >
               {timetable.status.toUpperCase()}
             </span>
           </div>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
             {timetable.term_name || 'Academic Term'} • Timezone: {institution?.timezone || 'UTC'}
             {timetable.description && ` • ${timetable.description}`}
           </p>
@@ -449,7 +449,7 @@ export default function TimetableDetailPage() {
               {timetable.status !== 'active' && (
                 <button
                   onClick={() => handleStatusChange('active')}
-                  className="px-3 py-2 bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600/30 text-emerald-300 rounded-lg text-sm font-medium transition-all"
+                  className="px-3 py-2 bg-emerald-50 dark:bg-emerald-600/20 border border-emerald-200 dark:border-emerald-500/40 hover:bg-emerald-100 dark:hover:bg-emerald-600/30 text-emerald-700 dark:text-emerald-300 rounded-lg text-sm font-medium transition-all cursor-pointer"
                 >
                   ✓ Set as Active Baseline
                 </button>
@@ -457,27 +457,27 @@ export default function TimetableDetailPage() {
               {timetable.status === 'active' && (
                 <button
                   onClick={() => handleStatusChange('archived')}
-                  className="px-3 py-2 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-medium transition-all"
+                  className="px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-all cursor-pointer"
                 >
                   Archive
                 </button>
               )}
               <button
                 onClick={() => setEditTimetableOpen(true)}
-                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-sm font-medium transition-colors"
+                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors cursor-pointer"
               >
                 Edit Info
               </button>
               <button
                 onClick={() => setPublishModalOpen(true)}
-                className="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-sm font-semibold shadow-md hover:shadow-emerald-500/20 transition-all flex items-center gap-1.5"
+                className="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-sm font-semibold shadow-md hover:shadow-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
                 title="Publish official version and notify affected students"
               >
                 <span>📢</span> Publish Timetable
               </button>
               <button
                 onClick={openCreateMeetingModal}
-                className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg text-sm font-medium shadow-md hover:shadow-indigo-500/25 transition-all flex items-center gap-1.5"
+                className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg text-sm font-medium shadow-md hover:shadow-indigo-500/25 transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <span>+</span> Add Meeting
               </button>
@@ -488,16 +488,16 @@ export default function TimetableDetailPage() {
 
       {/* Success Notification Banner */}
       {successNotice && (
-        <div className="p-4 bg-emerald-950/40 border border-emerald-500/40 rounded-xl flex items-center justify-between gap-3 text-emerald-200 text-sm animate-in fade-in">
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/40 rounded-xl flex items-center justify-between gap-3 text-emerald-900 dark:text-emerald-200 text-sm animate-in fade-in">
           <div className="flex items-center gap-2.5">
-            <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
+            <span className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
               ✓
             </span>
             <span>{successNotice}</span>
           </div>
           <button
             onClick={() => setSuccessNotice(null)}
-            className="text-emerald-400 hover:text-white text-xs px-2 py-1 rounded hover:bg-emerald-900/50 transition-colors"
+            className="text-emerald-700 hover:text-emerald-950 dark:text-emerald-400 dark:hover:text-white text-xs px-2 py-1 rounded hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors cursor-pointer"
           >
             Dismiss
           </button>
@@ -506,18 +506,18 @@ export default function TimetableDetailPage() {
 
       {/* Change Preview Mode Banner */}
       {proposedChange && (
-        <div className="p-4 bg-amber-950/40 border border-amber-500/50 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-amber-200 text-sm animate-in fade-in shadow-lg">
+        <div className="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-500/50 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-amber-900 dark:text-amber-200 text-sm animate-in fade-in shadow-md">
           <div className="flex items-center gap-3">
             <span className="px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-amber-500 text-slate-950 shadow-sm shrink-0">
               Change Preview
             </span>
             <div>
-              <p className="font-semibold text-white">
+              <p className="font-semibold text-slate-900 dark:text-white">
                 Proposed move: {proposedChange.meeting.course_code || 'Class'} to{' '}
                 {DAYS_OF_WEEK.find((d) => d.value === proposedChange.proposal.day_of_week)?.label}{' '}
                 {proposedChange.proposal.start_time}–{proposedChange.proposal.end_time}
               </p>
-              <p className="text-xs text-amber-300/80">
+              <p className="text-xs text-amber-800 dark:text-amber-300/80">
                 Official timetable remains unchanged until explicitly confirmed.
               </p>
             </div>
@@ -525,13 +525,13 @@ export default function TimetableDetailPage() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setImpactModalOpen(true)}
-              className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold rounded-lg text-xs shadow-md transition-all flex items-center gap-1.5"
+              className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold rounded-lg text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <span>🔍</span> Review Impact & Apply
             </button>
             <button
               onClick={handleCancelProposedChange}
-              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg text-xs transition-colors"
+              className="px-3 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-lg text-xs transition-colors cursor-pointer"
             >
               Discard Move
             </button>
@@ -541,49 +541,49 @@ export default function TimetableDetailPage() {
 
       {/* Metrics Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
-          <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Meetings</p>
-          <p className="text-2xl font-bold text-white mt-1">{meetings.length}</p>
+        <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs">
+          <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Total Meetings</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{meetings.length}</p>
         </div>
-        <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
-          <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Sections Scheduled</p>
-          <p className="text-2xl font-bold text-indigo-400 mt-1">
+        <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs">
+          <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Sections Scheduled</p>
+          <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400 mt-1">
             {new Set(meetings.map((m) => m.section_id)).size}
           </p>
         </div>
-        <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
-          <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Rooms Utilized</p>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">
+        <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs">
+          <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Rooms Utilized</p>
+          <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mt-1">
             {new Set(meetings.filter((m) => m.room_id).map((m) => m.room_id)).size}
           </p>
         </div>
-        <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-xl">
-          <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Faculty Assigned</p>
-          <p className="text-2xl font-bold text-amber-400 mt-1">
+        <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs">
+          <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Faculty Assigned</p>
+          <p className="text-2xl font-bold text-amber-700 dark:text-amber-400 mt-1">
             {new Set(meetings.filter((m) => m.faculty_id).map((m) => m.faculty_id)).size}
           </p>
         </div>
       </div>
 
       {/* View Switcher & Quick Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setViewMode('calendar')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
               viewMode === 'calendar'
                 ? 'bg-indigo-600 text-white shadow-sm'
-                : 'bg-slate-800/80 text-slate-400 hover:text-white'
+                : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             📅 Weekly Grid
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
               viewMode === 'list'
                 ? 'bg-indigo-600 text-white shadow-sm'
-                : 'bg-slate-800/80 text-slate-400 hover:text-white'
+                : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             📋 List View ({meetings.length})
@@ -619,7 +619,6 @@ export default function TimetableDetailPage() {
                 value={filterRoom}
                 onChange={(val) => setFilterRoom(String(val))}
                 size="sm"
-                searchable
                 portalTheme="university"
               />
             </div>
@@ -629,8 +628,8 @@ export default function TimetableDetailPage() {
 
       {/* Main View Area */}
       {viewMode === 'calendar' ? (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 overflow-hidden">
-          <div className="mb-3 flex items-center justify-between text-xs text-slate-400">
+        <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-4 overflow-hidden shadow-xs">
+          <div className="mb-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Weekly Schedule Matrix (Click a class block to view details or edit)</span>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1.5">
@@ -689,9 +688,9 @@ export default function TimetableDetailPage() {
         </div>
       ) : (
         /* List View */
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden">
+        <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
           {filteredMeetings.length === 0 ? (
-            <div className="p-8 text-center text-slate-400">
+            <div className="p-8 text-center text-slate-500 dark:text-slate-400">
               <p className="text-base font-medium">No meetings match current filters</p>
               <p className="text-sm text-slate-500 mt-1">Add meetings or adjust day/room filters above.</p>
             </div>
@@ -699,7 +698,7 @@ export default function TimetableDetailPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800 bg-slate-950/40 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     <th className="px-4 py-3">Course & Section</th>
                     <th className="px-4 py-3">Type</th>
                     <th className="px-4 py-3">Day</th>
@@ -709,30 +708,30 @@ export default function TimetableDetailPage() {
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 text-sm">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-sm">
                   {filteredMeetings.map((m) => {
                     const dayObj = DAYS_OF_WEEK.find((d) => d.value === m.day_of_week);
                     return (
-                      <tr key={m.id} className="hover:bg-slate-800/40 transition-colors">
-                        <td className="px-4 py-3 font-medium text-white">
+                      <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                        <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-indigo-400">{m.course_code || 'Course'}</span>
-                            <span className="px-1.5 py-0.5 text-xs bg-slate-800 text-slate-300 rounded">
+                            <span className="font-semibold text-indigo-700 dark:text-indigo-400">{m.course_code || 'Course'}</span>
+                            <span className="px-1.5 py-0.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded font-medium">
                               Sec {m.section_code || m.section_id}
                             </span>
                           </div>
-                          <div className="text-xs text-slate-400 mt-0.5">{m.course_name}</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{m.course_name}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 text-xs rounded bg-slate-800 text-slate-300 capitalize">
+                          <span className="px-2 py-0.5 text-xs rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 capitalize font-medium">
                             {m.meeting_type}
                           </span>
                         </td>
-                        <td className="px-4 py-3 font-medium text-slate-200">{dayObj?.label || m.day_of_week}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-slate-300">
+                        <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{dayObj?.label || m.day_of_week}</td>
+                        <td className="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-300">
                           {m.start_time.substring(0, 5)} – {m.end_time.substring(0, 5)}
                         </td>
-                        <td className="px-4 py-3 text-slate-300">
+                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
                           {m.room_number ? (
                             <div>
                               <span>Rm {m.room_number}</span>
@@ -741,24 +740,24 @@ export default function TimetableDetailPage() {
                               )}
                             </div>
                           ) : (
-                            <span className="text-slate-500 italic">Unassigned</span>
+                            <span className="text-slate-400 dark:text-slate-500 italic">Unassigned</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-slate-300">
-                          {m.faculty_name || <span className="text-slate-500 italic">Unassigned</span>}
+                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                          {m.faculty_name || <span className="text-slate-400 dark:text-slate-500 italic">Unassigned</span>}
                         </td>
                         <td className="px-4 py-3 text-right">
                           {isAdmin && (
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => openEditMeetingModal(m)}
-                                className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded transition-colors"
+                                className="px-2.5 py-1 text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded transition-colors cursor-pointer"
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => handleDeleteMeeting(m.id)}
-                                className="px-2.5 py-1 text-xs bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/40 rounded transition-colors"
+                                className="px-2.5 py-1 text-xs bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/40 rounded transition-colors cursor-pointer"
                               >
                                 Remove
                               </button>
@@ -778,14 +777,14 @@ export default function TimetableDetailPage() {
       {/* Meeting Create / Edit Modal */}
       {meetingModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/40">
-              <h2 className="text-lg font-bold text-white">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                 {editingMeeting ? 'Edit Scheduled Meeting' : 'Schedule New Course Meeting'}
               </h2>
               <button
                 onClick={() => setMeetingModalOpen(false)}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
               >
                 ✕
               </button>
@@ -793,14 +792,14 @@ export default function TimetableDetailPage() {
 
             <form onSubmit={handleSaveMeeting} className="p-6 space-y-4">
               {meetingError && (
-                <div className="p-3 bg-red-950/50 border border-red-800/80 rounded-xl text-red-200 text-xs leading-relaxed">
+                <div className="p-3 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/80 rounded-xl text-red-700 dark:text-red-200 text-xs leading-relaxed font-medium">
                   ⚠️ {meetingError}
                 </div>
               )}
 
               {/* Section Select */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Academic Section *
                 </label>
                 <CustomSelect
@@ -815,7 +814,7 @@ export default function TimetableDetailPage() {
                   portalTheme="university"
                 />
                 {selectedSection && (
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     Section Capacity: {selectedSection.capacity}
                   </p>
                 )}
@@ -824,7 +823,7 @@ export default function TimetableDetailPage() {
               {/* Day and Type */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                     Day of Week *
                   </label>
                   <CustomSelect
@@ -839,7 +838,7 @@ export default function TimetableDetailPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                     Meeting Type
                   </label>
                   <CustomSelect
@@ -857,27 +856,27 @@ export default function TimetableDetailPage() {
               {/* Start & End Time */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                     Start Time *
                   </label>
                   <input
                     type="time"
                     value={meetingForm.start_time}
                     onChange={(e) => setMeetingForm({ ...meetingForm, start_time: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 font-mono"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl px-3.5 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 font-mono"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                     End Time *
                   </label>
                   <input
                     type="time"
                     value={meetingForm.end_time}
                     onChange={(e) => setMeetingForm({ ...meetingForm, end_time: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 font-mono"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl px-3.5 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-indigo-500 font-mono"
                     required
                   />
                 </div>
@@ -886,11 +885,11 @@ export default function TimetableDetailPage() {
               {/* Room Select */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                     Room Assignment
                   </label>
                   {capacityWarning && (
-                    <span className="text-[11px] text-amber-400 font-medium">⚠️ {capacityWarning}</span>
+                    <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">⚠️ {capacityWarning}</span>
                   )}
                 </div>
                 <CustomSelect
@@ -915,7 +914,7 @@ export default function TimetableDetailPage() {
 
               {/* Faculty Override Select */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Faculty Instructor (Optional Override)
                 </label>
                 <CustomSelect
@@ -938,11 +937,11 @@ export default function TimetableDetailPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setMeetingModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -962,7 +961,7 @@ export default function TimetableDetailPage() {
                       setMeetingModalOpen(false);
                       triggerPreviewChange(editingMeeting, proposal);
                     }}
-                    className="px-4 py-2 bg-amber-600/20 border border-amber-500/40 hover:bg-amber-600/30 text-amber-300 rounded-xl text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-amber-50 dark:bg-amber-600/20 border border-amber-200 dark:border-amber-500/40 hover:bg-amber-100 dark:hover:bg-amber-600/30 text-amber-800 dark:text-amber-300 rounded-xl text-sm font-medium transition-colors cursor-pointer"
                   >
                     🔍 Preview Impact
                   </button>
@@ -970,7 +969,7 @@ export default function TimetableDetailPage() {
                 <button
                   type="submit"
                   disabled={submittingMeeting}
-                  className="px-5 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-xl text-sm font-medium shadow-md transition-all disabled:opacity-50"
+                  className="px-5 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-xl text-sm font-medium shadow-md transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {submittingMeeting ? 'Validating & Saving...' : editingMeeting ? 'Update Meeting' : 'Schedule Meeting'}
                 </button>
@@ -983,12 +982,12 @@ export default function TimetableDetailPage() {
       {/* Edit Timetable Details Modal */}
       {editTimetableOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/40">
-              <h2 className="text-lg font-bold text-white">Edit Timetable Information</h2>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Edit Timetable Information</h2>
               <button
                 onClick={() => setEditTimetableOpen(false)}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
               >
                 ✕
               </button>
@@ -996,42 +995,42 @@ export default function TimetableDetailPage() {
 
             <form onSubmit={handleSaveTimetableDetails} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Timetable Name *
                 </label>
                 <input
                   type="text"
                   value={ttName}
                   onChange={(e) => setTtName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl px-3.5 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-indigo-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Description
                 </label>
                 <textarea
                   value={ttDescription}
                   onChange={(e) => setTtDescription(e.target.value)}
                   rows={3}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl px-3.5 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setEditTimetableOpen(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submittingTt}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium shadow-md transition-all disabled:opacity-50"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium shadow-md transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {submittingTt ? 'Saving...' : 'Save Changes'}
                 </button>

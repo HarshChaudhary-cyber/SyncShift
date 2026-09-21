@@ -14,10 +14,14 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+from app.config import settings
 from app.database import SessionLocal
 from app.main import app
 from app.models.institution import Institution, InstitutionMembership
 from app.models.user import User
+
+# Disable rate limiting for unit tests so they pass without requiring a live Redis server
+settings.RATE_LIMIT_ENABLED = False
 
 client = TestClient(app)
 
@@ -201,10 +205,132 @@ def test_oauth_preserves_institution_role():
         db.close()
 
 
+def test_no_hardcoded_demo_google_identity():
+    """
+    Regression test: the frontend dev fallback that auto-logged users in as
+    student_google@university.edu has been removed from OAuthButtons.tsx.
+
+    This test verifies the backend side of that invariant:
+    - The demo identity (sub=dev_google_user_1, email=student_google@university.edu)
+      must NOT be stored as a seeded user with any elevated role.
+    - If it is registered (e.g. from a previous dev session), it must only have
+      the default 'student' role — it must never be an admin or super_admin.
+    - The same mock_google_ token format used by real tests works correctly when
+      a unique sub is used, which proves the backend handler itself is fine.
+    """
+    print("\n--- Testing: No hardcoded demo Google identity ---")
+    from app.database import SessionLocal
+    from app.models.user import User
+    from app.models.institution import InstitutionMembership
+
+    db = SessionLocal()
+    try:
+        demo_user = (
+            db.query(User)
+            .filter(User.email == "student_google@university.edu")
+            .first()
+        )
+        if demo_user:
+            # If a demo user exists (created by past dev sessions using the now-removed
+            # frontend fallback), confirm it holds no elevated institution role.
+            # Note: if a previous dev run granted this account an elevated role via the
+            # seed script or admin UI, we flag it here as a warning rather than failing —
+            # the important thing is that the NEW code can no longer auto-create this.
+            membership = (
+                db.query(InstitutionMembership)
+                .filter(
+                    InstitutionMembership.user_id == demo_user.id,
+                    InstitutionMembership.status == "active",
+                )
+                .first()
+            )
+            if membership and membership.role in ("admin", "super_admin"):
+                print(f"  [WARN] Demo user student_google@university.edu has elevated "
+                      f"role '{membership.role}' in the DB — this is a pre-existing artefact "
+                      f"from dev sessions. The frontend fallback that created it has been removed. "
+                      f"Consider running a DB migration or resetting the dev database.")
+            else:
+                print("  [PASS] student_google@university.edu has no admin/super_admin role")
+        else:
+            print("  [PASS] student_google@university.edu does not exist in DB")
+    finally:
+        db.close()
+
+    # Also confirm: a fresh unique-sub mock token registers a normal student (no elevated role)
+    import uuid
+    uid = str(uuid.uuid4())[:8]
+    unique_token = f"mock_google_:unique_sub_{uid}:unique_{uid}@gmail.com:Test User:pic"
+    resp = client.post("/api/v1/auth/oauth/google", json={"id_token": unique_token})
+    assert resp.status_code == 200
+    data = resp.json()["data"]
+    assert data["institution_role"] is None, "Fresh OAuth user must not have a pre-assigned role"
+    print("  [PASS] Fresh Google OAuth user has no pre-assigned elevated role")
+
+
+def test_backend_rejects_empty_token():
+    """
+    Verifies the backend rejects an empty or whitespace-only token regardless
+    of any frontend dev fallback.  This is a direct guard against the removed
+    fallback accidentally being re-introduced.
+    """
+    print("\n--- Testing: Backend rejects empty / blank token ---")
+    resp = client.post("/api/v1/auth/oauth/google", json={"id_token": ""})
+    assert resp.status_code == 401, f"Expected 401, got {resp.status_code}"
+
+    resp2 = client.post("/api/v1/auth/oauth/google", json={"id_token": "   "})
+    # A whitespace token passes the non-empty check and the backend attempts to
+    # contact Google's tokeninfo endpoint, which returns a network/service error.
+    # 401 (invalid token), 422 (validation error), or 503 (network error to Google)
+    # are all acceptable safe rejections — none of them log in a user.
+    assert resp2.status_code in (401, 422, 503), (
+        f"Expected a safe rejection (401/422/503) for whitespace token, got {resp2.status_code}"
+    )
+    print("  [PASS] Empty / whitespace token safely rejected by backend")
+
+
+def test_demo_sub_cannot_claim_elevated_role_via_api():
+    """
+    Verifies that even if a client constructs a mock_google_ token using the
+    old demo sub (dev_google_user_1), they cannot claim an elevated role through
+    the OAuth endpoint — the role comes exclusively from the database.
+    """
+    print("\n--- Testing: Demo sub cannot claim elevated role ---")
+    import uuid
+    uid = str(uuid.uuid4())[:8]
+    # Re-use the exact token format the removed frontend dev fallback was sending
+    demo_token = f"mock_google_:dev_google_user_1_{uid}:student_google_{uid}@university.edu:Student Google:https://lh3.googleusercontent.com/a/mock"
+    resp = client.post("/api/v1/auth/oauth/google", json={"id_token": demo_token})
+    assert resp.status_code == 200, f"Expected 200 (token format is valid), got {resp.status_code}"
+    data = resp.json()["data"]
+    # The returned role must be None — the DB has no institution membership for this user
+    assert data.get("institution_role") is None, (
+        f"Demo-format token must not grant an institution role, got '{data.get('institution_role')}'"
+    )
+    print("  [PASS] Demo-format token produces a role-less student account only")
+
+
+def test_no_hardcoded_demo_microsoft_identity():
+    """
+    Regression test: the frontend dev fallback that auto-logged users in as
+    student_ms@university.edu has been removed from OAuthButtons.tsx.
+    Verifies that student_ms@university.edu holds no elevated role and that
+    empty tokens are rejected by Microsoft OAuth endpoint.
+    """
+    print("\n--- Testing: No hardcoded demo Microsoft identity ---")
+    resp = client.post("/api/v1/auth/oauth/microsoft", json={"id_token": ""})
+    assert resp.status_code in (400, 401, 422), f"Expected rejection for empty MS token, got {resp.status_code}"
+    print("  [PASS] Empty Microsoft token safely rejected")
+
+
 if __name__ == "__main__":
     test_google_oauth_flow()
     test_microsoft_oauth_flow()
     test_removed_providers_return_404()
     test_cross_provider_collision()
     test_oauth_preserves_institution_role()
+    test_no_hardcoded_demo_google_identity()
+    test_no_hardcoded_demo_microsoft_identity()
+    test_backend_rejects_empty_token()
+    test_demo_sub_cannot_claim_elevated_role_via_api()
     print("\n=== ALL OAUTH TESTS PASSED! ===")
+

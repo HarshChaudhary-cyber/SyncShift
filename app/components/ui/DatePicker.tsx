@@ -205,7 +205,7 @@ export default function DatePicker({
             />
           </svg>
           <svg
-            className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-transform ${isOpen ? 'rotate-180 text-blue-500' : ''}`}
+            className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-transform ${isOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -265,7 +265,7 @@ export default function DatePicker({
                   onChange={handleToggleOngoing}
                   className="w-4 h-4 rounded text-blue-600 bg-[var(--bg-input)] border-[var(--border-color)] focus:ring-blue-500 cursor-pointer"
                 />
-                <span className={`font-medium ${value === null ? 'text-blue-500 font-semibold' : 'text-[var(--text-secondary)]'}`}>
+                <span className={`font-medium ${value === null ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-[var(--text-secondary)]'}`}>
                   Ongoing / No end date
                 </span>
               </label>

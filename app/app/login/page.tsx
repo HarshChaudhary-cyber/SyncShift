@@ -193,7 +193,7 @@ export default function LoginPage() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="flex items-start gap-2 text-xs text-rose-300 bg-rose-950/60 border border-rose-700/60 rounded-lg px-3.5 py-2.5 break-words"
+                  className="flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700/60 rounded-lg px-3.5 py-2.5 break-words"
                 >
                   <span className="shrink-0 mt-0.5">⚠️</span>
                   <span>{error}</span>
@@ -224,7 +224,7 @@ export default function LoginPage() {
           {/* Divider & OAuth buttons */}
           <div className="px-5 sm:px-6 pb-5 pt-0">
             <OAuthDivider text="OR" />
-            <OAuthButtons onSuccessRedirect="/student/dashboard" captchaToken={captchaToken} />
+            <OAuthButtons captchaToken={captchaToken} />
           </div>
 
           {/* Footer note */}

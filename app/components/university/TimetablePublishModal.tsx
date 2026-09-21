@@ -161,7 +161,7 @@ export default function TimetablePublishModal({
         {/* Content */}
         <div className="p-6 overflow-y-auto space-y-4 flex-1">
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium">
+            <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs font-medium">
               ⚠️ {error}
             </div>
           )}
@@ -182,8 +182,8 @@ export default function TimetablePublishModal({
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                           checklist.is_publishable
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                            : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                            ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30'
+                            : 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30'
                         }`}
                       >
                         {checklist.is_publishable ? '✓ Ready to Publish' : '⚠️ Action Required'}
@@ -200,9 +200,9 @@ export default function TimetablePublishModal({
 
                   {/* Blocking issues list if any */}
                   {checklist.blocking_issues && checklist.blocking_issues.length > 0 && (
-                    <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 space-y-1.5">
-                      <p className="text-xs font-bold text-rose-400">Blocking Issues (Must be resolved first):</p>
-                      <ul className="text-xs text-rose-300 space-y-1 list-disc list-inside">
+                    <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 space-y-1.5">
+                      <p className="text-xs font-bold text-rose-700 dark:text-rose-400">Blocking Issues (Must be resolved first):</p>
+                      <ul className="text-xs text-rose-800 dark:text-rose-300 space-y-1 list-disc list-inside">
                         {checklist.blocking_issues.map((b, i) => (
                           <li key={i}>{b}</li>
                         ))}
@@ -212,9 +212,9 @@ export default function TimetablePublishModal({
 
                   {/* Warning items if any */}
                   {checklist.warnings && checklist.warnings.length > 0 && (
-                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
-                      <p className="text-xs font-bold text-amber-400">Warnings (Non-blocking):</p>
-                      <ul className="text-xs text-amber-300 space-y-1 list-disc list-inside">
+                    <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 space-y-1.5">
+                      <p className="text-xs font-bold text-amber-800 dark:text-amber-400">Warnings (Non-blocking):</p>
+                      <ul className="text-xs text-amber-800 dark:text-amber-300 space-y-1 list-disc list-inside">
                         {checklist.warnings.map((w, i) => (
                           <li key={i}>{w}</li>
                         ))}
@@ -222,8 +222,8 @@ export default function TimetablePublishModal({
                     </div>
                   )}
 
-                  <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/20 text-xs text-[var(--text-secondary)] leading-relaxed space-y-1">
-                    <p className="font-bold text-indigo-400">What happens when you publish?</p>
+                  <div className="p-4 rounded-xl bg-indigo-50/50 dark:bg-indigo-500/5 border border-indigo-200 dark:border-indigo-500/20 text-xs text-[var(--text-secondary)] leading-relaxed space-y-1">
+                    <p className="font-bold text-indigo-700 dark:text-indigo-400">What happens when you publish?</p>
                     <p>
                       1. Version {targetVersion?.version_number} becomes the official institutional timetable.
                     </p>
@@ -254,10 +254,10 @@ export default function TimetablePublishModal({
           {step === 'result' && publishResult && (
             <div className="space-y-4 animate-fade-in">
               {/* Success Banner */}
-              <div className="p-5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-2">
+              <div className="p-5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-center space-y-2">
                 <span className="text-3xl block">🎉</span>
-                <h4 className="text-base font-black text-emerald-400">TIMETABLE PUBLISHED</h4>
-                <p className="text-xs text-emerald-300 font-medium">
+                <h4 className="text-base font-black text-emerald-800 dark:text-emerald-400">TIMETABLE PUBLISHED</h4>
+                <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">
                   Version {publishResult.published_version.version_number} is now official and active.
                 </p>
               </div>
@@ -265,7 +265,7 @@ export default function TimetablePublishModal({
               {/* Metrics Grid */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-center">
-                  <div className="text-xl font-black text-indigo-400">
+                  <div className="text-xl font-black text-indigo-700 dark:text-indigo-400">
                     {publishResult.notification_summary?.students_affected ?? 0}
                   </div>
                   <div className="text-[10px] uppercase font-bold text-[var(--text-muted)] mt-1">
@@ -273,7 +273,7 @@ export default function TimetablePublishModal({
                   </div>
                 </div>
                 <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-center">
-                  <div className="text-xl font-black text-amber-400">
+                  <div className="text-xl font-black text-amber-700 dark:text-amber-400">
                     {publishResult.notification_summary?.classes_changed ?? 0}
                   </div>
                   <div className="text-[10px] uppercase font-bold text-[var(--text-muted)] mt-1">
@@ -281,7 +281,7 @@ export default function TimetablePublishModal({
                   </div>
                 </div>
                 <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-center">
-                  <div className="text-xl font-black text-rose-400">
+                  <div className="text-xl font-black text-rose-700 dark:text-rose-400">
                     {publishResult.notification_summary?.new_conflicts ?? 0}
                   </div>
                   <div className="text-[10px] uppercase font-bold text-[var(--text-muted)] mt-1">
@@ -297,7 +297,7 @@ export default function TimetablePublishModal({
                 </span>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="flex items-center gap-1.5 p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]">
-                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
                     <div>
                       <span className="font-semibold block text-[11px]">In-app</span>
                       <span className="text-[10px] text-[var(--text-muted)]">
@@ -306,7 +306,7 @@ export default function TimetablePublishModal({
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]">
-                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
                     <div>
                       <span className="font-semibold block text-[11px]">Email</span>
                       <span className="text-[10px] text-[var(--text-muted)]">
@@ -315,7 +315,7 @@ export default function TimetablePublishModal({
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]">
-                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
                     <div>
                       <span className="font-semibold block text-[11px]">Push</span>
                       <span className="text-[10px] text-[var(--text-muted)]">
@@ -333,7 +333,7 @@ export default function TimetablePublishModal({
             <div className="space-y-3">
               <button
                 onClick={() => setStep('result')}
-                className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition flex items-center gap-1 cursor-pointer"
               >
                 <span>← Back to summary</span>
               </button>
@@ -360,11 +360,11 @@ export default function TimetablePublishModal({
                           </div>
                           <div className="text-right shrink-0">
                             <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-mono font-bold ${
-                              item.priority === 'URGENT' ? 'bg-rose-500/20 text-rose-400' : 'bg-indigo-500/20 text-indigo-400'
+                              item.priority === 'URGENT' ? 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400' : 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400'
                             }`}>
                               {item.priority}
                             </span>
-                            <span className="text-[10px] text-emerald-400 block mt-0.5">
+                            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block mt-0.5">
                               {item.delivery_status} ({item.channel})
                             </span>
                           </div>
@@ -403,7 +403,7 @@ export default function TimetablePublishModal({
             <>
               <button
                 onClick={handleOpenDeliveryReport}
-                className="px-4 py-2 rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-card)] text-xs font-medium text-indigo-400 hover:text-indigo-300 transition cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-card)] text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition cursor-pointer"
               >
                 View Delivery Report 📋
               </button>

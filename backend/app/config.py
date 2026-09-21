@@ -57,6 +57,18 @@ class Settings(BaseSettings):
         "http://localhost:8000",
     ]
 
+    # Redis & Distributed Rate Limiter
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+    REDIS_SOCKET_TIMEOUT: float = float(os.getenv("REDIS_SOCKET_TIMEOUT", "2.0"))
+    REDIS_CONNECT_TIMEOUT: float = float(os.getenv("REDIS_CONNECT_TIMEOUT", "2.0"))
+    REDIS_MAX_CONNECTIONS: int = int(os.getenv("REDIS_MAX_CONNECTIONS", "50"))
+    RATE_LIMIT_ENABLED: bool = os.getenv("RATE_LIMIT_ENABLED", "true").lower() in ("true", "1", "yes")
+    RATE_LIMIT_FAIL_CLOSED_ALL: bool = os.getenv("RATE_LIMIT_FAIL_CLOSED_ALL", "false").lower() in ("true", "1", "yes")
+    TRUSTED_PROXIES: str = os.getenv(
+        "TRUSTED_PROXIES",
+        "127.0.0.1,::1,testclient,localhost,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16",
+    )
+
     class Config:
         case_sensitive = True
         env_file = ".env"

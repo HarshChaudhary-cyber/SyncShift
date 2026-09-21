@@ -53,7 +53,7 @@ function ConflictsContent() {
           <p className="text-xs font-medium text-[var(--text-muted)]">Active Conflicts</p>
           <p
             className={`text-2xl font-black mt-1 ${
-              conflicts.length > 0 ? 'text-rose-400' : 'text-emerald-400'
+              conflicts.length > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
             }`}
           >
             {conflicts.length}
@@ -64,7 +64,7 @@ function ConflictsContent() {
         </div>
         <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm">
           <p className="text-xs font-medium text-[var(--text-muted)]">Conflict Engine Status</p>
-          <p className="text-sm font-semibold text-emerald-400 mt-2">Active & Monitoring</p>
+          <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mt-2">Active & Monitoring</p>
           <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
             Evaluates official timetable updates automatically
           </p>
@@ -82,7 +82,7 @@ function ConflictsContent() {
         ) : conflicts.length === 0 ? (
           <div className="py-12 text-center space-y-3">
             <span className="text-4xl">🎉</span>
-            <p className="text-sm font-medium text-emerald-400">No conflicts found!</p>
+            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">No conflicts found!</p>
             <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto">
               Your university classes, employment shifts, and study sessions do not overlap.
             </p>
@@ -99,12 +99,12 @@ function ConflictsContent() {
               return (
                 <div
                   key={index}
-                  className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  className="p-4 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="text-base">🚨</span>
-                      <p className="text-sm font-bold text-rose-300">
+                      <p className="text-sm font-bold text-rose-800 dark:text-rose-300">
                         {blockA?.title || 'Event A'} ⚔️ {blockB?.title || 'Event B'}
                       </p>
                     </div>

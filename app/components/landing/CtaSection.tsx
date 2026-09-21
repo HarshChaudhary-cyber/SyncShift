@@ -20,7 +20,7 @@ export default function CtaSection() {
           transition={{ duration: 0.6 }}
           className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs font-semibold text-[var(--text-secondary)] shadow-md"
         >
-          <SparklesIcon className="w-4 h-4 text-indigo-400" />
+          <SparklesIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
           <span>Start the semester stress-free</span>
         </motion.div>
 

@@ -153,18 +153,18 @@ export default function HeroSection() {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.9 }}
                           transition={{ duration: 0.4 }}
-                          className="absolute top-2 left-0 right-0 h-32 rounded-xl bg-blue-950/70 border-2 border-blue-500/80 p-3 shadow-lg shadow-blue-950/40 text-left"
+                          className="absolute top-2 left-0 right-0 h-32 rounded-xl bg-blue-50 dark:bg-blue-950/70 border-2 border-blue-400 dark:border-blue-500/80 p-3 shadow-lg shadow-blue-950/10 dark:shadow-blue-950/40 text-left"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] uppercase tracking-wider font-bold text-blue-400">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-blue-700 dark:text-blue-400">
                               Lecture
                             </span>
-                            <span className="text-[10px] text-blue-300 font-mono">09:00 - 10:30</span>
+                            <span className="text-[10px] text-blue-600 dark:text-blue-300 font-mono">09:00 - 10:30</span>
                           </div>
-                          <div className="font-bold text-xs sm:text-sm text-white mt-1 truncate">
+                          <div className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mt-1 truncate">
                             CS101: Data Structures
                           </div>
-                          <div className="text-[11px] text-blue-300/80 mt-0.5">Hall B, Prof. Sharma</div>
+                          <div className="text-[11px] text-blue-700/80 dark:text-blue-300/80 mt-0.5">Hall B, Prof. Sharma</div>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -179,18 +179,18 @@ export default function HeroSection() {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.9 }}
                           transition={{ duration: 0.4 }}
-                          className="absolute top-16 left-0 right-0 h-44 rounded-xl bg-emerald-950/70 border-2 border-emerald-500/80 p-3 shadow-lg shadow-emerald-950/40 text-left"
+                          className="absolute top-16 left-0 right-0 h-44 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border-2 border-emerald-400 dark:border-emerald-500/80 p-3 shadow-lg shadow-emerald-950/10 dark:shadow-emerald-950/40 text-left"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-400">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-emerald-700 dark:text-emerald-400">
                               Work Shift
                             </span>
-                            <span className="text-[10px] text-emerald-300 font-mono">10:00 - 14:00</span>
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-300 font-mono">10:00 - 14:00</span>
                           </div>
-                          <div className="font-bold text-xs sm:text-sm text-white mt-1 truncate">
+                          <div className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mt-1 truncate">
                             Campus Library Desk
                           </div>
-                          <div className="text-[11px] text-emerald-300/80 mt-0.5">Supervisor: Sarah ($17.50/h)</div>
+                          <div className="text-[11px] text-emerald-700/80 dark:text-emerald-300/80 mt-0.5">Supervisor: Sarah ($17.50/h)</div>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -222,12 +222,12 @@ export default function HeroSection() {
               </div>
 
               {/* Status caption below mockup */}
-              <div className="mt-3 flex items-center justify-between text-[11px] text-neutral-400">
+              <div className="mt-3 flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                  <span className="w-2 h-2 rounded-full bg-indigo-500" />
                   Auto-detects clashes across multiple formats
                 </span>
-                <span className="text-neutral-500 font-mono">Instant zero-delay alert</span>
+                <span className="text-[var(--text-muted)] font-mono">Instant zero-delay alert</span>
               </div>
             </div>
           </div>

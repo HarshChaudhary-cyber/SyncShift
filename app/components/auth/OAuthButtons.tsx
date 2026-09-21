@@ -43,7 +43,9 @@ function GoogleButtonInner({
         });
         const userInfo = await userInfoRes.json();
 
-        // Pass verified claims via mock_google_ format if id_token not directly returned in implicit flow
+        // Forward verified claims from Google's /userinfo endpoint to the backend.
+        // The backend's verify_google_id_token() accepts this colon-delimited format
+        // when the implicit flow is used (access_token returned instead of id_token).
         const idTokenPayload = `mock_google_:${userInfo.sub}:${userInfo.email}:${userInfo.name || ''}:${userInfo.picture || ''}`;
         const res = await api.oauthGoogle(idTokenPayload, captchaToken);
         onComplete(res);
@@ -71,20 +73,14 @@ function GoogleButtonInner({
 
   const handleClick = () => {
     if (disabled || isLoading) return;
-    onStart();
+    // GOOGLE_CLIENT_ID is always non-empty here because GoogleButtonInner is only
+    // rendered when GOOGLE_CLIENT_ID is set (see OAuthButtons guard below).
+    // This check is a safety net; it must NEVER silently log in a default user.
     if (!GOOGLE_CLIENT_ID) {
-      // In dev environment when no real client ID is configured, use a safe dev mock
-      setTimeout(async () => {
-        try {
-          const devToken = `mock_google_:dev_google_user_1:student_google@university.edu:Student Google:https://lh3.googleusercontent.com/a/mock`;
-          const res = await api.oauthGoogle(devToken, captchaToken);
-          onComplete(res);
-        } catch (e: any) {
-          onError(e?.message || "Couldn't connect with Google.");
-        }
-      }, 500);
+      onError('Google sign-in is not configured. Please contact the administrator.');
       return;
     }
+    onStart();
     triggerGoogleLogin({ prompt: 'select_account' });
   };
 
@@ -139,22 +135,14 @@ export function OAuthButtons({
   const handleMicrosoftLogin = () => {
     if (activeProvider) return;
     setError(null);
-    setActiveProvider('microsoft');
 
     if (!MICROSOFT_CLIENT_ID) {
-      // Dev mode fallback
-      setTimeout(async () => {
-        try {
-          const devToken = `mock_microsoft_:dev_ms_user_1:student_ms@university.edu:Student Microsoft`;
-          const res = await api.oauthMicrosoft(devToken, captchaToken);
-          await handleOAuthSuccess(res);
-        } catch (e: any) {
-          setError(e?.message || "Couldn't connect with Microsoft. Please try again.");
-          setActiveProvider(null);
-        }
-      }, 500);
+      setError('Microsoft sign-in is not configured. Please contact the administrator.');
       return;
     }
+
+    setActiveProvider('microsoft');
+
 
     try {
       const redirectUri =
@@ -244,24 +232,43 @@ export function OAuthButtons({
 
   return (
     <div className={`w-full flex flex-col items-center gap-2.5 ${className}`}>
-      {/* 1. Google Button (using @react-oauth/google provider with select_account prompt) */}
+      {/* 1. Google Button */}
+      {/* Only mount GoogleOAuthProvider when a real client ID is configured.
+          When GOOGLE_CLIENT_ID is absent the button renders in a degraded state
+          and shows a clear error — it never auto-logs in a demo user. */}
       <div className="w-full">
-        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID || 'dummy_id_for_init'}>
-          <GoogleButtonInner
-            disabled={isAnyLoading && activeProvider !== 'google'}
-            isLoading={activeProvider === 'google'}
-            captchaToken={captchaToken}
-            onStart={() => {
-              setError(null);
-              setActiveProvider('google');
-            }}
-            onComplete={handleOAuthSuccess}
-            onError={(msg) => {
-              setError(msg);
-              setActiveProvider(null);
-            }}
-          />
-        </GoogleOAuthProvider>
+        {GOOGLE_CLIENT_ID ? (
+          <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+            <GoogleButtonInner
+              disabled={isAnyLoading && activeProvider !== 'google'}
+              isLoading={activeProvider === 'google'}
+              captchaToken={captchaToken}
+              onStart={() => {
+                setError(null);
+                setActiveProvider('google');
+              }}
+              onComplete={handleOAuthSuccess}
+              onError={(msg) => {
+                setError(msg);
+                setActiveProvider(null);
+              }}
+            />
+          </GoogleOAuthProvider>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setError('Google sign-in is not configured. Please contact the administrator.')}
+            disabled={isAnyLoading}
+            aria-label="Continue with Google (not configured)"
+            className="w-full h-[44px] min-h-[44px] px-4 rounded-lg bg-white hover:bg-neutral-100 text-neutral-800 font-medium text-sm border border-neutral-300 shadow-sm flex items-center justify-between transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            <div className="w-6 flex items-center justify-start shrink-0">
+              <GoogleLogo />
+            </div>
+            <span className="flex-1 text-center font-medium text-neutral-800">Continue with Google</span>
+            <div className="w-6" />
+          </button>
+        )}
       </div>
 
       {/* 2. Microsoft Button */}
@@ -285,13 +292,13 @@ export function OAuthButtons({
 
       {/* Error Message Display */}
       {error && (
-        <div className="w-full mt-1 flex items-start gap-2 text-xs text-rose-300 bg-rose-950/60 border border-rose-700/60 rounded-lg px-3 py-2 break-words">
+        <div className="w-full mt-1 flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700/60 rounded-lg px-3 py-2 break-words">
           <span className="shrink-0 mt-0.5">⚠️</span>
           <span className="flex-1">{error}</span>
           <button
             type="button"
             onClick={() => setError(null)}
-            className="text-neutral-400 hover:text-white shrink-0 text-xs cursor-pointer ml-1"
+            className="text-rose-600 dark:text-neutral-400 hover:text-rose-900 dark:hover:text-white shrink-0 text-xs cursor-pointer ml-1"
           >
             ✕
           </button>
