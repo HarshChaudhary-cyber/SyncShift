@@ -128,7 +128,9 @@ source .venv/bin/activate  # Or on Windows: .venv\Scripts\activate
 # 2. Install dependencies
 uv pip install -r requirements.txt
 
-# 3. Apply database migration
+# 3. Apply database migrations (MANDATORY before first start)
+# The application enforces Alembic as the single source of truth for schema;
+# it will verify migration state on startup and will NOT auto-create tables.
 alembic upgrade head
 
 # 4. Start API server
@@ -141,8 +143,22 @@ uvicorn app.main:app --reload --port 8000
 
 ---
 
-## 5. Running Tests
+## 5. Production Security & Environment Variables
+
+When running in production mode (`ENV=production`), the application enforces strict secret validation on startup:
+
+- **JWT Secret Enforcement**: `JWT_SECRET` (and `SECRET_KEY`) **must** be set to a custom value of at least **32 characters**.
+- **Refusal to Boot with Dev Defaults**: The application strictly refuses to start if the public development fallback (`syncshift-dev-secret-key-32-chars-minimum!!`) is detected in production. It raises an explicit `RuntimeError` at startup rather than silently signing or verifying tokens with an insecure key.
+- **Generate Production Secret**:
+  ```bash
+  python -c "import secrets; print(secrets.token_urlsafe(48))"
+  ```
+- **Local Development**: In non-production environments (`ENV=development`, `ENV=staging`, `ENV=test`), the fallback secret remains active for zero-config local setup.
+
+---
+
+## 6. Running Tests
 
 ```bash
-pytest test_api_endpoints.py -v
+pytest -k "not live" -W ignore
 ```

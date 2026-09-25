@@ -22,12 +22,12 @@ def upgrade() -> None:
     # -------------------------------------------------------------------------
     op.create_table(
         "users",
-        sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
-        sa.Column("name", sa.String(length=120), nullable=False),
+        sa.Column("id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), autoincrement=True, nullable=False),
+        sa.Column("name", sa.String(length=120), nullable=True),
         sa.Column("email", sa.String(length=255), nullable=False),
-        sa.Column("password_hash", sa.String(length=255), nullable=False),
-        sa.Column("timezone", sa.String(length=64), server_default="Europe/London", nullable=False),
-        sa.Column("weekly_work_hour_limit", sa.Numeric(precision=4, scale=1), server_default="20.0", nullable=False),
+        sa.Column("password_hash", sa.String(length=255), nullable=True),
+        sa.Column("timezone", sa.String(length=64), server_default="Europe/London", nullable=True),
+        sa.Column("weekly_work_hour_limit", sa.Numeric(precision=4, scale=1), server_default="20.0", nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
@@ -40,7 +40,7 @@ def upgrade() -> None:
     # -------------------------------------------------------------------------
     op.create_table(
         "courses",
-        sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
+        sa.Column("id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), autoincrement=True, nullable=False),
         sa.Column("user_id", sa.BigInteger(), nullable=False),
         sa.Column("code", sa.String(length=32), nullable=False),
         sa.Column("name", sa.String(length=255), nullable=False),
@@ -57,7 +57,7 @@ def upgrade() -> None:
     # -------------------------------------------------------------------------
     op.create_table(
         "time_blocks",
-        sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
+        sa.Column("id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), autoincrement=True, nullable=False),
         sa.Column("user_id", sa.BigInteger(), nullable=False),
         sa.Column("type", sa.String(length=16), nullable=False),  # 'class' | 'shift'
         sa.Column("status", sa.String(length=16), server_default="enrolled", nullable=False),  # 'enrolled' | 'tentative' | 'dropped'
@@ -94,7 +94,7 @@ def upgrade() -> None:
     # -------------------------------------------------------------------------
     op.create_table(
         "block_overrides",
-        sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
+        sa.Column("id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), autoincrement=True, nullable=False),
         sa.Column("time_block_id", sa.BigInteger(), nullable=False),
         sa.Column("user_id", sa.BigInteger(), nullable=False),
         sa.Column("original_date", sa.Date(), nullable=False),
@@ -116,7 +116,7 @@ def upgrade() -> None:
     # -------------------------------------------------------------------------
     op.create_table(
         "conflicts",
-        sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
+        sa.Column("id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), autoincrement=True, nullable=False),
         sa.Column("user_id", sa.BigInteger(), nullable=False),
         sa.Column("block_a_id", sa.BigInteger(), nullable=False),
         sa.Column("block_b_id", sa.BigInteger(), nullable=False),

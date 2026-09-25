@@ -54,10 +54,13 @@ pytestmark = pytest.mark.skipif(not _is_redis_alive(), reason="Redis server is n
 
 @pytest.fixture(autouse=True)
 def clean_redis_state():
-    """Ensure Redis is clean before each test."""
+    """Ensure Redis is clean and rate limiter is active before each test."""
+    orig_rl = settings.RATE_LIMIT_ENABLED
+    settings.RATE_LIMIT_ENABLED = True
     reset_rate_limits()
     yield
     reset_rate_limits()
+    settings.RATE_LIMIT_ENABLED = orig_rl
 
 
 # ---------------------------------------------------------------------------

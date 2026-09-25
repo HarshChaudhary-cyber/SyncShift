@@ -1,5 +1,8 @@
 import os
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
+
+DEFAULT_DEV_SECRET = "syncshift-dev-secret-key-32-chars-minimum!!"
 
 
 class Settings(BaseSettings):
@@ -15,8 +18,8 @@ class Settings(BaseSettings):
     )
 
     # JWT Authentication
-    JWT_SECRET: str = os.getenv("JWT_SECRET", os.getenv("SECRET_KEY", "syncshift-dev-secret-key-32-chars-minimum!!"))
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "syncshift-dev-secret-key-32-chars-minimum!!")
+    JWT_SECRET: str = os.getenv("JWT_SECRET", os.getenv("SECRET_KEY", DEFAULT_DEV_SECRET))
+    SECRET_KEY: str = os.getenv("SECRET_KEY", os.getenv("JWT_SECRET", DEFAULT_DEV_SECRET))
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
@@ -68,6 +71,31 @@ class Settings(BaseSettings):
         "TRUSTED_PROXIES",
         "127.0.0.1,::1,testclient,localhost,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16",
     )
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self) -> "Settings":
+        # Synchronize secrets if one is configured securely and the other has the dev fallback
+        if (not self.SECRET_KEY or self.SECRET_KEY == DEFAULT_DEV_SECRET) and (self.JWT_SECRET and self.JWT_SECRET != DEFAULT_DEV_SECRET):
+            self.SECRET_KEY = self.JWT_SECRET
+        elif (not self.JWT_SECRET or self.JWT_SECRET == DEFAULT_DEV_SECRET) and (self.SECRET_KEY and self.SECRET_KEY != DEFAULT_DEV_SECRET):
+            self.JWT_SECRET = self.SECRET_KEY
+
+        if (self.ENV or "").strip().lower() == "production":
+            jwt_sec = (self.JWT_SECRET or "").strip()
+            if not jwt_sec or jwt_sec == DEFAULT_DEV_SECRET or len(jwt_sec) < 32:
+                raise RuntimeError(
+                    "JWT_SECRET must be set to a unique value >= 32 characters when ENV=production. "
+                    "Refusing to start with an insecure default secret."
+                )
+
+            sec_key = (self.SECRET_KEY or "").strip()
+            if not sec_key or sec_key == DEFAULT_DEV_SECRET or len(sec_key) < 32:
+                raise RuntimeError(
+                    "SECRET_KEY must be set to a unique value >= 32 characters when ENV=production. "
+                    "Refusing to start with an insecure default secret."
+                )
+
+        return self
 
     class Config:
         case_sensitive = True

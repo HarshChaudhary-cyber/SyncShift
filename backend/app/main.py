@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.database import init_db
 from app.routers import (
     auth_router,
     blocks_router,
@@ -40,10 +39,46 @@ app = FastAPI(
 )
 
 
+EXPECTED_ALEMBIC_HEAD = "0019"
+
+
+def check_db_migrated() -> None:
+    """Verify that Alembic migrations have been applied up to the expected head revision.
+
+    Raises RuntimeError if alembic_version table is missing or unmigrated.
+    """
+    if settings.ENV == "test":
+        return
+
+    from sqlalchemy import inspect, text
+    from app.database import engine
+
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+    if "alembic_version" not in tables:
+        raise RuntimeError(
+            "Database schema has not been initialized. Table 'alembic_version' is missing.\n"
+            "Please run 'alembic upgrade head' before starting the application."
+        )
+    with engine.connect() as conn:
+        current_rev = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        if not current_rev:
+            raise RuntimeError(
+                "No migration revision found in 'alembic_version'.\n"
+                "Please run 'alembic upgrade head' before starting the application."
+            )
+        if current_rev != EXPECTED_ALEMBIC_HEAD:
+            raise RuntimeError(
+                f"Database migration mismatch: found revision '{current_rev}', expected '{EXPECTED_ALEMBIC_HEAD}'.\n"
+                "Please run 'alembic upgrade head' before starting the application."
+            )
+    print(f"Database schema verified at revision: {current_rev}")
+
+
 @app.on_event("startup")
 def on_startup():
     print("Connected to DB:", settings.DATABASE_URL[:20])
-    init_db()
+    check_db_migrated()
     start_reminder_scheduler()
     redis_status = "Available" if is_redis_available() else "Unavailable (fallback mode active)"
     print(f"Distributed Rate Limiter Redis: {redis_status}")

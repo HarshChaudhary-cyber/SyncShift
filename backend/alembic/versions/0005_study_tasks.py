@@ -22,7 +22,7 @@ def upgrade() -> None:
     if "study_tasks" not in tables:
         op.create_table(
             "study_tasks",
-            sa.Column("id", sa.BigInteger(), primary_key=True, autoincrement=True, nullable=False),
+            sa.Column("id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), primary_key=True, autoincrement=True, nullable=False),
             sa.Column("user_id", sa.BigInteger(), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
             sa.Column("title", sa.String(length=255), nullable=False),
             sa.Column("course_id", sa.BigInteger(), sa.ForeignKey("courses.id", ondelete="SET NULL"), nullable=True),

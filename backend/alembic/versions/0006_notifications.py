@@ -22,7 +22,7 @@ def upgrade() -> None:
     if "push_subscriptions" not in tables:
         op.create_table(
             "push_subscriptions",
-            sa.Column("id", sa.BigInteger(), primary_key=True, autoincrement=True, nullable=False),
+            sa.Column("id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), primary_key=True, autoincrement=True, nullable=False),
             sa.Column("user_id", sa.BigInteger(), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
             sa.Column("endpoint", sa.Text(), unique=True, nullable=False),
             sa.Column("p256dh", sa.Text(), nullable=False),
@@ -37,7 +37,7 @@ def upgrade() -> None:
     if "notification_prefs" not in tables:
         op.create_table(
             "notification_prefs",
-            sa.Column("user_id", sa.BigInteger(), sa.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, nullable=False),
+            sa.Column("user_id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), sa.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, nullable=False),
             sa.Column("push_enabled", sa.Boolean(), nullable=False, server_default=sa.true()),
             sa.Column("email_enabled", sa.Boolean(), nullable=False, server_default=sa.false()),
             sa.Column("class_reminder_min", sa.Integer(), nullable=False, server_default="30"),
@@ -53,7 +53,7 @@ def upgrade() -> None:
     if "notification_log" not in tables:
         op.create_table(
             "notification_log",
-            sa.Column("id", sa.BigInteger(), primary_key=True, autoincrement=True, nullable=False),
+            sa.Column("id", sa.BigInteger().with_variant(sa.Integer(), "sqlite"), primary_key=True, autoincrement=True, nullable=False),
             sa.Column("user_id", sa.BigInteger(), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
             sa.Column("type", sa.String(length=50), nullable=False),
             sa.Column("title", sa.String(length=255), nullable=False),

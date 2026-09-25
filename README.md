@@ -95,7 +95,7 @@ SyncShift enforces enterprise-grade security standards across every boundary:
 | **Styling & Design** | **Tailwind CSS + CSS Variables** | Curated dark/light themes, accessible tokens, smooth micro-interactions |
 | **State & Fetching** | **React Context + Native Fetch** | Lightweight, responsive client-side caching with optimistic UI |
 | **Backend API** | **FastAPI (Python 3.11+)** | High-performance async REST API with Pydantic v2 validation |
-| **Database ORM** | **SQLAlchemy 2.0 + Alembic** | Strictly typed relational schema with 17 tracked migration revisions |
+| **Database ORM** | **SQLAlchemy 2.0 + Alembic** | Strictly typed relational schema with 19 tracked migration revisions |
 | **Database** | **PostgreSQL / SQLite** | SQLite for rapid local development/testing; PostgreSQL for production |
 | **AI Integration** | **Google Gemini API** | Function-calling LLM architecture integrated with deterministic services |
 | **Testing Suite** | **Pytest + Next.js Build Check** | 194 automated backend tests + strict frontend compilation & lint |
@@ -135,7 +135,8 @@ source .venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Run migrations to initialize database
+# Run migrations to initialize database (MANDATORY before first start)
+# The application enforces Alembic as the single source of truth and will NOT auto-create tables.
 alembic upgrade head
 
 # Seed realistic demo data (Northbridge University ecosystem)
@@ -229,7 +230,7 @@ SyncShift/
 ├── start.bat / start.sh           # One-click multi-service launch scripts
 │
 ├── backend/                       # FastAPI Backend
-│   ├── alembic/                   # Alembic database migrations (17 versions)
+│   ├── alembic/                   # Alembic database migrations (19 versions)
 │   ├── seed_demo_data.py          # Northbridge University seed generator
 │   └── app/
 │       ├── config.py              # Environment configuration & settings
