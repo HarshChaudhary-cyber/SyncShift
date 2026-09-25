@@ -239,11 +239,6 @@ def get_client_identity(request: Request) -> Tuple[str, str]:
 
     if auth_hdr and auth_hdr.startswith("Bearer "):
         token = auth_hdr[7:].strip()
-        # Mock token handling for test suites
-        if token.startswith("mock_token_"):
-            user_part = token.replace("mock_token_", "")
-            return f"user:{user_part}", ""
-
         # Attempt to decode user ID from JWT
         try:
             payload = jwt.decode(

@@ -10,8 +10,17 @@ from app.services.ics_parser import (
     format_time_hhmm,
 )
 
+from app.main import app
+from app.dependencies import get_current_user, CurrentUser
+
+@pytest.fixture(autouse=True)
+def override_auth():
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(user_id=1, email="student1@example.com")
+    yield
+    app.dependency_overrides.clear()
+
 client = TestClient(app)
-AUTH_HEADER = {"Authorization": "Bearer mock_token_1"}
+AUTH_HEADER = {"Authorization": "Bearer test_token"}
 
 SAMPLE_VALID_ICS = b"""BEGIN:VCALENDAR
 VERSION:2.0

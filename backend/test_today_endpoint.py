@@ -1,8 +1,18 @@
 from fastapi.testclient import TestClient
 from app.main import app
 
+import pytest
+from app.main import app
+from app.dependencies import get_current_user, CurrentUser
+
+@pytest.fixture
+def override_auth():
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(user_id=1, email="test_user@example.com")
+    yield
+    app.dependency_overrides.clear()
+
 client = TestClient(app)
-AUTH_HEADER = {"Authorization": "Bearer mock_token_1"}
+AUTH_HEADER = {"Authorization": "Bearer test_token"}
 
 
 def test_today_endpoint_unauthorized():
@@ -12,7 +22,7 @@ def test_today_endpoint_unauthorized():
     assert err["code"] == "unauthorized"
 
 
-def test_today_endpoint_authenticated():
+def test_today_endpoint_authenticated(override_auth):
     resp = client.get("/api/v1/today", headers=AUTH_HEADER)
     assert resp.status_code == 200, resp.text
     data = resp.json()["data"]
@@ -34,7 +44,7 @@ def test_today_endpoint_authenticated():
         assert "color" in block
 
 
-def test_today_endpoint_specific_date():
+def test_today_endpoint_specific_date(override_auth):
     # 2026-09-07 is Monday -> day_of_week 1
     resp = client.get("/api/v1/today?date=2026-09-07", headers=AUTH_HEADER)
     assert resp.status_code == 200, resp.text
@@ -58,7 +68,7 @@ def test_today_endpoint_specific_date():
     assert any(c["overlap_minutes"] == 30 for c in data["conflicts"])
 
 
-def test_today_endpoint_empty_day():
+def test_today_endpoint_empty_day(override_auth):
     # 2026-09-12 is Saturday -> day_of_week 6 (no seed blocks on Saturday)
     resp = client.get("/api/v1/today?date=2026-09-12", headers=AUTH_HEADER)
     assert resp.status_code == 200, resp.text

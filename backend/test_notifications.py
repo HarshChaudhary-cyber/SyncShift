@@ -29,8 +29,17 @@ from app.services.reminders import (
 )
 from app.store import add_block_to_store
 
+from app.main import app
+from app.dependencies import get_current_user, CurrentUser
+
+@pytest.fixture(autouse=True)
+def override_auth():
+    app.dependency_overrides[get_current_user] = lambda: CurrentUser(user_id=1, email="student1@example.com", timezone="Europe/London")
+    yield
+    app.dependency_overrides.clear()
+
 client = TestClient(app)
-AUTH_HEADER = {"Authorization": "Bearer mock_token_1"}
+AUTH_HEADER = {"Authorization": "Bearer test_token"}
 
 
 @pytest.fixture(autouse=True)

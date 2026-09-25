@@ -22,7 +22,7 @@ services:
       dockerfile: Dockerfile
     container_name: syncshift-backend
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
       ENV: development
       DATABASE_URL: sqlite:////data/syncshift.db

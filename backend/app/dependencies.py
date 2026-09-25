@@ -81,42 +81,6 @@ def get_current_user(
 
     token = credentials.credentials.strip()
 
-    # Dev/Mock token support for testing without a full auth backend
-    if token.startswith("mock_token_"):
-        if getattr(settings, "ENV", "development").lower() == "production":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail={"code": "unauthorized", "message": "Mock authentication tokens are disabled in production"},
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        try:
-            user_id = int(token.replace("mock_token_", ""))
-        except ValueError:
-            user_id = 1
-        user = db.query(User).filter(User.id == user_id).first()
-        if user:
-            if user.deleted_at is not None:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail={"code": "user_deleted", "message": "This account has been deleted"},
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-            return CurrentUser(
-                user_id=user.id,
-                email=user.email,
-                timezone=user.timezone or "Europe/London",
-                weekly_limit=float(user.weekly_work_hour_limit or 20.0),
-                display_name=getattr(user, "display_name", None) or getattr(user, "name", None),
-                avatar_url=getattr(user, "avatar_url", None),
-                currency=getattr(user, "currency", "INR") or "INR",
-                language=getattr(user, "language", "en") or "en",
-                theme=getattr(user, "theme", "dark") or "dark",
-                minimum_transition_minutes=int(getattr(user, "minimum_transition_minutes", 15) or 15),
-                oauth_provider=getattr(user, "oauth_provider", None),
-                deleted_at=getattr(user, "deleted_at", None),
-            )
-        return CurrentUser(user_id=user_id, email=f"user_{user_id}@example.com")
-
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
         user_id_val = payload.get("user_id") or payload.get("sub")
@@ -130,28 +94,32 @@ def get_current_user(
         email = payload.get("email", "")
 
         user = db.query(User).filter(User.id == user_id).first()
-        if user:
-            if user.deleted_at is not None:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail={"code": "user_deleted", "message": "This account has been deleted"},
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-            return CurrentUser(
-                user_id=user.id,
-                email=user.email,
-                timezone=user.timezone or "Europe/London",
-                weekly_limit=float(user.weekly_work_hour_limit or 20.0),
-                display_name=getattr(user, "display_name", None) or getattr(user, "name", None),
-                avatar_url=getattr(user, "avatar_url", None),
-                currency=getattr(user, "currency", "INR") or "INR",
-                language=getattr(user, "language", "en") or "en",
-                theme=getattr(user, "theme", "dark") or "dark",
-                minimum_transition_minutes=int(getattr(user, "minimum_transition_minutes", 15) or 15),
-                oauth_provider=getattr(user, "oauth_provider", None),
-                deleted_at=getattr(user, "deleted_at", None),
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={"code": "user_not_found", "message": "User not found"},
+                headers={"WWW-Authenticate": "Bearer"},
             )
-        return CurrentUser(user_id=user_id, email=email)
+        if user.deleted_at is not None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={"code": "user_deleted", "message": "This account has been deleted"},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return CurrentUser(
+            user_id=user.id,
+            email=user.email,
+            timezone=user.timezone or "Europe/London",
+            weekly_limit=float(user.weekly_work_hour_limit or 20.0),
+            display_name=getattr(user, "display_name", None) or getattr(user, "name", None),
+            avatar_url=getattr(user, "avatar_url", None),
+            currency=getattr(user, "currency", "INR") or "INR",
+            language=getattr(user, "language", "en") or "en",
+            theme=getattr(user, "theme", "dark") or "dark",
+            minimum_transition_minutes=int(getattr(user, "minimum_transition_minutes", 15) or 15),
+            oauth_provider=getattr(user, "oauth_provider", None),
+            deleted_at=getattr(user, "deleted_at", None),
+        )
 
 
     except jwt.ExpiredSignatureError:

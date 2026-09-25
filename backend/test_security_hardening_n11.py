@@ -457,6 +457,8 @@ def _is_redis_alive() -> bool:
 @pytest.mark.skipif(not _is_redis_alive(), reason="Redis server is required for rate limit test")
 def test_password_change_rate_limiting():
     """Change password endpoint enforces rate limiting (5 attempts per minute)."""
+    orig_rl = settings.RATE_LIMIT_ENABLED
+    settings.RATE_LIMIT_ENABLED = True
     reset_rate_limits()
     token, _, _ = _create_user("pw_rate_user")
     headers = {"Authorization": f"Bearer {token}"}
@@ -476,8 +478,11 @@ def test_password_change_rate_limiting():
         headers=headers,
         json={"current_password": "WrongPassword!", "new_password": "NewValidPassword123!"},
     )
-    assert resp_blocked.status_code == 429
-    assert resp_blocked.json()["error"]["code"] == "rate_limit_exceeded"
+    try:
+        assert resp_blocked.status_code == 429
+        assert resp_blocked.json()["error"]["code"] == "rate_limit_exceeded"
+    finally:
+        settings.RATE_LIMIT_ENABLED = orig_rl
 
 
 # ==============================================================================
@@ -499,10 +504,22 @@ def test_excessive_pagination_bounded():
 # 8. MOCK TOKEN PRODUCTION REJECTION
 # ==============================================================================
 
-def test_mock_tokens_rejected_in_production(monkeypatch):
-    """When ENV is 'production', dev mock tokens (mock_token_*) are strictly rejected with 401."""
-    monkeypatch.setattr(settings, "ENV", "production")
-
+def test_mock_tokens_rejected_in_all_environments():
+    """Dev mock tokens (mock_token_*) are strictly rejected with 401 in all environments."""
     resp = client.get("/api/v1/auth/me", headers={"Authorization": "Bearer mock_token_1"})
     assert resp.status_code == 401
-    assert "Mock authentication tokens are disabled in production" in resp.json()["error"]["message"]
+
+def test_missing_user_jwt_rejected():
+    """A correctly signed JWT for a user that does not exist in the database is rejected."""
+    from app.dependencies import create_access_token
+    token = create_access_token(user_id=999999, email="missing@example.com")
+    resp = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 401
+    assert resp.json()["error"]["code"] == "user_not_found"
+
+def test_valid_existing_user_jwt_accepted():
+    """A correctly signed JWT for an existing user is accepted."""
+    token, id_u, email = _create_user("valid_jwt")
+    resp = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 200
+    assert resp.json()["data"]["email"] == email

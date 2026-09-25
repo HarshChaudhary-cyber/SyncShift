@@ -6,7 +6,7 @@ from app.main import app
 
 client = TestClient(app)
 
-AUTH_HEADER = {"Authorization": "Bearer mock_token_1"}
+AUTH_HEADER = {}
 
 
 def test_health():
@@ -48,7 +48,9 @@ def test_auth_endpoints():
         json={"email": test_email, "password": test_password},
     )
     assert resp.status_code == 200, resp.text
-    assert "token" in resp.json()["data"]
+    token = resp.json()["data"]["token"]
+    global AUTH_HEADER
+    AUTH_HEADER.update({"Authorization": f"Bearer {token}"})
     print("[PASS] POST /api/v1/auth/login")
 
     # 3. GET /auth/me with Bearer token
