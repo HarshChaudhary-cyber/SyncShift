@@ -117,6 +117,12 @@ export function CalendarProvider({ children, onUnauthorized }: CalendarProviderP
 
   const refreshWeek = useCallback(() => loadWeek(weekStart), [loadWeek, weekStart]);
 
+  useEffect(() => {
+    const refresh = () => { void refreshWeek(); };
+    window.addEventListener('syncshift:schedule-updated', refresh);
+    return () => window.removeEventListener('syncshift:schedule-updated', refresh);
+  }, [refreshWeek]);
+
   // Reload whenever the selected week changes
   useEffect(() => {
     loadWeek(weekStart);

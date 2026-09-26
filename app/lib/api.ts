@@ -163,6 +163,7 @@ export interface ToolProgressStep {
 }
 
 export interface AssistantChatResponse {
+  schedule_changed?: boolean;
   conversation_id?: number | null;
   message: string;
   intent: string;
@@ -574,6 +575,9 @@ export interface IcsPreviewResponse {
 
 /** Extended preview item returned by /import/file for multi-format imports. */
 export interface FilePreviewItem {
+  effective_from?: string | null;
+  effective_until?: string | null;
+  recurrence_interval?: number;
   temp_id?: string;
   title: string;
   day_of_week: number; // 0=Mon … 6=Sun; -1 if unparseable
@@ -607,6 +611,8 @@ export interface FilePreviewResponse {
 
 export interface IcsConfirmPayload {
   preview_blocks: {
+    is_recurring?: boolean;
+    recurrence_interval?: number;
     title: string;
     day_of_week: number;
     start_time: string;
@@ -760,8 +766,8 @@ export const api = {
     request<AuthResponseData>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, timezone, weekly_work_hour_limit, captcha_token }) }),
   oauthGoogle: (id_token: string, captcha_token?: string) =>
     request<AuthResponseData>('/auth/oauth/google', { method: 'POST', body: JSON.stringify({ id_token, captcha_token }) }),
-  oauthMicrosoft: (id_token: string, captcha_token?: string) =>
-    request<AuthResponseData>('/auth/oauth/microsoft', { method: 'POST', body: JSON.stringify({ id_token, captcha_token }) }),
+  oauthMicrosoft: (id_token: string, captcha_token?: string, nonce?: string) =>
+    request<AuthResponseData>('/auth/oauth/microsoft', { method: 'POST', body: JSON.stringify({ id_token, captcha_token, nonce }) }),
   getAuthMe: () => request<UserProfile>('/auth/me'),
   updateProfile: (payload: UserProfileUpdatePayload) =>
     request<UserProfile>('/auth/me', { method: 'PATCH', body: JSON.stringify(payload) }),

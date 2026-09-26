@@ -12,9 +12,9 @@ interface ImportModalProps {
   onToast: (message: string) => void;
 }
 
-const ACCEPT = '.pdf,.docx,.pptx,.txt,.csv,.jpg,.jpeg,.png,.webp,.ics';
+const ACCEPT = '.pdf,.doc,.docx,.pptx,.xlsx,.xls,.txt,.csv,.jpg,.jpeg,.png,.webp,.ics,.ical';
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20MB
-const ALLOWED_EXTS = ['.pdf', '.docx', '.pptx', '.txt', '.csv', '.jpg', '.jpeg', '.png', '.webp', '.ics'];
+const ALLOWED_EXTS = ACCEPT.split(',');
 
 const DAY_ORDER = [0, 1, 2, 3, 4, 5, 6, -1];
 const DAY_LABELS: Record<number, string> = {
@@ -144,9 +144,9 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
     }
     const ext = getFileExt(file.name);
     if (!ALLOWED_EXTS.includes(ext)) {
-      return 'Unsupported file type. Supported: PDF, DOCX, PPTX, image (JPG, PNG), TXT, ICS.';
+      return 'Supported: PDF, DOC/DOCX, PPTX, XLS/XLSX, CSV, TXT, ICS/ICAL, JPG, PNG and WebP.';
     }
-    if (['.doc', '.ppt', '.xls', '.xlsx'].includes(ext)) {
+    if (['.ppt'].includes(ext)) {
       return `Legacy format '${ext}' is not supported. Please save the file as .docx or .pptx.`;
     }
     return null;
@@ -373,8 +373,10 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
           start_time: b.start_time,
           end_time: b.end_time,
           location: b.location ?? null,
-          effective_from: effectiveFrom || undefined,
-          effective_until: effectiveUntil || undefined,
+          effective_from: b.effective_from || effectiveFrom || undefined,
+          effective_until: b.effective_until || effectiveUntil || undefined,
+          is_recurring: b.is_recurring ?? true,
+          recurrence_interval: b.recurrence_interval ?? 1,
         })),
       };
 

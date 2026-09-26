@@ -35,6 +35,7 @@ class OAuthGoogleRequest(BaseModel):
 
 class OAuthMicrosoftRequest(BaseModel):
     id_token: str
+    nonce: Optional[str] = None
     captcha_token: Optional[str] = None
 
 

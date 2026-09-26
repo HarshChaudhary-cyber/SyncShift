@@ -5,6 +5,7 @@ POST /api/v1/import/file       → FilePreviewResponseData
 POST /api/v1/import/file/confirm → IcsConfirmResponseData (reused from import_ics)
 """
 from typing import Literal, Optional
+from datetime import date
 from pydantic import BaseModel, Field
 
 
@@ -32,6 +33,9 @@ class FilePreviewItem(BaseModel):
     location: Optional[str] = None
     course_code: Optional[str] = None
     is_recurring: bool = True
+    recurrence_interval: int = 1
+    effective_from: Optional[date] = None
+    effective_until: Optional[date] = None
     confidence: Literal["high", "low"] = "high"
     status: Literal["valid", "needs_review", "duplicate", "conflict"] = "valid"
     is_duplicate: bool = False

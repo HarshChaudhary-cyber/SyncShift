@@ -24,7 +24,7 @@ Idempotent: Safe to run repeatedly.
 """
 
 import sys
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timezone, timedelta
 import bcrypt
 
 if sys.platform == "win32":
@@ -34,7 +34,11 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-from app.database import SessionLocal, init_db
+from app.database import SessionLocal, engine
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from pathlib import Path
+from app.models.course import Course
 from app.models.academic_course import AcademicCourse
 from app.models.academic_section import AcademicSection
 from app.models.academic_term import AcademicTerm
@@ -65,7 +69,12 @@ def seed():
     print("  SyncShift — Seeding Northbridge University Demo Ecosystem (N12)")
     print("=" * 65)
 
-    init_db()
+    # Seeding must not create an unversioned schema that cannot start the API.
+    with engine.connect() as connection:
+        revision = MigrationContext.configure(connection).get_current_revision()
+    head = ScriptDirectory(str(Path(__file__).parent / "alembic")).get_current_head()
+    if revision != head:
+        raise RuntimeError("Run alembic upgrade head before seeding demo data.")
     db = SessionLocal()
 
     try:
@@ -505,6 +514,72 @@ def seed():
                 db.add(st)
                 db.commit()
         print("✓ Seeded Study Tasks for Smart Planning")
+
+        # Additional personal-calendar scenarios, separate from official meetings.
+        for code, name, color in [
+            ("DEMO101", "Demo: Python Practice", "#8b5cf6"),
+            ("DEMO102", "Demo: Design Workshop", "#14b8a6"),
+        ]:
+            if not db.query(Course).filter_by(user_id=student_alex.id, code=code).first():
+                db.add(Course(user_id=student_alex.id, code=code, name=name,
+                              color=color, term="Fall 2026"))
+        db.flush()
+        practice = db.query(Course).filter_by(user_id=student_alex.id, code="DEMO101").one()
+        scenarios = [
+            ("Demo: Python Practice", BlockType.CLASS, 1, time(14), time(16), None, practice.id),
+            ("Demo: Cafe shift overlapping practice", BlockType.SHIFT, 1, time(15), time(18), 16.5, None),
+            ("Demo: Weekend library shift", BlockType.SHIFT, 6, time(10), time(14), 18, None),
+            ("Demo: Independent revision", BlockType.STUDY, 5, time(15), time(16), None, None),
+        ]
+        for title, kind, day, start, end, wage, course_id in scenarios:
+            if not db.query(TimeBlock).filter_by(user_id=student_alex.id, title=title).first():
+                db.add(TimeBlock(user_id=student_alex.id, title=title, type=kind,
+                    day_of_week=day, start_time=start, end_time=end,
+                    duration_minutes=(end.hour-start.hour)*60,
+                    hourly_wage=wage, course_id=course_id, is_recurring=True,
+                    is_flexible=kind == BlockType.STUDY, location="Demo campus"))
+        for title, hours, days, priority, status in [
+            ("Demo: Upcoming database assignment", 3, 3, "high", "pending"),
+            ("Demo: Network exam preparation", 5, 7, "medium", "pending"),
+            ("Demo: Overdue reading", 1, -2, "high", "pending"),
+            ("Demo: Completed practice exercise", 2, -1, "low", "done"),
+        ]:
+            if not db.query(StudyTask).filter_by(user_id=student_alex.id, title=title).first():
+                db.add(StudyTask(user_id=student_alex.id, title=title,
+                    total_hours_required=hours, deadline=date.today()+timedelta(days=days),
+                    priority=priority, status=status,
+                    completed_hours=hours if status == "done" else 0))
+        if not db.query(StudentPreference).filter_by(user_id=student_alex.id).first():
+            db.add(StudentPreference(user_id=student_alex.id, institution_id=inst.id,
+                preferred_time_of_day="afternoon", preferred_days_off="0"))
+        if not db.query(StudentConstraint).filter_by(user_id=student_alex.id,
+                description="Demo: Protect work shifts").first():
+            db.add(StudentConstraint(user_id=student_alex.id, institution_id=inst.id,
+                constraint_type="protect_work_shifts", is_hard=True,
+                description="Demo: Protect work shifts"))
+        for user in [admin_user, student_alex, student_jordan]:
+            if not db.get(NotificationPrefs, user.id):
+                db.add(NotificationPrefs(user_id=user.id, email_enabled=False))
+
+        # A draft with one moved class supports impact-preview and publish testing.
+        v2 = db.query(TimetableVersion).filter_by(timetable_id=tt.id, version_number=2).first()
+        if not v2:
+            v2 = TimetableVersion(institution_id=inst.id, timetable_id=tt.id,
+                version_number=2, name="Demo: Proposed afternoon lecture", status="draft",
+                created_by_user_id=admin_user.id,
+                change_summary="Move Monday Computer Networks to 15:00 for impact testing.")
+            db.add(v2)
+            db.flush()
+            for original in db.query(CourseMeeting).filter_by(version_id=v1.id).all():
+                moved = original.day_of_week == 1
+                db.add(CourseMeeting(institution_id=inst.id, timetable_id=tt.id,
+                    version_id=v2.id, academic_term_id=term.id, section_id=original.section_id,
+                    faculty_id=original.faculty_id, room_id=original.room_id,
+                    day_of_week=original.day_of_week,
+                    start_time=time(15) if moved else original.start_time,
+                    end_time=time(16, 30) if moved else original.end_time, status="active"))
+        db.commit()
+        print("✓ Added calendar conflict, income shifts, current tasks, preferences and draft timetable")
 
         # Initial Notification
         notif = db.query(NotificationLog).filter(

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 import { api, ApiError } from '@/lib/api';
@@ -34,20 +34,12 @@ function GoogleButtonInner({
 }) {
   const triggerGoogleLogin = useGoogleLogin({
     flow: 'implicit',
+    scope: 'openid email profile',
     prompt: 'select_account',
     onSuccess: async (tokenResponse) => {
       try {
-        // Fetch user profile from Google using the access token to get id_token or verified claims
-        const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        });
-        const userInfo = await userInfoRes.json();
-
-        // Forward verified claims from Google's /userinfo endpoint to the backend.
-        // The backend's verify_google_id_token() accepts this colon-delimited format
-        // when the implicit flow is used (access_token returned instead of id_token).
-        const idTokenPayload = `mock_google_:${userInfo.sub}:${userInfo.email}:${userInfo.name || ''}:${userInfo.picture || ''}`;
-        const res = await api.oauthGoogle(idTokenPayload, captchaToken);
+        // The API verifies this access token with Google and checks its client ID.
+        const res = await api.oauthGoogle(tokenResponse.access_token, captchaToken);
         onComplete(res);
       } catch (err: any) {
         if (err instanceof ApiError) {
@@ -115,7 +107,6 @@ export function OAuthButtons({
 
   const [activeProvider, setActiveProvider] = useState<'google' | 'microsoft' | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const popupRef = useRef<Window | null>(null);
 
   const handleOAuthSuccess = useCallback(
     async (data: any) => {
@@ -137,22 +128,17 @@ export function OAuthButtons({
     setError(null);
 
     if (!MICROSOFT_CLIENT_ID) {
-      setError('Microsoft sign-in is not configured. Please contact the administrator.');
       return;
     }
 
     setActiveProvider('microsoft');
-
-
     try {
-      const redirectUri =
-        process.env.NEXT_PUBLIC_MICROSOFT_REDIRECT_URI ||
-        (typeof window !== 'undefined'
-          ? `${window.location.origin}/auth/microsoft/callback`
-          : 'http://localhost:3000/auth/microsoft/callback');
-
-      const state = Math.random().toString(36).substring(2, 15);
-      const nonce = Math.random().toString(36).substring(2, 15);
+      const redirectUri = `${window.location.origin}/auth/microsoft/callback`;
+      const state = crypto.randomUUID();
+      const nonce = crypto.randomUUID();
+      sessionStorage.setItem('syncshift_ms_oauth_state', state);
+      sessionStorage.setItem('syncshift_ms_oauth_nonce', nonce);
+      sessionStorage.setItem('syncshift_ms_oauth_captcha', captchaToken || '');
 
       const authUrl =
         `https://login.microsoftonline.com/${MICROSOFT_TENANT}/oauth2/v2.0/authorize?` +
@@ -167,61 +153,7 @@ export function OAuthButtons({
           prompt: 'select_account',
         }).toString();
 
-      const popup = window.open(
-        authUrl,
-        'microsoft_oauth',
-        'width=520,height=650,left=150,top=100,menubar=no,status=no,toolbar=no'
-      );
-      popupRef.current = popup;
-
-      const messageListener = async (event: MessageEvent) => {
-        if (typeof window !== 'undefined' && event.origin !== window.location.origin) return;
-        if (event.data?.type === 'MS_AUTH_RESPONSE') {
-          window.removeEventListener('message', messageListener);
-          clearInterval(pollTimer);
-
-          if (event.data.error) {
-            if (event.data.error === 'access_denied') {
-              setError('Login canceled');
-            } else {
-              setError(event.data.error_description || "Couldn't connect with Microsoft. Please try again.");
-            }
-            setActiveProvider(null);
-            return;
-          }
-
-          if (event.data.id_token) {
-            try {
-              const res = await api.oauthMicrosoft(event.data.id_token, captchaToken);
-              await handleOAuthSuccess(res);
-            } catch (err: any) {
-              if (err instanceof ApiError && (err.status === 409 || err.code === 'email_exists')) {
-                setError('This email is already registered with email/password. Please sign in that way.');
-              } else {
-                setError(err?.message || "Couldn't connect with Microsoft. Please try again.");
-              }
-              setActiveProvider(null);
-            }
-          }
-        }
-      };
-
-      window.addEventListener('message', messageListener);
-
-      // Poll to detect popup closure without response
-      const pollTimer = setInterval(() => {
-        if (popup?.closed) {
-          clearInterval(pollTimer);
-          window.removeEventListener('message', messageListener);
-          setActiveProvider((current) => {
-            if (current === 'microsoft') {
-              setError('Login canceled');
-              return null;
-            }
-            return current;
-          });
-        }
-      }, 500);
+      window.location.assign(authUrl);
     } catch {
       setError("Couldn't connect with Microsoft. Please try again.");
       setActiveProvider(null);
@@ -233,9 +165,7 @@ export function OAuthButtons({
   return (
     <div className={`w-full flex flex-col items-center gap-2.5 ${className}`}>
       {/* 1. Google Button */}
-      {/* Only mount GoogleOAuthProvider when a real client ID is configured.
-          When GOOGLE_CLIENT_ID is absent the button renders in a degraded state
-          and shows a clear error — it never auto-logs in a demo user. */}
+      {/* Only mount GoogleOAuthProvider when a client ID is configured. */}
       <div className="w-full">
         {GOOGLE_CLIENT_ID ? (
           <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
@@ -257,15 +187,14 @@ export function OAuthButtons({
         ) : (
           <button
             type="button"
-            onClick={() => setError('Google sign-in is not configured. Please contact the administrator.')}
-            disabled={isAnyLoading}
-            aria-label="Continue with Google (not configured)"
-            className="w-full h-[44px] min-h-[44px] px-4 rounded-lg bg-white hover:bg-neutral-100 text-neutral-800 font-medium text-sm border border-neutral-300 shadow-sm flex items-center justify-between transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            disabled
+            aria-label="Google sign-in unavailable"
+            className="w-full h-[44px] min-h-[44px] px-4 rounded-lg bg-white text-neutral-500 font-medium text-sm border border-neutral-300 shadow-sm flex items-center justify-between opacity-60 cursor-not-allowed"
           >
             <div className="w-6 flex items-center justify-start shrink-0">
               <GoogleLogo />
             </div>
-            <span className="flex-1 text-center font-medium text-neutral-800">Continue with Google</span>
+            <span className="flex-1 text-center font-medium">Google sign-in unavailable</span>
             <div className="w-6" />
           </button>
         )}
@@ -275,20 +204,26 @@ export function OAuthButtons({
       <button
         type="button"
         onClick={handleMicrosoftLogin}
-        disabled={isAnyLoading}
-        aria-label="Continue with Microsoft"
+        disabled={isAnyLoading || !MICROSOFT_CLIENT_ID}
+        aria-label={MICROSOFT_CLIENT_ID ? 'Continue with Microsoft' : 'Microsoft sign-in unavailable'}
         className="w-full h-[44px] min-h-[44px] px-4 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white font-medium text-sm border border-neutral-700 shadow-sm flex items-center justify-between transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
         <div className="w-6 flex items-center justify-start shrink-0">
           <MicrosoftLogo />
         </div>
         <span className="flex-1 text-center font-medium text-white">
-          {activeProvider === 'microsoft' ? 'Connecting to Microsoft…' : 'Continue with Microsoft'}
+          {activeProvider === 'microsoft' ? 'Connecting to Microsoft…' : MICROSOFT_CLIENT_ID ? 'Continue with Microsoft' : 'Microsoft sign-in unavailable'}
         </span>
         <div className="w-6 flex items-center justify-end shrink-0">
           {activeProvider === 'microsoft' && <Spinner size={16} color="text-white" />}
         </div>
       </button>
+
+      {!GOOGLE_CLIENT_ID && !MICROSOFT_CLIENT_ID && (
+        <p className="text-xs text-center text-[var(--text-muted)]">
+          Social sign-in needs provider client IDs. Use email and password for now.
+        </p>
+      )}
 
       {/* Error Message Display */}
       {error && (

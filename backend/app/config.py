@@ -6,6 +6,7 @@ DEFAULT_DEV_SECRET = "syncshift-dev-secret-key-32-chars-minimum!!"
 
 
 class Settings(BaseSettings):
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
     PROJECT_NAME: str = "SyncShift API"
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"

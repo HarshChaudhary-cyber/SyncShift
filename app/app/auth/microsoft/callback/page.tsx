@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useAuthContext } from '@/context/AuthContext';
@@ -10,35 +10,32 @@ export default function MicrosoftCallbackPage() {
   const router = useRouter();
   const { loginWithOAuthData } = useAuthContext();
   const [error, setError] = useState<string | null>(null);
+  const started = useRef(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || started.current) return;
+    started.current = true;
 
-    // 1. Parse fragment params (#id_token=... or #error=...) or query params (?id_token=... or ?error=...)
+    // Microsoft sends its response in the URL fragment.
     const hash = window.location.hash.startsWith('#') ? window.location.hash.substring(1) : '';
     const hashParams = new URLSearchParams(hash);
-    const searchParams = new URLSearchParams(window.location.search);
+    const idToken = hashParams.get('id_token');
+    const errCode = hashParams.get('error');
+    const errDesc = hashParams.get('error_description');
+    const responseState = hashParams.get('state');
+    const expectedState = sessionStorage.getItem('syncshift_ms_oauth_state');
+    const nonce = sessionStorage.getItem('syncshift_ms_oauth_nonce');
+    const captchaToken = sessionStorage.getItem('syncshift_ms_oauth_captcha') || undefined;
+    sessionStorage.removeItem('syncshift_ms_oauth_state');
+    sessionStorage.removeItem('syncshift_ms_oauth_nonce');
+    sessionStorage.removeItem('syncshift_ms_oauth_captcha');
+    window.history.replaceState(null, '', window.location.pathname);
 
-    const idToken = hashParams.get('id_token') || searchParams.get('id_token');
-    const errCode = hashParams.get('error') || searchParams.get('error');
-    const errDesc = hashParams.get('error_description') || searchParams.get('error_description');
-
-    // 2. If opened in a popup by OAuthButtons, communicate back to opener
-    if (window.opener && !window.opener.closed) {
-      window.opener.postMessage(
-        {
-          type: 'MS_AUTH_RESPONSE',
-          id_token: idToken,
-          error: errCode,
-          error_description: errDesc,
-        },
-        window.location.origin
-      );
-      window.close();
+    if (!expectedState || !responseState || responseState !== expectedState || !nonce) {
+      setError('Microsoft sign-in could not be verified. Please try again.');
       return;
     }
 
-    // 3. If standard full-page redirect flow
     if (errCode) {
       if (errCode === 'access_denied') {
         router.replace('/login?error=Login canceled');
@@ -56,7 +53,7 @@ export default function MicrosoftCallbackPage() {
     // Exchange token with backend
     (async () => {
       try {
-        const res = await api.oauthMicrosoft(idToken);
+        const res = await api.oauthMicrosoft(idToken, captchaToken, nonce);
         await loginWithOAuthData(res);
         router.replace(getPortalRedirect(res.institution_role));
       } catch (err: unknown) {

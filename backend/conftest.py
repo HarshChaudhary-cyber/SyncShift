@@ -2,6 +2,22 @@ import pytest
 from app.config import settings
 from app.database import Base, engine, init_db
 
+
+@pytest.fixture(autouse=True)
+def disable_live_gemini_for_tests(monkeypatch):
+    """Keep routine tests independent of API credentials, quotas, and network access.
+
+    Tests of the Gemini integration opt in with a fake key and mock the SDK.
+    """
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", None)
+
+
+@pytest.fixture(autouse=True)
+def enable_synthetic_oauth_only_in_tests(monkeypatch):
+    """Mock OAuth tokens must never be accepted by a running app."""
+    from app.services import oauth_service
+    monkeypatch.setattr(oauth_service, "_allow_test_oauth_tokens", lambda: True)
+
 # If Redis is unavailable or paused, disable rate limiting for test suite execution
 try:
     import redis
@@ -24,9 +40,15 @@ def setup_test_db():
     from datetime import date, time
     from app.database import SessionLocal
     from app.models.time_block import TimeBlock, BlockType
+    from app.models.user import User
 
     db = SessionLocal()
     try:
+        # Reserve the owner of fixture events before real test accounts register.
+        # Otherwise the first registration inherits these orphaned sample rows.
+        if db.get(User, 1) is None:
+            db.add(User(id=1, email="fixture-owner@example.test", name="Fixture owner"))
+            db.flush()
         has_shift = db.query(TimeBlock).filter(
             TimeBlock.user_id == 1,
             TimeBlock.title == "Library Desk",

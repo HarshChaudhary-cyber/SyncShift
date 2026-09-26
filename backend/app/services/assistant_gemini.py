@@ -494,6 +494,9 @@ def build_system_prompt(role: str = "student", user_name: Optional[str] = None) 
             "- You also have access to university administration tools for room availability, timetable versions, and impact analysis.\n"
             "- All timetable changes require explicit user confirmation via ActionPreview.\n"
         )
+    from app.services.assistant_app import APP_GUIDE
+    base += "\nVERIFIED APP GUIDE:\n" + "\n".join(
+        value for key, value in APP_GUIDE.items() if key != "admin" or role in ("admin", "super_admin"))
     return base
 
 
@@ -560,9 +563,8 @@ def call_gemini_with_tools(
 
     # Try model candidates in supported order for the current Google AI API.
     model_candidates = [
-        "gemini-3.1-pro-preview",
-        "gemini-3.7-flash",
-        "gemini-2.5-flash-lite",
+        settings.GEMINI_MODEL,
+        "gemini-flash-lite-latest",
     ]
 
     tool_calls_meta: List[Dict[str, Any]] = []
@@ -708,7 +710,7 @@ def gemini_answer_general_question(
         g_role = role_map.get(h.get("role", "user"), "user")
         history.append({"role": g_role, "parts": [h.get("content", "")]})
 
-    model_candidates = ["gemini-3.1-pro-preview", "gemini-3.7-flash", "gemini-2.5-flash-lite"]
+    model_candidates = list(dict.fromkeys([settings.GEMINI_MODEL, "gemini-flash-lite-latest"]))
     for model_name in model_candidates:
         try:
             model = genai.GenerativeModel(

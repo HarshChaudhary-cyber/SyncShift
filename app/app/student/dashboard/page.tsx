@@ -65,6 +65,12 @@ function StudentDashboardContent() {
     fetchDashboard();
   }, [fetchDashboard]);
 
+  useEffect(() => {
+    const refresh = () => { void fetchDashboard(true); };
+    window.addEventListener('syncshift:schedule-updated', refresh);
+    return () => window.removeEventListener('syncshift:schedule-updated', refresh);
+  }, [fetchDashboard]);
+
   // 2. Auto-refresh every 5 minutes & on tab visibilitychange
   useEffect(() => {
     const intervalId = setInterval(() => {

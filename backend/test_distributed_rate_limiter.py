@@ -410,6 +410,15 @@ def test_trusted_proxy_correctly_resolves_client_ip():
 # ---------------------------------------------------------------------------
 def test_authenticated_user_rate_limiting():
     """Authenticated users are rate-limited by user ID, not IP."""
+    # A token for a missing account is rejected before this route's limiter runs.
+    from app.database import SessionLocal
+    from app.models.user import User
+    from app.routers.auth import hash_password
+    with SessionLocal() as db:
+        if db.get(User, 777) is None:
+            db.add(User(id=777, email="auth_user_777@syncshift.app",
+                        password_hash=hash_password("FixturePassword123!")))
+            db.commit()
     client = TestClient(app)
     token = create_access_token(user_id=777, email="auth_user_777@syncshift.app")
     auth_headers = {"Authorization": f"Bearer {token}"}

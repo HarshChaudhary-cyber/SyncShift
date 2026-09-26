@@ -160,9 +160,10 @@ class TestFileExtractorValidation:
         with pytest.raises(ValueError, match="Unsupported file type"):
             extract_text(b"PK\x03\x04", "archive.zip")
 
-    def test_legacy_doc_raises(self):
+    def test_legacy_doc_without_converter(self, monkeypatch):
         from app.services.file_extractor import extract_text
-        with pytest.raises(ValueError, match="Please save the file as .docx"):
+        monkeypatch.setattr("app.services.file_extractor.shutil.which", lambda name: None)
+        with pytest.raises(ValueError, match="Legacy Word conversion is unavailable"):
             extract_text(b"\xd0\xcf\x11\xe0", "old_file.doc")
 
     def test_legacy_ppt_raises(self):
@@ -225,10 +226,10 @@ class TestImportFileEndpoint:
         r = self._upload(client, auth_headers, b"PK\x03\x04", "archive.zip", "application/zip")
         assert r.status_code == 400
 
-    def test_legacy_doc_400(self, client, auth_headers):
+    def test_corrupt_legacy_doc_422(self, client, auth_headers):
         r = self._upload(client, auth_headers, b"\xd0\xcf\x11\xe0", "old.doc", "application/msword")
-        assert r.status_code == 400
-        assert ".docx" in r.json()["error"]["message"]
+        assert r.status_code == 422
+        assert "Could not read" in r.json()["error"]["message"]
 
     def test_empty_file_400(self, client, auth_headers):
         r = self._upload(client, auth_headers, b"", "empty.txt")

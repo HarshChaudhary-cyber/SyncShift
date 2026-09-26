@@ -39,7 +39,7 @@ class IcsConfirmBlock(BaseModel):
     course_id: Optional[int] = None
     effective_from: Optional[date] = None
     effective_until: Optional[date] = None
-    recurrence_interval: Optional[int] = 1
+    recurrence_interval: Optional[int] = Field(1, ge=1, le=52)
     is_recurring: Optional[bool] = True
 
 

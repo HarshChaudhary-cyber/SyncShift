@@ -129,7 +129,9 @@ def test_gemini_missing_api_key_is_sanitized():
 
 def test_gemini_returns_empty_or_non_timetable():
     """Gemini returning [] must return 422 with timetable guidance."""
-    with patch("app.services.gemini_timetable.call_gemini_model", return_value="[]"):
+    with patch.object(settings, "GEMINI_API_KEY", "test-key"), patch(
+        "app.services.gemini_timetable.call_gemini_model", return_value="[]"
+    ):
         response = client.post(
             "/api/v1/import/file",
             files={"file": ("random_photo.jpg", b"\xff\xd8\xfffakejpeg", "image/jpeg")},
@@ -142,7 +144,9 @@ def test_gemini_returns_empty_or_non_timetable():
 
 def test_gemini_unreadable_json_triggers_retry_and_422():
     """Corrupted response even after retry returns 422."""
-    with patch("app.services.gemini_timetable.call_gemini_model", return_value="Not valid JSON at all"):
+    with patch.object(settings, "GEMINI_API_KEY", "test-key"), patch(
+        "app.services.gemini_timetable.call_gemini_model", return_value="Not valid JSON at all"
+    ):
         response = client.post(
             "/api/v1/import/file",
             files={"file": ("corrupt.pdf", b"%PDF-1.4 fake", "application/pdf")},
@@ -176,7 +180,9 @@ def test_gemini_successful_extraction_and_confirm_flow():
         }
     ])
 
-    with patch("app.services.gemini_timetable.call_gemini_model", return_value=mock_gemini_json):
+    with patch.object(settings, "GEMINI_API_KEY", "test-key"), patch(
+        "app.services.gemini_timetable.call_gemini_model", return_value=mock_gemini_json
+    ):
         response = client.post(
             "/api/v1/import/file",
             files={"file": ("timetable.png", b"\x89PNG\r\n\x1a\nsample", "image/png")},
@@ -221,7 +227,7 @@ def test_gemini_successful_extraction_and_confirm_flow():
         blocks = get_all_blocks(user_id=TEST_USER.user_id)
         user_blocks = [b for b in blocks if b.title == "CS101 Lecture"]
         assert len(user_blocks) >= 1
-        assert user_blocks[0].day_of_week == 1
+        assert user_blocks[0].day_of_week == 2  # Preview Monday=0; stored Sunday=0.
         assert str(user_blocks[0].start_time).startswith("09:00")
 
 

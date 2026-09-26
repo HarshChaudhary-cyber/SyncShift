@@ -10,10 +10,13 @@ Verifies:
 """
 from datetime import date, timedelta
 import uuid
+from unittest.mock import patch
 import pytest
 from starlette.testclient import TestClient
 
+from app.config import settings
 from app.main import app
+from app.services.assistant_gemini import GeminiQuotaExceededError
 from app.services.rate_limiter import reset_rate_limits
 
 client = TestClient(app)
@@ -102,6 +105,44 @@ def test_assistant_read_queries():
     r_conflicts = client.post("/api/v1/assistant/chat", headers=headers, json={"message": "Do I have any conflicts?"})
     assert r_conflicts.status_code == 200, r_conflicts.text
     assert "no scheduling conflicts" in r_conflicts.json()["data"]["message"].lower()
+
+
+def test_schedule_query_falls_back_when_gemini_quota_is_exhausted():
+    """Schedule help remains available when the configured AI provider returns 429."""
+    headers, _ = setup_assistant_user("quota_fallback")
+    today_d = date.today()
+    week_start = today_d - timedelta(days=today_d.weekday())
+    today_dow = (today_d.weekday() + 1) % 7
+    block = client.post(
+        "/api/v1/blocks",
+        headers=headers,
+        json={
+            "title": "Quota Fallback Class",
+            "type": "class",
+            "day_of_week": today_dow,
+            "start_time": "10:00",
+            "end_time": "11:00",
+            "recurrence_rule": "weekly",
+            "effective_from": week_start.isoformat(),
+        },
+    )
+    assert block.status_code in (200, 201), block.text
+
+    with patch.object(settings, "GEMINI_API_KEY", "test-key"), patch(
+        "app.services.assistant_gemini.call_gemini_with_tools",
+        side_effect=GeminiQuotaExceededError("429 quota exhausted", retry_after=30),
+    ) as gemini_call:
+        response = client.post(
+            "/api/v1/assistant/chat",
+            headers=headers,
+            json={"message": "What is my schedule today?"},
+        )
+
+    assert response.status_code == 200, response.text
+    assert gemini_call.call_count == 1
+    data = response.json()["data"]
+    assert "Quota Fallback Class" in data["message"]
+    assert data["requires_confirmation"] is False
 
 
 def test_assistant_ambiguous_shift_move():

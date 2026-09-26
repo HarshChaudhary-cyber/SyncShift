@@ -14,19 +14,27 @@ Raises:
 from __future__ import annotations
 
 import io
+import csv
+import shutil
+import subprocess
+import tempfile
+import zipfile
+from datetime import datetime, time
+from pathlib import Path
 
 SUPPORTED_EXTENSIONS = {
     ".ics", ".ical",
     ".pdf",
     ".docx",
+    ".doc", ".xlsx", ".xls",
     ".pptx",
     ".txt", ".csv",
-    ".jpg", ".jpeg", ".png",
+    ".jpg", ".jpeg", ".png", ".webp",
 }
 
-LEGACY_EXTENSIONS = {".doc", ".ppt"}
+LEGACY_EXTENSIONS = {".ppt"}
 
-SUPPORTED_READABLE = "ics, pdf, docx, pptx, txt, csv, jpg, png"
+SUPPORTED_READABLE = "ics, pdf, doc, docx, pptx, xls, xlsx, txt, csv, jpg, png, webp"
 
 
 def _ext(filename: str) -> str:
@@ -47,6 +55,11 @@ def extract_text(content: bytes, filename: str) -> tuple[str, bool]:
     """
     ext = _ext(filename)
 
+    if ext in (".xlsx", ".docx", ".pptx"):
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            if sum(i.file_size for i in archive.infolist()) > 50 * 1024 * 1024:
+                raise ValueError("Expanded document exceeds the 50 MB limit.")
+
     if ext in LEGACY_EXTENSIONS:
         raise ValueError(
             f"Please save the file as .docx / .pptx and re-upload. "
@@ -64,41 +77,130 @@ def extract_text(content: bytes, filename: str) -> tuple[str, bool]:
         return content.decode("utf-8", errors="replace"), False
 
     if ext == ".pdf":
-        return _extract_pdf(content), False
+        return _extract_pdf(content)
 
     if ext == ".docx":
         return _extract_docx(content), False
 
+    if ext == ".doc":
+        executable = shutil.which("antiword")
+        if not executable:
+            raise ValueError("Legacy Word conversion is unavailable on this server. Save as DOCX or PDF and upload again.")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "timetable.doc"
+            path.write_bytes(content)
+            result = subprocess.run([executable, str(path)], capture_output=True, timeout=20, check=True)
+            return result.stdout.decode("utf-8", errors="replace"), False
+
+    if ext == ".xlsx":
+        import openpyxl
+        workbook = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True, keep_links=False)
+        try:
+            if any((s.max_row or 0) > 10000 or (s.max_column or 0) > 100 for s in workbook):
+                raise ValueError("Upload at most 10,000 rows and 100 columns per sheet.")
+            return "\n".join(rows_to_text(sheet.iter_rows(max_row=min(sheet.max_row or 1, 10000),
+                max_col=min(sheet.max_column or 1, 100), values_only=True)) for sheet in workbook), False
+        finally:
+            workbook.close()
+
+    if ext == ".xls":
+        import xlrd
+        workbook = xlrd.open_workbook(file_contents=content, on_demand=True)
+        try:
+            sheets = []
+            for sheet in workbook.sheets():
+                if sheet.nrows > 10000 or sheet.ncols > 100:
+                    raise ValueError("Upload at most 10,000 rows and 100 columns per sheet.")
+                rows = []
+                for r in range(min(sheet.nrows, 10000)):
+                    row = []
+                    for c in range(min(sheet.ncols, 100)):
+                        cell = sheet.cell(r, c)
+                        value = cell.value
+                        if cell.ctype == xlrd.XL_CELL_DATE:
+                            value = xlrd.xldate_as_datetime(value, workbook.datemode)
+                            if cell.value < 1:
+                                value = value.time()
+                        row.append(value)
+                    rows.append(row)
+                sheets.append(rows_to_text(rows))
+            return "\n".join(sheets), False
+        finally:
+            workbook.release_resources()
+
     if ext == ".pptx":
         return _extract_pptx(content), False
 
-    if ext in (".txt", ".csv"):
+    if ext == ".csv":
+        text = content.decode("utf-8-sig")
+        try:
+            dialect = csv.Sniffer().sniff(text[:8192], delimiters=",;\t")
+        except csv.Error:
+            dialect = csv.excel
+        return rows_to_text(csv.reader(io.StringIO(text), dialect)), False
+
+    if ext == ".txt":
         return content.decode("utf-8", errors="replace"), False
 
-    if ext in (".jpg", ".jpeg", ".png"):
+    if ext in (".jpg", ".jpeg", ".png", ".webp"):
         return _extract_image(content), True
 
     # Unreachable but kept for safety
     raise ValueError(f"Unsupported file type '{ext}'. Supported: {SUPPORTED_READABLE}")
 
 
+def rows_to_text(rows):
+    """Preserve tabular structure; normalize common schedule headers for local parsing."""
+    lines, header = [], None
+    for index, row in enumerate(rows):
+        if index >= 10000:
+            raise ValueError("A timetable may contain at most 10,000 rows per sheet.")
+        cells = [v.strftime("%H:%M") if isinstance(v, time) else
+                 v.strftime("%A") if isinstance(v, datetime) else str(v or "").strip() for v in row]
+        aliases = {"day": "day", "weekday": "day", "day_of_week": "day", "day of week": "day",
+            "start": "start", "start time": "start", "start_time": "start",
+            "end": "end", "end time": "end", "end_time": "end", "finish": "end",
+            "title": "title", "subject": "title", "course": "title", "class": "title",
+            "location": "location", "room": "location"}
+        candidate = {aliases[v.lower()]: i for i, v in enumerate(cells) if v.lower() in aliases}
+        if {"day", "start", "end"} <= candidate.keys():
+            header = candidate
+            continue
+        if header:
+            values = {key: cells[i] if i < len(cells) else "" for key, i in header.items()}
+            lines.append(f"{values['day']} {values['start']} - {values['end']} {values.get('title', '')} {values.get('location', '')}")
+        elif any(cells):
+            lines.append(" | ".join(cells))
+    return "\n".join(lines)
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # PDF
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _extract_pdf(content: bytes) -> str:
+def _extract_pdf(content: bytes) -> tuple[str, bool]:
     try:
         import pdfplumber  # type: ignore
     except ImportError:
         raise ValueError("PDF support requires 'pdfplumber'. Run: pip install pdfplumber")
 
     lines: list[str] = []
+    used_ocr = False
     with pdfplumber.open(io.BytesIO(content)) as pdf:
+        if len(pdf.pages) > 50:
+            raise ValueError("Upload at most 50 timetable pages at a time.")
         for page in pdf.pages:
             # 1. Paragraph text
             raw_text = page.extract_text()
             if raw_text:
                 lines.append(raw_text)
+            else:
+                import pytesseract
+                try:
+                    lines.append(pytesseract.image_to_string(page.to_image(resolution=150).original, timeout=20))
+                    used_ocr = True
+                except (pytesseract.TesseractNotFoundError, RuntimeError):
+                    pass
 
             # 2. Table rows (join cells with spaces, rows with newlines)
             tables = page.extract_tables()
@@ -108,7 +210,7 @@ def _extract_pdf(content: bytes) -> str:
                     if cells:
                         lines.append("  ".join(cells))
 
-    return "\n".join(lines)
+    return "\n".join(lines), used_ocr
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -183,7 +285,7 @@ def _extract_image(content: bytes) -> str:
 
     try:
         img = Image.open(io.BytesIO(content))
-        text: str = pytesseract.image_to_string(img)
+        text: str = pytesseract.image_to_string(img, timeout=20)
         return text
     except pytesseract.TesseractNotFoundError:
         # Tesseract binary not in PATH

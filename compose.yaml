@@ -11,7 +11,7 @@ services:
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
       NEXT_PUBLIC_MICROSOFT_CLIENT_ID: ${NEXT_PUBLIC_MICROSOFT_CLIENT_ID:-}
       NEXT_PUBLIC_MICROSOFT_REDIRECT_URI: ${NEXT_PUBLIC_MICROSOFT_REDIRECT_URI:-http://localhost:3000/auth/microsoft/callback}
-      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-1x00000000000000000000AA}
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     depends_on:
       - backend
     restart: unless-stopped
@@ -31,13 +31,16 @@ services:
       JWT_SECRET: ${JWT_SECRET:-syncshift-dev-secret-key-32-chars-minimum!!}
       SECRET_KEY: ${SECRET_KEY:-syncshift-dev-secret-key-32-chars-minimum!!}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
       AI_PROVIDER: ${AI_PROVIDER:-gemini}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
       MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
       MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
-      CAPTCHA_SECRET_KEY: ${CAPTCHA_SECRET_KEY:-1x0000000000000000000000000000000AA}
+      # Local email-login testing works without external CAPTCHA configuration.
+      # Set both provider keys and CAPTCHA_ENFORCE=true when enabling Turnstile.
+      CAPTCHA_SECRET_KEY: ${CAPTCHA_SECRET_KEY:-}
       CAPTCHA_ENFORCE: ${CAPTCHA_ENFORCE:-false}
     depends_on:
       redis:

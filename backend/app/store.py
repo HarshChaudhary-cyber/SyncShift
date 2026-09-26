@@ -233,6 +233,8 @@ def get_occurrences_for_range(
                         ov = override_by_orig.get((b.id, curr_d))
                         if ov and ov.is_cancelled:
                             continue
+                        if ov and ov.override_date and ov.override_date != curr_d:
+                            continue
                         occurrences.append(_apply_override_to_block_out(b, curr_d, ov))
                     continue
 
@@ -298,7 +300,7 @@ def get_occurrences_for_range(
                     .join(AcademicTerm, AcademicSection.academic_term_id == AcademicTerm.id)
                     .filter(
                         SectionEnrollment.student_id == user_id,
-                        SectionEnrollment.status == "active",
+                        SectionEnrollment.status.in_(["active", "enrolled"]),
                     )
                     .all()
                 )

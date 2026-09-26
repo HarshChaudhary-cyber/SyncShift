@@ -5,6 +5,7 @@ and role preservation.
 """
 import sys
 import uuid
+from unittest.mock import patch
 from starlette.testclient import TestClient
 
 if sys.platform == "win32":
@@ -24,6 +25,103 @@ from app.models.user import User
 settings.RATE_LIMIT_ENABLED = False
 
 client = TestClient(app)
+
+
+def test_synthetic_oauth_tokens_are_rejected_outside_tests():
+    """A caller cannot fabricate a provider identity on a running app."""
+    with patch("app.services.oauth_service._allow_test_oauth_tokens", return_value=False):
+        google = client.post(
+            "/api/v1/auth/oauth/google",
+            json={"id_token": "mock_google_:forged:admin@example.com:Forged User:pic"},
+        )
+        microsoft = client.post(
+            "/api/v1/auth/oauth/microsoft",
+            json={"id_token": "mock_microsoft_:forged:admin@example.com:Forged User"},
+        )
+    assert google.status_code == 401
+    assert microsoft.status_code == 401
+
+
+def test_google_access_token_is_checked_with_provider_and_client_id():
+    """The browser access token is verified server-side before login."""
+    uid = str(uuid.uuid4())[:8]
+    email = f"verified_google_{uid}@gmail.com"
+
+    class FakeResponse:
+        def __init__(self, status_code, payload):
+            self.status_code = status_code
+            self.payload = payload
+
+        def json(self):
+            return self.payload
+
+    class FakeGoogleClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def get(self, url, params=None, headers=None):
+            if params == {"id_token": "provider-access-token"}:
+                return FakeResponse(400, {})
+            if params == {"access_token": "provider-access-token"}:
+                return FakeResponse(200, {"aud": "google-client-id"})
+            if url.endswith("/userinfo") and headers == {"Authorization": "Bearer provider-access-token"}:
+                return FakeResponse(200, {
+                    "sub": f"google-{uid}", "email": email,
+                    "email_verified": True, "name": "Verified User",
+                })
+            raise AssertionError(f"Unexpected Google request: {url}")
+
+    with patch.object(settings, "ENV", "development"), patch.object(
+        settings, "GOOGLE_CLIENT_ID", "google-client-id"
+    ), patch(
+        "app.services.oauth_service._get_cached_jwks", side_effect=ValueError("not a JWT")
+    ), patch(
+        "app.services.oauth_service.httpx.AsyncClient", return_value=FakeGoogleClient()
+    ):
+        response = client.post(
+            "/api/v1/auth/oauth/google", json={"id_token": "provider-access-token"}
+        )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["data"]["email"] == email
+
+
+def test_microsoft_token_requires_matching_nonce():
+    """A signed Microsoft token must belong to the current sign-in attempt."""
+    uid = str(uuid.uuid4())[:8]
+
+    class Claims(dict):
+        def validate(self):
+            pass
+
+    claims = Claims({
+        "oid": f"microsoft-{uid}",
+        "email": f"verified_microsoft_{uid}@outlook.com",
+        "name": "Verified User",
+        "aud": "microsoft-client-id",
+        "tid": "tenant-id",
+        "iss": "https://login.microsoftonline.com/tenant-id/v2.0",
+        "nonce": "expected-nonce",
+    })
+    with patch.object(settings, "ENV", "development"), patch.object(
+        settings, "MICROSOFT_CLIENT_ID", "microsoft-client-id"
+    ), patch(
+        "app.services.oauth_service._get_cached_jwks", return_value=object()
+    ), patch("app.services.oauth_service.jwt.decode", return_value=claims):
+        bad = client.post(
+            "/api/v1/auth/oauth/microsoft",
+            json={"id_token": "signed-token", "nonce": "wrong-nonce"},
+        )
+        good = client.post(
+            "/api/v1/auth/oauth/microsoft",
+            json={"id_token": "signed-token", "nonce": "expected-nonce"},
+        )
+
+    assert bad.status_code == 401
+    assert good.status_code == 200, good.text
 
 
 def test_google_oauth_flow():
@@ -333,4 +431,3 @@ if __name__ == "__main__":
     test_backend_rejects_empty_token()
     test_demo_sub_cannot_claim_elevated_role_via_api()
     print("\n=== ALL OAUTH TESTS PASSED! ===")
-

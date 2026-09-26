@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import AssistantTimetableUpload from './AssistantTimetableUpload';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   SparklesIcon,
@@ -47,6 +48,8 @@ interface ChatMessage {
 }
 
 const STUDENT_SUGGESTIONS = [
+  'How do I use this app?',
+  'Move my today work to tomorrow',
   'What classes do I have today?',
   'When can I work this week?',
   'Do I have any conflicts?',
@@ -69,6 +72,7 @@ export function openSyncShiftAssistant() {
 }
 
 export default function SyncShiftAssistant() {
+  const [showUpload, setShowUpload] = useState(false);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [inputMessage, setInputMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -82,7 +86,7 @@ export default function SyncShiftAssistant() {
   const initialWelcomeText =
     userRole === 'admin'
       ? "👋 Welcome, Administrator! I'm your **SyncShift Assistant**. Ask me about room availability, timetable versions, draft creation, or impact analyses. Every timetable modification requires your explicit review and confirmation."
-      : "👋 Hi! I'm your **SyncShift Assistant**. Ask me anything about your timetable, enrolled courses, work hours, conflicts, or study blocks. All schedule changes require your explicit confirmation.";
+      : "👋 Hi! Ask me how to use SyncShift, inspect your schedule, or attach a timetable to import it. Say 'Move my today work to tomorrow' and I’ll move just today's work if it fits. Other changes may need a preview or more details.";
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -264,6 +268,9 @@ export default function SyncShiftAssistant() {
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
+      if (response.schedule_changed) {
+        window.dispatchEvent(new CustomEvent('syncshift:schedule-updated'));
+      }
     } catch (err: any) {
       const errorMsg: ChatMessage = {
         id: `err-${Date.now()}`,
@@ -427,7 +434,7 @@ export default function SyncShiftAssistant() {
                       </span>
                     )}
                   </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Deterministic Coordinator • Zero Hallucination</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">App guidance, schedules and timetable imports</p>
                 </div>
               </div>
 
@@ -806,6 +813,11 @@ export default function SyncShiftAssistant() {
             </div>
 
             {/* Input Bar */}
+            {showUpload && <AssistantTimetableUpload onClose={() => setShowUpload(false)} onDone={(text) => {
+              setMessages(prev => [...prev, {id: `import-${Date.now()}`, sender: 'assistant', text,
+                timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}]);
+              setShowUpload(false);
+            }} />}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -813,6 +825,7 @@ export default function SyncShiftAssistant() {
               }}
               className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 flex items-center gap-2"
             >
+              <button type="button" aria-label="Attach timetable" title="Attach timetable" disabled={isLoading} onClick={() => setShowUpload(!showUpload)} className="p-2 text-indigo-600 dark:text-indigo-300">📎</button>
               <input
                 ref={inputRef}
                 id="syncshift-assistant-input"

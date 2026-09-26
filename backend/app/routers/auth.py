@@ -721,7 +721,7 @@ async def oauth_microsoft(
     if body.captcha_token:
         await verify_captcha_token(body.captcha_token, request.client.host if request.client else None)
 
-    profile = await verify_microsoft_token(body.id_token)
+    profile = await verify_microsoft_token(body.id_token, expected_nonce=body.nonce)
     microsoft_id = profile["microsoft_id"]
     email = profile["email"]
     display_name = profile.get("display_name")

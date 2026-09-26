@@ -120,6 +120,7 @@ class AssistantChatResponseData(BaseModel):
     intent: str
     conversation_id: Optional[int] = None
     requires_confirmation: bool = False
+    schedule_changed: bool = False
     action: Optional[ActionPreview] = None
     choices: Optional[list[dict[str, Any]]] = None
     suggestions: list[str] = Field(default_factory=list)

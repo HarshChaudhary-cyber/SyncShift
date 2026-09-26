@@ -39,6 +39,7 @@ router = APIRouter(prefix="/import", tags=["File Import"])
 ALLOWED_EXTENSIONS = {
     ".pdf",
     ".docx",
+    ".doc", ".xlsx", ".xls",
     ".pptx",
     ".txt",
     ".csv",
@@ -50,7 +51,7 @@ ALLOWED_EXTENSIONS = {
     ".ical",
 }
 
-from datetime import date, time as dt_time
+from datetime import date, time as dt_time, timedelta
 from app.database import get_db
 from app.models.time_block import BlockStatus, BlockType, TimeBlock
 from sqlalchemy.orm import Session
@@ -81,14 +82,16 @@ def enrich_preview_items(
     existing_blocks = db.query(TimeBlock).filter(
         TimeBlock.user_id == user_id,
         TimeBlock.deleted == False,
+        TimeBlock.status != BlockStatus.DROPPED,
     ).all()
 
     valid_count = 0
     review_count = 0
     duplicate_count = 0
     conflict_count = 0
+    official_cache = {}
 
-    for item in preview_items:
+    for index, item in enumerate(preview_items):
         issues: list[str] = []
         if 0 <= item.day_of_week <= 6:
             item.day_name = DAY_NAME_MAP.get(item.day_of_week, "Monday")
@@ -103,6 +106,9 @@ def enrich_preview_items(
             try:
                 cand_s = int(s_parts[0]) * 60 + int(s_parts[1])
                 cand_e = int(e_parts[0]) * 60 + int(e_parts[1])
+                if not (0 <= int(s_parts[0]) < 24 and 0 <= int(e_parts[0]) < 24 and
+                        0 <= int(s_parts[1]) < 60 and 0 <= int(e_parts[1]) < 60) or cand_s == cand_e:
+                    issues.append("Invalid start or end time")
             except ValueError:
                 cand_s, cand_e = -1, -1
                 issues.append("Invalid time values")
@@ -119,9 +125,18 @@ def enrich_preview_items(
         conf_desc = None
 
         if cand_s >= 0 and cand_e >= 0 and sync_dow >= 0:
-            for b in existing_blocks:
+            from app.store import get_occurrences_for_range
+            from types import SimpleNamespace
+            anchor = item.effective_from or date.today()
+            check_date = anchor + timedelta(days=(item.day_of_week-anchor.weekday()) % 7) if item.is_recurring else anchor
+            if check_date not in official_cache:
+                official_cache[check_date] = [SimpleNamespace(
+                    title=e.title, type=e.type, day_of_week=e.day_of_week,
+                    start_time=dt_time.fromisoformat(e.start_time), end_time=dt_time.fromisoformat(e.end_time))
+                    for e in get_occurrences_for_range(user_id, check_date, check_date, db=db) if e.id < 0]
+            for b in [*existing_blocks, *official_cache[check_date]]:
                 # Compare against both sync_dow and direct day_of_week
-                if b.day_of_week not in (sync_dow, item.day_of_week):
+                if b.day_of_week != sync_dow:
                     continue
 
                 b_s = b.start_time.hour * 60 + b.start_time.minute
@@ -147,8 +162,23 @@ def enrich_preview_items(
                     conf_desc = f"Conflicts with {b_type_str} '{b.title}' ({b_start_str}–{b_end_str})"
                     issues.append(conf_desc)
 
+        # Check entries within the upload as well as already-saved events.
+        for previous in preview_items[:index]:
+            if previous.day_of_week != item.day_of_week:
+                continue
+            if previous.start_time == item.start_time and previous.end_time == item.end_time and previous.title == item.title:
+                is_dup = True
+                dup_reason = "Repeated entry within this upload"
+                issues.append(dup_reason)
+            elif previous.start_time < item.end_time and item.start_time < previous.end_time:
+                has_conf = True
+                conf_desc = f"Overlaps '{previous.title}' within this upload"
+                issues.append(conf_desc)
+
         if item.confidence == "low":
             issues.append("Low confidence extraction — verify times")
+        if not item.is_recurring and not item.effective_from:
+            issues.append("One-time event needs a specific date")
 
         item.is_duplicate = is_dup
         item.duplicate_reason = dup_reason
@@ -172,7 +202,7 @@ def enrich_preview_items(
     return preview_items, valid_count, review_count, duplicate_count, conflict_count
 
 
-LEGACY_REJECTED = {".doc", ".ppt", ".xls", ".xlsx"}
+LEGACY_REJECTED = {".ppt"}
 
 _EMPTY_MESSAGE = (
     "No timetable entries detected in this file. "
@@ -251,7 +281,7 @@ async def preview_file_timetable(
         )
 
     # Read file bytes into memory (never save to disk)
-    content = await file.read()
+    content = await file.read(MAX_FILE_SIZE_BYTES + 1)
     if not content:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -293,7 +323,10 @@ async def preview_file_timetable(
                 end_time=item.end_time,
                 location=item.location,
                 course_code=item.course_code,
-                is_recurring=True,
+                is_recurring=item.is_recurring,
+                effective_from=item.effective_from,
+                effective_until=item.effective_until,
+                recurrence_interval=item.recurrence_interval,
                 confidence="high",
                 source_line="",
                 notes=item.notes or "",
@@ -317,10 +350,21 @@ async def preview_file_timetable(
         )
 
     # Fast & reliable local extractor for plain text and CSV
-    if ext in (".txt", ".csv"):
+    if ext in (".txt", ".csv", ".xlsx", ".xls", ".doc", ".docx", ".pptx"):
         from app.services.text_extractor import text_to_blocks
-        raw_text = content.decode("utf-8", errors="replace")
+        from app.services.file_extractor import extract_text
+        try:
+            raw_text, _ = extract_text(content, file.filename)
+        except Exception as exc:
+            raise HTTPException(status_code=422, detail={"code": "unreadable_file",
+                "message": "Could not read this document. Check that it is not encrypted or damaged, or export it as PDF/CSV."}) from exc
         extracted_blocks = text_to_blocks(raw_text, is_ocr=False)
+
+        if not extracted_blocks and raw_text.strip():
+            from app.config import settings
+            if settings.GEMINI_API_KEY:
+                extracted_blocks, _ = await extract_timetable_with_gemini(
+                    raw_text.encode("utf-8"), "extracted.txt", ".txt")
 
         if not extracted_blocks:
             return DataResponse(
@@ -331,7 +375,7 @@ async def preview_file_timetable(
                     review_count=0,
                     duplicate_count=0,
                     conflict_count=0,
-                    file_type="txt" if ext == ".txt" else "csv",
+                    file_type=ext.lstrip("."),
                     message=_EMPTY_MESSAGE,
                 )
             )
@@ -347,7 +391,7 @@ async def preview_file_timetable(
                 review_count=r_count,
                 duplicate_count=d_count,
                 conflict_count=c_count,
-                file_type="txt" if ext == ".txt" else "csv",
+                file_type=ext.lstrip("."),
                 message=f"Found {len(enriched_items)} classes. Review and confirm to add them.",
             )
         )
@@ -411,8 +455,10 @@ def confirm_file_import(
         from app.store import detect_conflicts_and_totals
 
         for b in body.preview_blocks:
-            st_parts = b.start_time.split(":") if b.start_time else ["09", "00"]
-            et_parts = b.end_time.split(":") if b.end_time else ["10", "00"]
+            if not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", b.start_time) or not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", b.end_time):
+                raise HTTPException(422, detail="Each event needs valid start and end times (HH:MM).")
+            st_parts = b.start_time.split(":")
+            et_parts = b.end_time.split(":")
             st = dt_time(int(st_parts[0]), int(st_parts[1]))
             et = dt_time(int(et_parts[0]), int(et_parts[1]))
 
@@ -420,7 +466,7 @@ def confirm_file_import(
             e_min = et.hour * 60 + et.minute
             duration = (e_min - s_min) % (24 * 60)
             if duration <= 0:
-                duration = 60
+                raise HTTPException(422, detail="Start and end times cannot be identical.")
 
             eff_from = None
             if b.effective_from:
@@ -437,17 +483,36 @@ def confirm_file_import(
                     else date.fromisoformat(str(b.effective_until))
                 )
 
+            if b.course_id:
+                from app.models.course import Course
+                if not db.query(Course).filter_by(id=b.course_id, user_id=current_user.user_id).first():
+                    raise HTTPException(403, detail="Course does not belong to this account.")
+            if eff_from and eff_until and eff_until < eff_from:
+                raise HTTPException(422, detail="The end date must not precede the start date.")
+            sync_dow = (b.day_of_week + 1) % 7
+            if not b.is_recurring and not eff_from:
+                raise HTTPException(422, detail="A one-time event needs its specific date.")
+            duplicate = db.query(TimeBlock).filter_by(user_id=current_user.user_id,
+                title=b.title, day_of_week=sync_dow, start_time=st, end_time=et,
+                effective_from=eff_from, effective_until=eff_until,
+                is_recurring=bool(b.is_recurring), recurrence_interval=b.recurrence_interval or 1,
+                deleted=False).first()
+            if duplicate:
+                continue
             new_block = TimeBlock(
                 user_id=current_user.user_id,
                 type=BlockType.CLASS,
                 status=BlockStatus.ENROLLED,
                 title=b.title,
                 location=b.location,
-                day_of_week=b.day_of_week,
+                day_of_week=sync_dow,
                 start_time=st,
                 end_time=et,
                 duration_minutes=duration,
-                is_recurring=True,
+                is_overnight=e_min < s_min,
+                is_recurring=bool(b.is_recurring),
+                specific_date=eff_from if not b.is_recurring else None,
+                recurrence_interval=b.recurrence_interval or 1,
                 effective_from=eff_from,
                 effective_until=eff_until,
                 is_flexible=False,
@@ -473,6 +538,9 @@ def confirm_file_import(
         conflicts, _ = detect_conflicts_and_totals(user_id=current_user.user_id, db=db)
         conflicts_detected = len(conflicts)
 
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as exc:
         db.rollback()
         logger.error(f"Error creating time blocks from file import: {exc}", exc_info=True)

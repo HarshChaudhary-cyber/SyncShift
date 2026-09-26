@@ -533,6 +533,16 @@ def process_assistant_chat(
     db.add(u_msg)
     db.commit()
 
+    from app.services.assistant_app import app_help, is_today_work_move, move_today_work
+    help_text = app_help(message, role)
+    if help_text:
+        return _finalize_response(db, conv.id, help_text, "GENERAL_HELP")
+    if is_today_work_move(message):
+        text, changed = move_today_work(db, current_user)
+        response = _finalize_response(db, conv.id, text, "MOVE_WORK_SHIFT")
+        response.schedule_changed = changed
+        return response
+
     # ── Gemini-powered NLU (primary path) ─────────────────────────────────────
     # Attempt Gemini function-calling first. Fall back to keyword classifier.
     gemini_used = False
@@ -608,13 +618,9 @@ def process_assistant_chat(
                 gemini_intent_str = AssistantIntentType.GENERAL_HELP.value
                 gemini_used = True
     except GeminiQuotaExceededError as gemini_exc:
-        logger.warning("Gemini quota exceeded for assistant request; retry_after=%s", getattr(gemini_exc, "retry_after", None))
-        return _finalize_response(
-            db=db,
-            conv_id=conv.id,
-            text="SyncShift AI is temporarily unavailable because the AI service quota has been reached. Please try again later.",
-            intent=AssistantIntentType.GENERAL_HELP.value,
-            suggestions=["What classes do I have today?", "Do I have any conflicts?", "Plan my week"],
+        logger.warning(
+            "Gemini quota exceeded for assistant request; using local schedule assistant; retry_after=%s",
+            getattr(gemini_exc, "retry_after", None),
         )
     except GeminiTemporaryUnavailableError as gemini_exc:
         logger.warning("Gemini service unavailable for assistant request: %s", gemini_exc)
@@ -775,17 +781,14 @@ def process_assistant_chat(
             suggestions = ["When can I work this week?", "What is my schedule today?"]
 
         elif intent == AssistantIntentType.FIND_AVAILABLE_TIME:
-            sched = tool_get_my_schedule(db, current_user, view="week")
-            pref = tool_get_my_preferences(db, current_user)
-            tool_calls_meta.append({"tool": "get_my_preferences", "status": "success"})
-
-            response_text = (
-                "🕒 **Available Scheduling Windows**:\n"
-                f"- Preferred study/work time: **{pref['preferred_time_of_day'].capitalize()}**\n"
-                "- Tuesday: 15:00–18:00 (free gap between Database Systems and evening)\n"
-                "- Thursday: 14:00–18:00 (completely open afternoon)\n"
-                "- Friday: Evening after 17:00 is free."
-            )
+            data = tool_find_available_time_slots(db, current_user,
+                day_of_week=params.get("day_of_week"), duration_minutes=60)
+            tool_calls_meta.append({"tool": "find_available_time_slots", "status": "success"})
+            slots = data["free_slots"]
+            response_text = "No free slots of at least one hour were found." if not slots else (
+                "**Available scheduling windows:**\n" + "\n".join(
+                    f"- {slot['day_name']}: {slot['start_time']}–{slot['end_time']}"
+                    for slot in slots[:7]))
             suggestions = ["Create a study block", "Plan my week"]
 
         elif intent == AssistantIntentType.PLAN_WEEK:

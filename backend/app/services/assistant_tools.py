@@ -112,71 +112,31 @@ def tool_get_my_schedule(
     else:
         target_dow = (today.weekday() + 1) % 7
 
-    # 1. Fetch active enrollments -> published CourseMeetings
-    meetings_q = (
-        db.query(CourseMeeting, AcademicCourse, AcademicSection, Room)
-        .join(AcademicSection, CourseMeeting.section_id == AcademicSection.id)
-        .join(AcademicCourse, AcademicSection.course_id == AcademicCourse.id)
-        .join(SectionEnrollment, SectionEnrollment.section_id == AcademicSection.id)
-        .join(Timetable, CourseMeeting.timetable_id == Timetable.id)
-        .outerjoin(Room, CourseMeeting.room_id == Room.id)
-        .filter(
-            SectionEnrollment.student_id == user_id,
-            SectionEnrollment.status.in_(["enrolled", "active"]),
-            or_(
-                (Timetable.published_version_id.isnot(None)) & (CourseMeeting.version_id == Timetable.published_version_id),
-                (Timetable.published_version_id.is_(None)) & (Timetable.status.in_(["active", "draft"])) & (CourseMeeting.version_id.is_(None)),
-            ),
-        )
-    )
-
-    if view == "today":
-        meetings_q = meetings_q.filter(CourseMeeting.day_of_week == target_dow)
-
-    meetings = meetings_q.all()
-
-    # 2. Fetch TimeBlocks (shifts, personal, study, classes)
-    blocks_q = db.query(TimeBlock).filter(
-        TimeBlock.user_id == user_id,
-        TimeBlock.status != BlockStatus.DROPPED,
-    )
-    if view == "today":
-        blocks_q = blocks_q.filter(TimeBlock.day_of_week == target_dow)
-    blocks = blocks_q.all()
-
+    # Use the same materialized occurrences as Calendar, including one-time moves.
+    from app.store import get_occurrences_for_range
+    from zoneinfo import ZoneInfo
+    today = datetime.now(ZoneInfo(current_user.timezone or "UTC")).date()
+    selected_date = date.fromisoformat(target_date) if target_date else today
+    if day_of_week is not None and not target_date:
+        selected_date = today - timedelta(days=today.weekday()) + timedelta(days=(day_of_week - 1) % 7)
+    target_dow = (selected_date.weekday() + 1) % 7
+    start_date = selected_date if view == "today" else selected_date - timedelta(days=selected_date.weekday())
+    end_date = start_date if view == "today" else start_date + timedelta(days=6)
+    occurrences = get_occurrences_for_range(user_id, start_date, end_date, db=db)
+    dropped = {b.id for b in db.query(TimeBlock).filter_by(user_id=user_id, status=BlockStatus.DROPPED).all()}
     items = []
-    for m, c, s, r in meetings:
-        st_str = format_time_str(m.start_time)
-        et_str = format_time_str(m.end_time)
-        items.append({
-            "type": "class",
-            "title": f"{c.code} - {c.name}",
-            "section": s.section_code,
-            "day_of_week": m.day_of_week,
-            "day_name": DAY_NAMES[m.day_of_week],
-            "start_time": st_str,
-            "end_time": et_str,
-            "start_mins": time_to_minutes(m.start_time),
-            "end_mins": time_to_minutes(m.end_time),
-            "location": f"Room {r.room_number}" if r else "TBD",
-        })
-
-    for b in blocks:
-        st_str = b.start_time.strftime("%H:%M") if isinstance(b.start_time, dt_time) else str(b.start_time)[:5]
-        et_str = b.end_time.strftime("%H:%M") if isinstance(b.end_time, dt_time) else str(b.end_time)[:5]
-        items.append({
-            "type": b.type.value if hasattr(b.type, "value") else str(b.type),
-            "title": b.title,
-            "day_of_week": b.day_of_week,
-            "day_name": DAY_NAMES[b.day_of_week],
-            "start_time": st_str,
-            "end_time": et_str,
-            "start_mins": time_to_minutes(b.start_time),
-            "end_mins": time_to_minutes(b.end_time),
-            "location": b.location or "",
-        })
-
-    items.sort(key=lambda x: (x["day_of_week"], x["start_mins"]))
+    for event in occurrences:
+        if event.id in dropped:
+            continue
+        start_mins = time_to_minutes(event.start_time)
+        end_mins = time_to_minutes(event.end_time)
+        if end_mins <= start_mins:
+            end_mins += 24 * 60
+        items.append({"id": event.id, "type": event.type, "title": event.title,
+            "day_of_week": event.day_of_week, "day_name": DAY_NAMES[event.day_of_week],
+            "date": str(event.occurrence_date), "start_time": event.start_time[:5],
+            "end_time": event.end_time[:5], "start_mins": start_mins, "end_mins": end_mins,
+            "location": event.location or ""})
 
     # Free intervals for today
     free_gaps = []
