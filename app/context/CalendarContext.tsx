@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { format, startOfWeek, addWeeks, subWeeks, parseISO } from 'date-fns';
+import { format, startOfWeek, addDays, addWeeks, subWeeks, parseISO } from 'date-fns';
 import {
   api,
   ApiError,
@@ -165,8 +165,12 @@ export function CalendarProvider({ children, onUnauthorized }: CalendarProviderP
     occurrenceDate?: string,
     scope: 'this' | 'future' | 'all' = 'this'
   ) => {
-    const previousBlock = blocks.find((b) => b.id === id);
+    const previousBlock = blocks.find((b) => b.id === id && (!occurrenceDate || b.occurrence_date === occurrenceDate));
     if (!previousBlock) return;
+    if (id < 0) {
+      showErrorToast('This class is managed by your university. Contact your timetable administrator to change it.');
+      return;
+    }
 
     setBlocks((prev) =>
       prev.map((b) =>
@@ -181,15 +185,17 @@ export function CalendarProvider({ children, onUnauthorized }: CalendarProviderP
         day_of_week: dayOfWeek,
         start_time: startTime,
         end_time: endTime,
-        occurrence_date: occurrenceDate,
+        occurrence_date: previousBlock.original_date || occurrenceDate,
+        override_date: scope === 'this'
+          ? format(addDays(parseISO(weekStart), (dayOfWeek + 6) % 7), 'yyyy-MM-dd')
+          : undefined,
         scope,
       });
       await refreshWeek();
       await refreshConflicts();
     } catch (err: unknown) {
-      console.error(`Failed to persist move for block #${id}:`, err);
       await refreshWeek();
-      showErrorToast("Couldn't save move. Please try again.");
+      showErrorToast(err instanceof ApiError ? err.message : "Couldn't save move. Please try again.");
       throw err;
     }
   };

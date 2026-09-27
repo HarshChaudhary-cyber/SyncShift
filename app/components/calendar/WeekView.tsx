@@ -87,6 +87,7 @@ export default function WeekView({ onBlockClick, onSlotClick, onReplanStudy }: W
     if (!active?.data?.current?.block) return;
 
     const block = active.data.current.block as BlockOut;
+    if (block.id < 0) return;
     const targetDayIndex =
       over?.data?.current?.dayIndex !== undefined
         ? over.data.current.dayIndex
@@ -110,7 +111,8 @@ export default function WeekView({ onBlockClick, onSlotClick, onReplanStudy }: W
       newStartStr !== block.start_time.slice(0, 5) ||
       newEndStr !== block.end_time.slice(0, 5)
     ) {
-      await moveBlock(
+      try {
+        await moveBlock(
         block.id,
         targetDayIndex,
         newStartStr,
@@ -118,6 +120,9 @@ export default function WeekView({ onBlockClick, onSlotClick, onReplanStudy }: W
         block.occurrence_date || undefined,
         'this'
       );
+      } catch {
+        // CalendarContext restores the calendar and displays the API error.
+      }
     }
   };
 

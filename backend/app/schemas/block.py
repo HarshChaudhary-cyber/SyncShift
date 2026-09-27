@@ -55,6 +55,7 @@ class BlockUpdate(BaseModel):
     # Recurrence edit scope: "this" (single occurrence), "future" (this and future), "all" (entire series)
     scope: Optional[Literal["this", "future", "all"]] = "all"
     occurrence_date: Optional[date] = None
+    override_date: Optional[date] = None
 
     @model_validator(mode="after")
     def validate_update_dates(self) -> "BlockUpdate":

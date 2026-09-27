@@ -33,6 +33,18 @@ from sqlalchemy.orm import Session
 router = APIRouter(prefix="/blocks", tags=["Time Blocks"])
 
 
+def _require_personal_block(block_id: int, user_id: int, db: Session) -> dict:
+    if block_id < 0:
+        raise HTTPException(status_code=403, detail={
+            "code": "official_timetable_read_only",
+            "message": "This class is managed by your university. Contact your timetable administrator to change it.",
+        })
+    block = get_block_by_id(block_id, user_id=user_id, db=db)
+    if not block or block.get("deleted"):
+        raise HTTPException(status_code=404, detail={"code": "not_found", "message": "Block not found"})
+    return block
+
+
 @router.get("", response_model=DataResponse[list[BlockOut]])
 def get_blocks(
     week_start: Optional[date] = Query(None, description="Filter blocks active during the week of week_start"),
@@ -162,6 +174,7 @@ def update_block(
     - scope: "future" -> splits series starting at occurrence_date
     - scope: "all" -> updates the entire series definition
     """
+    _require_personal_block(block_id, current_user.user_id, db)
     updates = body.model_dump(exclude_unset=True)
     active_scope = scope or updates.get("scope") or "all"
     active_date = occurrence_date or updates.get("occurrence_date")
@@ -200,7 +213,7 @@ def update_block(
             type=base["type"],
             title=ov.title or base["title"],
             location=ov.location if ov.location is not None else base.get("location"),
-            day_of_week=base["day_of_week"],
+            day_of_week=((ov.override_date or active_date).weekday() + 1) % 7,
             start_time=st,
             end_time=et,
             is_recurring=base["is_recurring"],
@@ -316,6 +329,7 @@ def add_block_exception(
     """
     Explicit endpoint to cancel or modify a single occurrence of a recurring block.
     """
+    _require_personal_block(block_id, current_user.user_id, db)
     ov_dict = body.model_dump(exclude_unset=True)
     ov = create_or_update_override(
         user_id=current_user.user_id,

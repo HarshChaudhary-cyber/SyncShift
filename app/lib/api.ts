@@ -524,6 +524,7 @@ export interface BlockCreatePayload {
 }
 
 export interface BlockUpdatePayload {
+  override_date?: string;
   type?: 'class' | 'shift' | 'study';
   title?: string;
   location?: string | null;

@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { BlockOut, ConflictItem } from '@/lib/api';
 import EventHoverCard from './EventHoverCard';
+import { showErrorToast } from '@/lib/toast';
 
 interface CalendarBlockCardProps {
   block: BlockOut;
@@ -29,6 +30,14 @@ export default function CalendarBlockCard({
   onReplanStudy,
 }: CalendarBlockCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const isOfficial = block.id < 0;
+  const openBlock = () => {
+    if (isOfficial) {
+      showErrorToast('This class is managed by your university. Contact your timetable administrator to change it.');
+    } else {
+      onClick(block);
+    }
+  };
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const draggableId = block.occurrence_date
@@ -38,7 +47,7 @@ export default function CalendarBlockCard({
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: draggableId,
     data: { block },
-    disabled: Boolean(block.isSaving),
+    disabled: isOfficial || Boolean(block.isSaving),
   });
 
   const parseToMinutes = (timeStr: string) => {
@@ -99,6 +108,7 @@ export default function CalendarBlockCard({
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
+    if (isOfficial) return;
     if (confirm(`Delete "${block.title}"?`)) {
       onDelete?.(block.id, block.is_recurring ? 'this' : 'all', block.occurrence_date || undefined);
     }
@@ -107,7 +117,7 @@ export default function CalendarBlockCard({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onClick(block);
+      openBlock();
     }
   };
 
@@ -162,13 +172,15 @@ export default function CalendarBlockCard({
       data-block-card="true"
       {...attributes}
       {...listeners}
-      onClick={() => onClick(block)}
+      onClick={openBlock}
+      title={isOfficial ? 'University timetable · read-only' : undefined}
       onKeyDown={handleKeyDown}
       onContextMenu={handleContextMenu}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={`group absolute left-1 right-1 rounded-lg border px-2 py-1 select-none transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${block.isSaving
           ? 'pointer-events-none ring-1 ring-blue-400/50'
+          : isOfficial ? 'cursor-default'
           : isDragging
             ? 'cursor-grabbing shadow-2xl scale-[1.02]'
             : 'cursor-grab active:cursor-grabbing hover:-translate-y-0.5'
@@ -181,6 +193,7 @@ export default function CalendarBlockCard({
           {block.type === 'study' && <span className="shrink-0 text-[11px]" title="Study Session">📖</span>}
           {block.type === 'class' && <span className="shrink-0 text-[11px]" title="Class Timetable">📚</span>}
           <span className="truncate">{block.title}</span>
+          {isOfficial && <span title="Managed by your university" aria-label="University timetable, read-only">🔒</span>}
           {block.is_recurring && (
             <span className="shrink-0 text-[10px] opacity-70" title={block.recurrence_interval === 2 ? 'Repeats every 2 weeks' : 'Repeats weekly'}>
               🔁
@@ -243,12 +256,12 @@ export default function CalendarBlockCard({
       )}
 
       {/* Resize Bottom Handle */}
-      <div
+      {!isOfficial && <div
         onMouseDown={handleResizeStart}
         title="Drag edge to resize duration"
         aria-label="Resize duration"
         className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize hover:bg-black/15 dark:hover:bg-white/20 rounded-b-lg transition"
-      />
+      />}
 
       {/* Floating Hover Card (visible on hover when not dragging) */}
       {isHovered && !isDragging && (
