@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Emit a self-contained server bundle used by the production Docker image.
+  // "node server.js" inside .next/standalone/ is all the runtime image needs;
+  // no separate node_modules installation is required.
+  output: "standalone",
   async headers() {
     return [
       {

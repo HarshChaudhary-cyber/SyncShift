@@ -122,7 +122,10 @@ def create_block(
         "is_recurring": body.is_recurring,
         "recurrence_interval": body.recurrence_interval or 1,
         "specific_date": body.specific_date,
-        "effective_from": body.effective_from or date(2026, 9, 1),
+        # Default effective_from to today so a new block is active immediately.
+        # Callers may supply an explicit date (e.g. the first day of a semester)
+        # to schedule a block that only starts in the future.
+        "effective_from": body.effective_from or date.today(),
         "effective_until": body.effective_until,
         "is_flexible": body.is_flexible,
         "hourly_wage": body.hourly_wage,

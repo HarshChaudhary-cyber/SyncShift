@@ -14,14 +14,19 @@ logger = logging.getLogger(__name__)
 TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 
 
+def _allow_test_captcha_tokens() -> bool:
+    """Only the isolated test harness may override this; never a runtime setting."""
+    return False
+
+
 async def verify_captcha_token(token: Optional[str], client_ip: Optional[str] = None) -> bool:
     """
     Verifies a Turnstile CAPTCHA token server-side.
     Returns True on success.
     Raises HTTPException(400) on invalid/expired/missing token.
     """
-    # 1. Allow mock tokens for automated tests and development
-    if token:
+    # Synthetic tokens must never bypass provider verification in a running app.
+    if token and _allow_test_captcha_tokens():
         if token.startswith("mock_captcha_pass") or token.startswith("test_captcha_pass") or token == "1x00000000000000000000AA" or token.startswith("XXXX."):
             return True
         if token.startswith("mock_captcha_fail") or token.startswith("test_captcha_fail") or token == "2x00000000000000000000AB":

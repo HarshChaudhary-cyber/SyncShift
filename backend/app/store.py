@@ -109,7 +109,9 @@ def _model_to_block_out(
         day_of_week=b.day_of_week,
         start_time=_format_time_str(b.start_time),
         end_time=_format_time_str(b.end_time),
-        effective_from=eff_from or date(2026, 9, 1),
+        # Default to today so that blocks without an explicit start date are
+        # active from their creation date rather than an arbitrary past date.
+        effective_from=eff_from or date.today(),
         effective_until=eff_until,
         is_recurring=bool(b.is_recurring),
         recurrence_interval=int(getattr(b, "recurrence_interval", 1) or 1),
@@ -488,7 +490,9 @@ def add_block_to_store(
             is_recurring=data.get("is_recurring", True),
             recurrence_interval=int(data.get("recurrence_interval", 1) or 1),
             specific_date=spec_d,
-            effective_from=eff_from or date(2026, 9, 1),
+            # Default to today so that blocks created without an explicit start
+            # date are active immediately rather than from an arbitrary past date.
+            effective_from=eff_from or date.today(),
             effective_until=eff_until,
             is_flexible=data.get("is_flexible", False),
             hourly_wage=data.get("hourly_wage"),

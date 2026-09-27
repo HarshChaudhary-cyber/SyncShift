@@ -3,15 +3,22 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
+      # NEXT_PUBLIC_* variables are compiled into the JavaScript bundle at build
+      # time by Next.js.  They must be supplied here as build args, not as
+      # runtime environment variables.  Override on the command line with:
+      #   NEXT_PUBLIC_API_BASE_URL=https://... docker compose up --build
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000/api/v1}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_MICROSOFT_CLIENT_ID: ${NEXT_PUBLIC_MICROSOFT_CLIENT_ID:-}
+        NEXT_PUBLIC_MICROSOFT_REDIRECT_URI: ${NEXT_PUBLIC_MICROSOFT_REDIRECT_URI:-http://localhost:3000/auth/microsoft/callback}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     container_name: syncshift-frontend
     ports:
       - "3000:3000"
+    # NODE_ENV is a runtime variable — the production server honours it.
     environment:
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
-      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
-      NEXT_PUBLIC_MICROSOFT_CLIENT_ID: ${NEXT_PUBLIC_MICROSOFT_CLIENT_ID:-}
-      NEXT_PUBLIC_MICROSOFT_REDIRECT_URI: ${NEXT_PUBLIC_MICROSOFT_REDIRECT_URI:-http://localhost:3000/auth/microsoft/callback}
-      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
+      NODE_ENV: production
     depends_on:
       - backend
     restart: unless-stopped

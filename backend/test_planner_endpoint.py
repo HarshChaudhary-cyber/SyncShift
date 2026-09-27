@@ -55,6 +55,7 @@ def test_task_crud_and_planning():
         headers=headers,
         json={
             "title": "CS 210 Data Structures",
+            "effective_from": (date.today() - timedelta(days=date.today().weekday())).isoformat(),
             "type": "class",
             "day_of_week": 1,
             "start_time": "09:00",
@@ -68,6 +69,7 @@ def test_task_crud_and_planning():
         headers=headers,
         json={
             "title": "Campus Library Desk",
+            "effective_from": (date.today() - timedelta(days=date.today().weekday())).isoformat(),
             "type": "shift",
             "day_of_week": 1,
             "start_time": "13:00",
@@ -147,7 +149,8 @@ def test_task_crud_and_planning():
     print("  [PASS] Plan confirmed, task marked 'scheduled'")
 
     # 5. Check study blocks appear in /api/v1/week
-    week_start_str = (date.today() - timedelta(days=date.today().weekday())).isoformat()
+    # The plan can cross Sunday into the next week. Query its seven-day window.
+    week_start_str = min(b["date"] for b in approved_blocks)
     week_resp = client.get(f"/api/v1/week?start={week_start_str}", headers=headers)
     assert week_resp.status_code == 200
     week_blocks = week_resp.json()["data"]["blocks"]

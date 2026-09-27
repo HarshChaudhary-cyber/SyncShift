@@ -10,6 +10,12 @@ jobs:
   backend-test:
     name: Backend Tests (FastAPI + Pytest)
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,14 +28,20 @@ jobs:
 
       - name: Install backend dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr antiword
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
           pip install pytest httpx
 
+      - name: Verify fresh database migrations
+        working-directory: backend
+        run: python verify_migrations.py
+
       - name: Run Pytest
         run: |
           cd backend
-          pytest
+          pytest --ignore=test_live_docker_scenarios.py --ignore=test_live_image_upload.py
 
   frontend-check:
     name: Frontend Lint & Build (Next.js)

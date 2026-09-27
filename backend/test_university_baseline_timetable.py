@@ -613,6 +613,7 @@ def test_student_schedule_and_calendar_integration():
             "start_time": "15:00:00",
             "end_time": "18:00:00",
             "date": "2026-09-02",
+            "effective_from": "2026-09-02",
         },
     )
     assert shift_resp.status_code in (200, 201)

@@ -1,5 +1,8 @@
 # SyncShift
 
+> **University handover status:** evaluation/demo only. See [the readiness review](docs/university-readiness-review.md) for verified checks, fixes and remaining production blockers.
+
+
 > **"Connect the university timetable with real student life."**
 
 SyncShift is a modern, unified scheduling platform designed for higher-education institutions and the modern students who attend them. It bridges the gap between authoritative university academic timetables and the chaotic realities of real student life—including jobs, shifts, study commitments, commuting, and personal obligations.
@@ -30,7 +33,7 @@ SyncShift unifies **University Operations** and **Student Scheduling** under a s
 - **My Courses & Academic Status:** Direct visibility into enrolled sections, instructors, room assignments, and academic term dates.
 - **Smart Planner (N5):** Heuristic optimization engine that recommends conflict-free study allocations, preserves travel buffers, respects shift commitments, and ensures healthy rest intervals.
 - **Real-Time Timetable Sync & Alerts (N8):** Immediate notification when a room is relocated, faculty changes, or a class is rescheduled.
-- **Ask SyncShift Assistant (N9):** Natural-language schedule Q&A with strict role enforcement and read-only student tenant isolation.
+- **Ask SyncShift Assistant (N9):** Natural-language schedule Q&A with strict role enforcement and student tenant isolation and validated schedule actions.
 
 ### 🏛️ For Universities ("Build better timetables and understand their impact on students")
 - **Academic Resource Foundation (N1, N2):** Complete data hierarchy: Institutions → Departments → Courses → Sections → Faculty Assignments & Room Allocations.
@@ -77,12 +80,12 @@ graph TD
 
 ## 🔒 Security & Privacy Architecture (N11 Hardened)
 
-SyncShift enforces enterprise-grade security standards across every boundary:
+SyncShift implements the following security controls; remaining rollout requirements are documented in the readiness review:
 
 1. **Strict Multi-Tenant Isolation:** Database queries and API dependencies strictly scope data by `institution_id`. Tenant hopping via IDOR is systematically blocked and tested.
 2. **Role-Based Access Control (RBAC):** Hierarchical permissions (`student`, `professor`, `admin`, `super_admin`) enforced via FastAPI dependencies.
 3. **Student Privacy Guardrails:** Personal shifts and private blocks are protected from administrator surveillance. University analytics compute only anonymized, aggregate metrics.
-4. **Governed AI Architecture:** The assistant runs over deterministic internal tools with system prompts enforcing tenant boundaries, read-only permissions, and confirmation requirements for mutations.
+4. **Governed AI Architecture:** The assistant runs over deterministic internal tools with system prompts enforcing tenant boundaries, role-scoped permissions and validated mutations.
 5. **Robust File & Payload Validation:** Magic-byte sniffing, size limits, and sanitization prevent malicious upload injection.
 
 ---
@@ -98,14 +101,14 @@ SyncShift enforces enterprise-grade security standards across every boundary:
 | **Database ORM** | **SQLAlchemy 2.0 + Alembic** | Strictly typed relational schema with 19 tracked migration revisions |
 | **Database** | **PostgreSQL / SQLite** | SQLite for rapid local development/testing; PostgreSQL for production |
 | **AI Integration** | **Google Gemini API** | Function-calling LLM architecture integrated with deterministic services |
-| **Testing Suite** | **Pytest + Next.js Build Check** | 194 automated backend tests + strict frontend compilation & lint |
+| **Testing Suite** | **Pytest + Next.js Build Check** | Automated backend tests + frontend compilation and lint |
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- **Node.js**: v18.18+ or v20+
+- **Node.js**: v20.9+
 - **Python**: v3.11, 3.12, or 3.13
 - **Git**
 
@@ -195,10 +198,10 @@ The project includes an idempotent seed script (`backend/seed_demo_data.py`) set
 SyncShift includes comprehensive automated test coverage for backend services, security hardening, and frontend build verification:
 
 ```bash
-# Run backend test suite (194 tests)
+# Run backend test suite against an isolated database
 cd backend
 .venv\Scripts\activate
-pytest -k "not live" -W ignore
+pytest --ignore=test_live_docker_scenarios.py --ignore=test_live_image_upload.py
 
 # Run frontend production build (Turbopack + TypeScript validation)
 cd ../app

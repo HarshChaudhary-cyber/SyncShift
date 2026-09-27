@@ -259,7 +259,7 @@ def tool_get_my_preferences(db: Session, current_user: CurrentUser) -> dict[str,
     constraints = db.query(StudentConstraint).filter(StudentConstraint.user_id == current_user.user_id).all()
 
     return {
-        "weekly_work_hour_limit": float(user.weekly_work_hour_limit or 20.0) if user else 20.0,
+        "weekly_work_hour_limit": float((user.weekly_work_hour_limit if user.weekly_work_hour_limit is not None else 20.0)) if user else 20.0,
         "preferred_time_of_day": pref.preferred_time_of_day if pref else "any",
         "schedule_density": pref.schedule_density if pref else "balanced",
         "constraints": [
@@ -847,8 +847,8 @@ def tool_get_my_profile(db: Session, current_user: CurrentUser) -> dict[str, Any
         "name": getattr(user, "name", None) or user.email,
         "email": user.email,
         "timezone": getattr(user, "timezone", "UTC"),
-        "weekly_work_hour_limit": float(user.weekly_work_hour_limit or 20.0),
-        "minimum_transition_minutes": int(getattr(user, "minimum_transition_minutes", 15) or 15),
+        "weekly_work_hour_limit": float((user.weekly_work_hour_limit if user.weekly_work_hour_limit is not None else 20.0)),
+        "minimum_transition_minutes": int((user.minimum_transition_minutes if getattr(user, "minimum_transition_minutes", None) is not None else 15)),
     }
 
 
@@ -931,7 +931,7 @@ def tool_get_my_tasks(db: Session, current_user: CurrentUser) -> dict[str, Any]:
 def tool_get_my_weekly_hours(db: Session, current_user: CurrentUser) -> dict[str, Any]:
     """Returns total scheduled work hours this week and remaining capacity."""
     user = db.query(User).filter(User.id == current_user.user_id).first()
-    limit = float(user.weekly_work_hour_limit or 20.0) if user else 20.0
+    limit = float((user.weekly_work_hour_limit if user.weekly_work_hour_limit is not None else 20.0)) if user else 20.0
     sched = tool_get_my_schedule(db, current_user, view="week")
     shift_mins = sum(
         e["end_mins"] - e["start_mins"]
@@ -1090,7 +1090,7 @@ def tool_calculate_transition_time(
 ) -> dict[str, Any]:
     """Checks if there is sufficient transition time between two consecutive events."""
     user = db.query(User).filter(User.id == current_user.user_id).first()
-    required_minutes = int(getattr(user, "minimum_transition_minutes", 15) or 15)
+    required_minutes = int((user.minimum_transition_minutes if getattr(user, "minimum_transition_minutes", None) is not None else 15))
 
     end_m = time_to_minutes(end_event_time)
     start_m = time_to_minutes(start_next_event_time)
@@ -1286,7 +1286,7 @@ def tool_prepare_move_work_shift(
     # No conflict — build ActionPreview
     # Check weekly work hour limit
     user = db.query(User).filter(User.id == user_id).first()
-    limit = float(user.weekly_work_hour_limit or 20.0)
+    limit = float((user.weekly_work_hour_limit if user.weekly_work_hour_limit is not None else 20.0))
     weekly = tool_get_my_weekly_hours(db, current_user)
     # Subtract the current shift hours (it's being moved, not added)
     current_shift_hours = dur / 60.0

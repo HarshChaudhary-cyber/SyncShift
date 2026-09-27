@@ -255,6 +255,10 @@ def test_reminder_matching_and_deduplication():
         "end_time": end_str,
         "is_recurring": True,
         "deleted": False,
+        # Set effective_from to the date of fixed_now so this block is active
+        # when the scheduler runs at fixed_now (2026-09-14).  Without this,
+        # the block defaults to today and is not visible for the past date.
+        "effective_from": fixed_now.date(),
     }
     created = add_block_to_store(test_block, user_id=1)
 
@@ -315,13 +319,19 @@ def test_conflict_alert_on_block_clash():
     db.close()
 
 
-    # Create a clashing block via API
+    # Create clashing blocks via API.
+    # Use the Monday of the current week as effective_from so both blocks appear
+    # in the weekly occurrence window used by conflict detection.
+    today = date.today()
+    week_monday = (today - timedelta(days=today.weekday())).isoformat()
+
     block_a_payload = {
         "type": "class",
         "title": "Morning Biology",
         "day_of_week": 4,  # Thursday
         "start_time": "10:00:00",
         "end_time": "12:00:00",
+        "effective_from": week_monday,
     }
     resp_a = client.post("/api/v1/blocks", json=block_a_payload, headers=AUTH_HEADER)
     assert resp_a.status_code == 201
@@ -334,6 +344,7 @@ def test_conflict_alert_on_block_clash():
         "end_time": "14:00:00",
         "is_flexible": True,
         "hourly_wage": 16.50,
+        "effective_from": week_monday,
     }
 
     with patch("app.services.reminders.send_web_push", return_value=True):

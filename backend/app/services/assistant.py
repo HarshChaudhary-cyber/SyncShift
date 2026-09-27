@@ -766,7 +766,7 @@ def process_assistant_chat(
 
         elif intent == AssistantIntentType.GET_WORK_HOURS:
             user = db.query(User).filter(User.id == user_id).first()
-            limit = float(user.weekly_work_hour_limit or 20.0)
+            limit = float((user.weekly_work_hour_limit if user.weekly_work_hour_limit is not None else 20.0))
             sched = tool_get_my_schedule(db, current_user, view="week")
             shift_mins = sum(e["end_mins"] - e["start_mins"] for e in sched["events"] if e["type"] == "shift")
             shift_hours = round(shift_mins / 60.0, 1)

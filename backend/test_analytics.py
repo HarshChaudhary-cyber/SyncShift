@@ -48,6 +48,12 @@ def test_analytics_known_dataset():
     # Update profile currency to EUR
     client.patch("/api/v1/auth/me", headers=headers, json={"currency": "EUR"})
 
+    # The analytics endpoint defaults to the current week (Monday-Sunday).
+    # All blocks must have effective_from on or before Monday so that they
+    # appear on every day of the week regardless of when the test runs.
+    today = date.today()
+    week_monday = (today - timedelta(days=today.weekday())).isoformat()
+
     # Setup known dataset:
     # 1. Classes: 10h total
     #    Monday (dow=1): 09:00 - 14:00 (5h)
@@ -55,12 +61,12 @@ def test_analytics_known_dataset():
     client.post(
         "/api/v1/blocks",
         headers=headers,
-        json={"title": "Class Mon", "type": "class", "day_of_week": 1, "start_time": "09:00", "end_time": "14:00"},
+        json={"title": "Class Mon", "type": "class", "day_of_week": 1, "start_time": "09:00", "end_time": "14:00", "effective_from": week_monday},
     )
     client.post(
         "/api/v1/blocks",
         headers=headers,
-        json={"title": "Class Wed", "type": "class", "day_of_week": 3, "start_time": "09:00", "end_time": "14:00"},
+        json={"title": "Class Wed", "type": "class", "day_of_week": 3, "start_time": "09:00", "end_time": "14:00", "effective_from": week_monday},
     )
 
     # 2. Work shifts: 10h total
@@ -69,12 +75,12 @@ def test_analytics_known_dataset():
     client.post(
         "/api/v1/blocks",
         headers=headers,
-        json={"title": "Shift Paid", "type": "shift", "day_of_week": 2, "start_time": "10:00", "end_time": "14:00", "hourly_wage": 15.0},
+        json={"title": "Shift Paid", "type": "shift", "day_of_week": 2, "start_time": "10:00", "end_time": "14:00", "hourly_wage": 15.0, "effective_from": week_monday},
     )
     client.post(
         "/api/v1/blocks",
         headers=headers,
-        json={"title": "Shift Unpaid", "type": "shift", "day_of_week": 4, "start_time": "12:00", "end_time": "18:00"},
+        json={"title": "Shift Unpaid", "type": "shift", "day_of_week": 4, "start_time": "12:00", "end_time": "18:00", "effective_from": week_monday},
     )
 
     # 3. Study: 5h total
@@ -82,7 +88,7 @@ def test_analytics_known_dataset():
     client.post(
         "/api/v1/blocks",
         headers=headers,
-        json={"title": "Self Study", "type": "study", "day_of_week": 5, "start_time": "10:00", "end_time": "15:00"},
+        json={"title": "Self Study", "type": "study", "day_of_week": 5, "start_time": "10:00", "end_time": "15:00", "effective_from": week_monday},
     )
 
     # Call GET /api/v1/analytics/week

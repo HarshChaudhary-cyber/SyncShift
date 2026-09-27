@@ -74,7 +74,7 @@ def compute_week_analytics(
         week_start = week_start - timedelta(days=week_start.weekday())
 
     week_end = week_start + timedelta(days=6)
-    configured_work_limit = float(current_user.weekly_work_hour_limit or 20.0)
+    configured_work_limit = float((current_user.weekly_work_hour_limit if current_user.weekly_work_hour_limit is not None else 20.0))
 
     # 1. Fetch user's actual materialized occurrences for this week & detected conflicts
     week_occurrences = get_occurrences_for_range(

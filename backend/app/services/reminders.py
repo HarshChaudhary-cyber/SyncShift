@@ -175,6 +175,11 @@ def send_email_alert(
         except Exception as ex:
             logger.warning(f"SMTP send failed: {ex}. Falling back to console log.")
 
+    # Never report undelivered mail as sent or log personal content in production.
+    if settings.ENV.strip().lower() == "production":
+        logger.warning("Email was not delivered; check SMTP configuration and connectivity.")
+        return False
+
     # Log-only fallback in dev mode
     print(f"\n=======================================================")
     print(f"[EMAIL WOULD SEND] To: {to_email}")

@@ -64,8 +64,8 @@ def optimize_work_schedule(
             w_start = target_week_start - timedelta(days=target_week_start.weekday())
 
         w_end = w_start + timedelta(days=6)
-        work_limit = float(current_user.weekly_work_hour_limit or 20.0)
-        min_transition = max(0, int(getattr(current_user, "minimum_transition_minutes", 15) or 15))
+        work_limit = float((current_user.weekly_work_hour_limit if current_user.weekly_work_hour_limit is not None else 20.0))
+        min_transition = max(0, int((current_user.minimum_transition_minutes if getattr(current_user, "minimum_transition_minutes", None) is not None else 15)))
 
         # 1. Fetch current week's existing occurrences & totals
         occurrences = get_occurrences_for_range(

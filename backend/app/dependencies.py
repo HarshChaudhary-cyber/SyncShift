@@ -57,7 +57,7 @@ def create_access_token(user_id: int, email: str) -> str:
         "user_id": user_id,
         "sub": str(user_id),
         "email": email,
-        "exp": now + timedelta(days=7),
+        "exp": now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         "iat": now,
     }
     return jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
@@ -110,13 +110,13 @@ def get_current_user(
             user_id=user.id,
             email=user.email,
             timezone=user.timezone or "Europe/London",
-            weekly_limit=float(user.weekly_work_hour_limit or 20.0),
+            weekly_limit=float((user.weekly_work_hour_limit if user.weekly_work_hour_limit is not None else 20.0)),
             display_name=getattr(user, "display_name", None) or getattr(user, "name", None),
             avatar_url=getattr(user, "avatar_url", None),
             currency=getattr(user, "currency", "INR") or "INR",
             language=getattr(user, "language", "en") or "en",
             theme=getattr(user, "theme", "dark") or "dark",
-            minimum_transition_minutes=int(getattr(user, "minimum_transition_minutes", 15) or 15),
+            minimum_transition_minutes=int((user.minimum_transition_minutes if getattr(user, "minimum_transition_minutes", None) is not None else 15)),
             oauth_provider=getattr(user, "oauth_provider", None),
             deleted_at=getattr(user, "deleted_at", None),
         )

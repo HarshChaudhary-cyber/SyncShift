@@ -159,7 +159,7 @@ def get_today_schedule_data(
     week_start = today_d - timedelta(days=today_d.weekday())
     all_conflicts, _ = detect_conflicts_and_totals(
         user_id=current_user.user_id,
-        weekly_hour_limit=current_user.weekly_work_hour_limit or 20.0,
+        weekly_hour_limit=(current_user.weekly_work_hour_limit if current_user.weekly_work_hour_limit is not None else 20.0),
         week_start=week_start,
     )
     today_block_ids = {b.id for b in today_blocks}
@@ -262,7 +262,7 @@ def get_week_schedule_data(
         week_start = today_d - timedelta(days=today_d.weekday())
 
     week_end = week_start + timedelta(days=6)
-    work_limit = float(current_user.weekly_work_hour_limit or 20.0)
+    work_limit = float((current_user.weekly_work_hour_limit if current_user.weekly_work_hour_limit is not None else 20.0))
 
     conflicts, totals = detect_conflicts_and_totals(
         user_id=current_user.user_id,

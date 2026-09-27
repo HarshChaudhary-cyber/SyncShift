@@ -10,6 +10,7 @@ Validates:
 7. User A re-authentication (sign out -> sign in): User A still sees all active blocks
 """
 import uuid
+from datetime import date, timedelta
 from fastapi.testclient import TestClient
 from app.main import app
 from app.database import SessionLocal
@@ -19,7 +20,9 @@ from app.models.course import Course
 client = TestClient(app)
 
 
-def test_full_persistence_flow():
+def test_full_persistence_flow(monkeypatch):
+    from app.config import settings
+    monkeypatch.setattr(settings, "ENV", "development")
     # Generate unique test users
     uid_a = str(uuid.uuid4())[:8]
     uid_b = str(uuid.uuid4())[:8]
@@ -53,6 +56,12 @@ def test_full_persistence_flow():
     assert res_course.status_code == 201
     course_id = res_course.json()["data"]["id"]
 
+    # Blocks must be visible for the current week's /week view query.
+    # Use the Monday of the current week as effective_from so that every
+    # day of the week falls within the block's active range.
+    today = date.today()
+    week_monday = (today - timedelta(days=today.weekday())).isoformat()
+
     # 3. User A adds 3 blocks
     block_payloads = [
         {
@@ -63,6 +72,7 @@ def test_full_persistence_flow():
             "start_time": "09:00:00",
             "end_time": "10:30:00",
             "course_id": course_id,
+            "effective_from": week_monday,
         },
         {
             "type": "shift",
@@ -73,6 +83,7 @@ def test_full_persistence_flow():
             "end_time": "15:00:00",
             "hourly_wage": 16.50,
             "is_flexible": True,
+            "effective_from": week_monday,
         },
         {
             "type": "shift",
@@ -83,6 +94,7 @@ def test_full_persistence_flow():
             "end_time": "18:00:00",
             "hourly_wage": 18.00,
             "is_flexible": False,
+            "effective_from": week_monday,
         },
     ]
 
@@ -159,8 +171,8 @@ def test_full_persistence_flow():
     assert "Campus Library Desk" in titles
     assert "IT Helpdesk" in titles
 
-    # Also test /week view returns all 3 blocks
-    res_week = client.get("/api/v1/week?start=2026-09-07", headers=new_headers_a)
+    # Also test /week view returns all 3 blocks (query current week Monday)
+    res_week = client.get(f"/api/v1/week?start={week_monday}", headers=new_headers_a)
     assert res_week.status_code == 200
     assert len(res_week.json()["data"]["blocks"]) == 3
 

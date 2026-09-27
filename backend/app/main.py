@@ -111,12 +111,7 @@ def _cors_headers(request: Request) -> dict[str, str]:
         "Access-Control-Allow-Methods": "*",
     }
     if origin:
-        if (
-            "*" in settings.BACKEND_CORS_ORIGINS
-            or origin in settings.BACKEND_CORS_ORIGINS
-            or "localhost" in origin
-            or "127.0.0.1" in origin
-        ):
+        if origin in settings.BACKEND_CORS_ORIGINS:
             headers["Access-Control-Allow-Origin"] = origin
             headers["Vary"] = "Origin"
     return headers

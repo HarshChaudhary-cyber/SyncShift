@@ -92,7 +92,7 @@ def test_dashboard_with_schedule_and_alerts():
     assert reg_resp.status_code == 200, f"Register failed: {reg_resp.text}"
     token = reg_resp.json()["data"]["token"]
 
-    from datetime import date
+    from datetime import date, timedelta
     today_d = date.today()
     # day_of_week in SyncShift: 0=Sun, 1=Mon, ..., 6=Sat
     today_dow = (today_d.weekday() + 1) % 7
@@ -168,6 +168,7 @@ def test_dashboard_with_schedule_and_alerts():
         headers=headers,
         json={
             "title": "Weekend Mega Shift",
+            "effective_from": (today_d - timedelta(days=today_d.weekday())).isoformat(),
             "type": "shift",
             "day_of_week": other_dow,
             "start_time": "04:00",

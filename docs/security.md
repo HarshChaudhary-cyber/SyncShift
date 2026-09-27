@@ -1,5 +1,8 @@
 # SyncShift Security Hardening, Audit Logging & Privacy Controls
 
+> This is historical design documentation. Use [the September 2026 readiness review](university-readiness-review.md) for current verified behavior and unresolved production requirements.
+
+
 Security and user privacy are foundational pillars of SyncShift. Because scheduling data contains sensitive personal routines, workplace locations, and academic timetables, the system implements defense-in-depth across authentication, authorization, input validation, audit trails, and data sovereignty.
 
 ---
@@ -12,7 +15,7 @@ Security and user privacy are foundational pillars of SyncShift. Because schedul
   current_user: CurrentUser = Depends(get_current_user)
   ```
 - **Zero Request-Body Identity Binding**: Even if an attacker injects `{"user_id": "victim-id"}` into the request payload or query parameters, the backend strictly discards or ignores it, executing exclusively against `current_user.user_id`.
-- **Token Invalidation & Expiry**: Access tokens are cryptographically signed using HMAC-SHA256 (`HS256`) with a short expiration window (60 minutes). Expired or tampered signatures immediately return `HTTP 401 Unauthorized`.
+- **Token Invalidation & Expiry**: Access tokens are cryptographically signed using HMAC-SHA256 (`HS256`) with the configured ACCESS_TOKEN_EXPIRE_MINUTES (default: seven days). Expired or tampered signatures immediately return `HTTP 401 Unauthorized`.
 
 ---
 
@@ -36,12 +39,12 @@ SyncShift enforces row-level multi-tenant isolation on all database queries:
 ## 3. Rate Limiting
 
 To protect authentication and compute-intensive endpoints (such as LLM assistant chats and timetable parsing) from brute-force or denial-of-service attempts:
-- A thread-safe, sliding-window in-memory rate limiter (`backend/app/services/rate_limiter.py`) tracks requests per client IP / user identifier.
+- A Redis-backed rate limiter (`backend/app/services/rate_limiter.py`) tracks requests per client IP / user identifier.
 - **Rate-Limited Routes**:
-  - `POST /api/v1/auth/register`: 10 requests / minute.
-  - `POST /api/v1/auth/login`: 15 requests / minute.
+  - `POST /api/v1/auth/register`: 5 requests / minute.
+  - `POST /api/v1/auth/login`: 10 requests / minute.
   - `POST /api/v1/assistant/chat`: 30 requests / minute.
-  - `POST /api/v1/import/upload`: 10 requests / minute.
+  - `POST /api/v1/import/file`: 10 requests / minute.
 - Exceeding limits results in `HTTP 429 Too Many Requests` with a descriptive retry message.
 
 ---
@@ -59,7 +62,7 @@ The timetable import pipeline accepts `.ics`, `.csv`, and image/PDF timetable fi
 - **Dangerous File Extension Blocking**:
   - Executables and script formats (`.exe`, `.sh`, `.bat`, `.py`, `.cmd`, `.vbs`, etc.) are blocked at the boundary.
 - **File Size Clamping**:
-  - Maximum upload size is strictly capped at 10 MB (`MAX_FILE_SIZE = 10 * 1024 * 1024`).
+  - The multi-format import route caps uploads at 20 MB; format-specific extraction limits also apply.
 - **Memory Streaming**:
   - Files are processed through in-memory streams or isolated temporary directories outside the application runtime path.
 

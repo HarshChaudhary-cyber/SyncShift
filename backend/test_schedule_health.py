@@ -163,7 +163,12 @@ def test_schedule_health_api_endpoint():
     assert data["category"] == "Excellent"
     assert len(data["factors"]) > 0
 
-    # 2. Add two overlapping classes -> hard conflict -> health score drops
+    # 2. Add two overlapping classes -> hard conflict -> health score drops.
+    # Use the Monday of the current week as effective_from so the blocks are
+    # visible for the full week when the health endpoint queries it.
+    today = date.today()
+    week_monday = (today - timedelta(days=today.weekday())).isoformat()
+
     b1 = client.post(
         "/api/v1/blocks",
         headers=headers,
@@ -173,6 +178,7 @@ def test_schedule_health_api_endpoint():
             "day_of_week": 1,
             "start_time": "10:00",
             "end_time": "12:00",
+            "effective_from": week_monday,
         },
     )
     assert b1.status_code in (200, 201)
@@ -187,6 +193,7 @@ def test_schedule_health_api_endpoint():
             "day_of_week": 1,
             "start_time": "11:00",
             "end_time": "13:00",
+            "effective_from": week_monday,
         },
     )
     assert b2.status_code in (200, 201)

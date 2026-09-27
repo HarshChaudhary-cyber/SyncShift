@@ -16,6 +16,12 @@ RUN python -m pip install --upgrade pip && \
 
 COPY backend /app
 
+# Run migrations then start the server.
+# entrypoint.sh executes "alembic upgrade head" before uvicorn so that a fresh
+# volume is initialised and an existing volume is safely migrated on every start.
+COPY backend/entrypoint.sh /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
+
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/entrypoint.sh"]

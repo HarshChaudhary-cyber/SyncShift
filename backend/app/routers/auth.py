@@ -42,6 +42,11 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 def validate_password_strength(password: str) -> None:
+    if len(password.encode("utf-8")) > 72:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "invalid_password", "message": "Password must be at most 72 UTF-8 bytes"},
+        )
     if len(password) < 8:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -181,8 +186,7 @@ async def login(
     Compares provided password against bcrypt hash in database.
     Returns JWT access token with 7-day expiration.
     """
-    if body.captcha_token or settings.CAPTCHA_SECRET_KEY:
-        await verify_captcha_token(body.captcha_token, request.client.host if request.client else None)
+    await verify_captcha_token(body.captcha_token, request.client.host if request.client else None)
 
     normalized_email = body.email.lower()
     user = db.query(User).filter(User.email == normalized_email).first()
@@ -286,13 +290,13 @@ def get_current_user_profile(
             user_id=user.id,
             email=user.email,
             timezone=user.timezone,
-            weekly_work_hour_limit=float(user.weekly_work_hour_limit or 20.0),
+            weekly_work_hour_limit=float((user.weekly_work_hour_limit if user.weekly_work_hour_limit is not None else 20.0)),
             display_name=display_name,
             avatar_url=avatar_url,
             currency=user.currency or "INR",
             language=user.language or "en",
             theme=user.theme or "dark",
-            minimum_transition_minutes=int(getattr(user, "minimum_transition_minutes", 15) or 15),
+            minimum_transition_minutes=int((user.minimum_transition_minutes if getattr(user, "minimum_transition_minutes", None) is not None else 15)),
             oauth_provider=user.oauth_provider,
             has_password=bool(user.password_hash),
             created_at=user.created_at,
@@ -383,13 +387,13 @@ def update_current_user_profile(
             user_id=user.id,
             email=user.email,
             timezone=user.timezone,
-            weekly_work_hour_limit=float(user.weekly_work_hour_limit or 20.0),
+            weekly_work_hour_limit=float((user.weekly_work_hour_limit if user.weekly_work_hour_limit is not None else 20.0)),
             display_name=user.display_name or user.name,
             avatar_url=user.avatar_url,
             currency=user.currency or "INR",
             language=user.language or "en",
             theme=user.theme or "dark",
-            minimum_transition_minutes=int(getattr(user, "minimum_transition_minutes", 15) or 15),
+            minimum_transition_minutes=int((user.minimum_transition_minutes if getattr(user, "minimum_transition_minutes", None) is not None else 15)),
             oauth_provider=user.oauth_provider,
             has_password=bool(user.password_hash),
             created_at=user.created_at,
@@ -595,7 +599,7 @@ def export_user_data(
         "email": user.email,
         "display_name": user.display_name or user.name,
         "timezone": user.timezone,
-        "weekly_work_hour_limit": float(user.weekly_work_hour_limit or 20.0),
+        "weekly_work_hour_limit": float((user.weekly_work_hour_limit if user.weekly_work_hour_limit is not None else 20.0)),
         "currency": user.currency or "INR",
         "language": user.language or "en",
         "theme": user.theme or "dark",

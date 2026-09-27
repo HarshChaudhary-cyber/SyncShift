@@ -120,7 +120,7 @@ def get_today_schedule(
     today_block_ids = {b.id for b in today_blocks}
     all_conflicts, _ = detect_conflicts_and_totals(
         user_id=current_user.user_id,
-        weekly_hour_limit=current_user.weekly_work_hour_limit or 20.0,
+        weekly_hour_limit=(current_user.weekly_work_hour_limit if current_user.weekly_work_hour_limit is not None else 20.0),
         week_start=today_d - timedelta(days=(today_d.weekday())),  # Get Monday of the week
         db=db,
     )

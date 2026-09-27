@@ -123,7 +123,7 @@ def get_dashboard(
         email=current_user.email,
         avatar_url=current_user.avatar_url,
         timezone=current_user.timezone or "Europe/London",
-        weekly_work_hour_limit=float(current_user.weekly_work_hour_limit or 20.0),
+        weekly_work_hour_limit=float((current_user.weekly_work_hour_limit if current_user.weekly_work_hour_limit is not None else 20.0)),
         currency=currency_symbol,
     )
 
