@@ -9,6 +9,13 @@ import {
   UniversityNotificationSummaryOut,
   getErrorMessage,
 } from '@/lib/api';
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  XMarkIcon,
+  MegaphoneIcon,
+  ClipboardDocumentListIcon,
+} from '@heroicons/react/24/outline';
 
 interface TimetablePublishModalProps {
   isOpen: boolean;
@@ -141,7 +148,7 @@ export default function TimetablePublishModal({
           <div>
             <h3 className="text-base font-bold text-[var(--text-primary)]">
               {step === 'result'
-                ? 'Timetable Published 🎉'
+                ? 'Timetable Published'
                 : step === 'delivery_report'
                 ? 'Student Notification Delivery Report'
                 : 'Publish University Timetable'}
@@ -153,16 +160,18 @@ export default function TimetablePublishModal({
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--border-color)] transition cursor-pointer"
+            aria-label="Close dialog"
           >
-            ✕
+            <XMarkIcon className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Content */}
         <div className="p-6 overflow-y-auto space-y-4 flex-1">
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs font-medium">
-              ⚠️ {error}
+            <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs font-medium flex items-center gap-1.5">
+              <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -180,13 +189,23 @@ export default function TimetablePublishModal({
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[var(--text-secondary)]">Readiness Status</span>
                       <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                        className={`px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1 ${
                           checklist.is_publishable
                             ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30'
                             : 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30'
                         }`}
                       >
-                        {checklist.is_publishable ? '✓ Ready to Publish' : '⚠️ Action Required'}
+                        {checklist.is_publishable ? (
+                          <>
+                            <CheckCircleIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>Ready to Publish</span>
+                          </>
+                        ) : (
+                          <>
+                            <ExclamationTriangleIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>Action Required</span>
+                          </>
+                        )}
                       </span>
                     </div>
                     <p className="text-xs text-[var(--text-primary)] font-medium">
@@ -255,7 +274,7 @@ export default function TimetablePublishModal({
             <div className="space-y-4 animate-fade-in">
               {/* Success Banner */}
               <div className="p-5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-center space-y-2">
-                <span className="text-3xl block">🎉</span>
+                <CheckCircleIcon className="w-10 h-10 mx-auto text-emerald-500" aria-hidden="true" />
                 <h4 className="text-base font-black text-emerald-800 dark:text-emerald-400">TIMETABLE PUBLISHED</h4>
                 <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">
                   Version {publishResult.published_version.version_number} is now official and active.
@@ -297,7 +316,7 @@ export default function TimetablePublishModal({
                 </span>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="flex items-center gap-1.5 p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                    <CheckCircleIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" aria-hidden="true" />
                     <div>
                       <span className="font-semibold block text-[11px]">In-app</span>
                       <span className="text-[10px] text-[var(--text-muted)]">
@@ -306,7 +325,7 @@ export default function TimetablePublishModal({
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                    <CheckCircleIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" aria-hidden="true" />
                     <div>
                       <span className="font-semibold block text-[11px]">Email</span>
                       <span className="text-[10px] text-[var(--text-muted)]">
@@ -315,7 +334,7 @@ export default function TimetablePublishModal({
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓</span>
+                    <CheckCircleIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" aria-hidden="true" />
                     <div>
                       <span className="font-semibold block text-[11px]">Push</span>
                       <span className="text-[10px] text-[var(--text-muted)]">
@@ -394,7 +413,8 @@ export default function TimetablePublishModal({
                 disabled={loading || !checklist?.is_publishable}
                 className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold shadow-sm transition cursor-pointer flex items-center gap-1.5"
               >
-                <span>🚀 Publish Timetable Now</span>
+                <MegaphoneIcon className="w-4 h-4" aria-hidden="true" />
+                <span>Publish Timetable Now</span>
               </button>
             </>
           )}
@@ -403,9 +423,10 @@ export default function TimetablePublishModal({
             <>
               <button
                 onClick={handleOpenDeliveryReport}
-                className="px-4 py-2 rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-card)] text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-[var(--border-color)] hover:bg-[var(--bg-card)] text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition cursor-pointer flex items-center gap-1.5"
               >
-                View Delivery Report 📋
+                <ClipboardDocumentListIcon className="w-4 h-4" aria-hidden="true" />
+                <span>View Delivery Report</span>
               </button>
               <button
                 onClick={onClose}

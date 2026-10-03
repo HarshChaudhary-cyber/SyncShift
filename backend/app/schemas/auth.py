@@ -23,9 +23,27 @@ class UserRegister(BaseModel):
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: Optional[str] = None
+    identifier: Optional[str] = None
     password: str
+    institution_id: Optional[int] = None
+    institution_code: Optional[str] = None
     captcha_token: Optional[str] = None
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+class PublicInstitutionOut(BaseModel):
+    id: int
+    name: str
+    code: str
 
 
 class OAuthGoogleRequest(BaseModel):

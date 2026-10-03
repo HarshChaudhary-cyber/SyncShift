@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthContext } from '@/context/AuthContext';
 import { ApiError } from '@/lib/api';
-import { OAuthButtons, OAuthDivider } from '@/components/auth/OAuthButtons';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 import { safeReturnUrl } from '@/lib/session-policy.mjs';
 import CustomSelect from '@/components/ui/CustomSelect';
@@ -201,11 +201,7 @@ export default function SignupPage() {
             </p>
           </div>
 
-          {/* OAuth Buttons & Divider placed ABOVE email form */}
-          <div className="px-4 sm:px-5 pt-2 pb-0">
-            <OAuthButtons captchaToken={captchaToken} />
-            <OAuthDivider text="OR" />
-          </div>
+
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="px-4 sm:px-5 pb-4 sm:pb-5 pt-1 space-y-2.5 sm:space-y-3">
@@ -448,7 +444,7 @@ export default function SignupPage() {
                   exit={{ opacity: 0, height: 0 }}
                   className="flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700/60 rounded-lg px-3 py-2 break-words"
                 >
-                  <span className="shrink-0 mt-0.5">⚠️</span>
+                  <ExclamationTriangleIcon className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" aria-hidden="true" />
                   <span>{error}</span>
                 </motion.div>
               )}

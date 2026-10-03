@@ -4,6 +4,14 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useUniversity } from './layout';
 import {
+  BuildingLibraryIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  BookOpenIcon,
+  UsersIcon,
+  ChartBarIcon,
+} from '@heroicons/react/24/outline';
+import {
   api,
   UniversityDashboardData,
   InstitutionCreatePayload,
@@ -105,8 +113,8 @@ export default function UniversityDashboardPage() {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 text-3xl mb-4 border border-indigo-500/20">
-            🏛️
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 mb-4 border border-indigo-500/20">
+            <BuildingLibraryIcon className="w-8 h-8 text-indigo-500" aria-hidden="true" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
             Set Up Your University
@@ -243,7 +251,7 @@ export default function UniversityDashboardPage() {
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-2xl">🗓️</span>
+              <CalendarDaysIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400 shrink-0" aria-hidden="true" />
               <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/40">
                 Official University Timetable
               </span>
@@ -269,7 +277,7 @@ export default function UniversityDashboardPage() {
             {activeTimetable && (
               <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-slate-700 dark:text-slate-300">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 shadow-2xs">
-                  <span>📅</span> {activeTimetable.term_name || dashboardData?.active_term?.name || 'Academic Term'}
+                  <CalendarDaysIcon className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" /> {activeTimetable.term_name || dashboardData?.active_term?.name || 'Academic Term'}
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 font-medium shadow-2xs">
                   <span className="text-indigo-700 dark:text-indigo-400 font-bold">{activeTimetable.meetings_count || 0}</span> Scheduled Classes
@@ -329,7 +337,7 @@ export default function UniversityDashboardPage() {
             href="/university/timetables"
             className="flex flex-col items-start p-3.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-indigo-500/40 transition group cursor-pointer"
           >
-            <span className="text-2xl mb-2">🗓️</span>
+            <CalendarDaysIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400 mb-2" aria-hidden="true" />
             <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
               View Timetable
             </span>
@@ -342,7 +350,7 @@ export default function UniversityDashboardPage() {
             href={activeTimetable ? `/university/timetables/${activeTimetable.id}` : '/university/timetables'}
             className="flex flex-col items-start p-3.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-indigo-500/40 transition group cursor-pointer"
           >
-            <span className="text-2xl mb-2">🕒</span>
+            <ClockIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400 mb-2" aria-hidden="true" />
             <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
               Add Class Meeting
             </span>
@@ -355,7 +363,7 @@ export default function UniversityDashboardPage() {
             href="/university/resources"
             className="flex flex-col items-start p-3.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-indigo-500/40 transition group cursor-pointer"
           >
-            <span className="text-2xl mb-2">📚</span>
+            <BookOpenIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400 mb-2" aria-hidden="true" />
             <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
               Academic Resources
             </span>
@@ -368,7 +376,7 @@ export default function UniversityDashboardPage() {
             href="/university/members"
             className="flex flex-col items-start p-3.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-indigo-500/40 transition group cursor-pointer"
           >
-            <span className="text-2xl mb-2">👥</span>
+            <UsersIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400 mb-2" aria-hidden="true" />
             <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
               View Students
             </span>
@@ -381,7 +389,7 @@ export default function UniversityDashboardPage() {
             href="/university/insights"
             className="flex flex-col items-start p-3.5 rounded-xl bg-[var(--bg-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-color)] hover:border-indigo-500/40 transition group cursor-pointer"
           >
-            <span className="text-2xl mb-2">📊</span>
+            <ChartBarIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400 mb-2" aria-hidden="true" />
             <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
               University Insights
             </span>
@@ -400,7 +408,7 @@ export default function UniversityDashboardPage() {
         >
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-2xl">📅</span>
+              <CalendarDaysIcon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
               <span className="text-xs font-semibold uppercase text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/20">
                 Active Term
               </span>
@@ -425,7 +433,7 @@ export default function UniversityDashboardPage() {
         >
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-2xl">🏛️</span>
+              <BuildingLibraryIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
               <span className="text-xs font-semibold uppercase text-[var(--text-muted)] bg-[var(--bg-secondary)] px-2 py-0.5 rounded-full border border-[var(--border-color)]">
                 Building Blocks
               </span>
@@ -448,7 +456,7 @@ export default function UniversityDashboardPage() {
         >
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-2xl">👥</span>
+              <UsersIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
               <span className="text-xs font-semibold uppercase text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-500/20">
                 Campus Users
               </span>
@@ -471,7 +479,7 @@ export default function UniversityDashboardPage() {
         >
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-2xl">📊</span>
+              <ChartBarIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" aria-hidden="true" />
               <span className="text-xs font-semibold uppercase text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-500/20">
                 Decision Analytics
               </span>

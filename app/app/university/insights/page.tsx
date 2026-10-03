@@ -12,6 +12,26 @@ import {
   DepartmentComparisonItem,
 } from '@/lib/api';
 import CustomSelect from '@/components/ui/CustomSelect';
+import {
+  BuildingLibraryIcon,
+  LockClosedIcon,
+  ChartBarIcon,
+  LightBulbIcon,
+  UsersIcon,
+  BookOpenIcon,
+  CalendarDaysIcon,
+  BuildingOfficeIcon,
+  ExclamationTriangleIcon,
+  MegaphoneIcon,
+  BoltIcon,
+  ExclamationCircleIcon,
+  ClipboardDocumentListIcon,
+  ShieldCheckIcon,
+  FireIcon,
+  InformationCircleIcon,
+  DocumentTextIcon,
+  SparklesIcon,
+} from '@heroicons/react/24/outline';
 
 export default function UniversityInsightsPage() {
   const { institution, isAdmin, loading: contextLoading } = useUniversity();
@@ -79,7 +99,7 @@ export default function UniversityInsightsPage() {
   if (!institution) {
     return (
       <div className="text-center py-16 max-w-lg mx-auto">
-        <span className="text-4xl mb-3 block">🏛️</span>
+        <BuildingLibraryIcon className="w-12 h-12 mx-auto mb-3 text-[var(--text-muted)]" aria-hidden="true" />
         <h2 className="text-xl font-bold text-[var(--text-primary)]">No University Selected</h2>
         <p className="text-sm text-[var(--text-secondary)] mt-2">
           Please register or select an institution before accessing university insights.
@@ -91,7 +111,7 @@ export default function UniversityInsightsPage() {
   if (!isAdmin) {
     return (
       <div className="text-center py-16 max-w-lg mx-auto bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-8 shadow-sm">
-        <span className="text-4xl mb-3 block">🔒</span>
+        <LockClosedIcon className="w-12 h-12 mx-auto mb-3 text-[var(--text-muted)]" aria-hidden="true" />
         <h2 className="text-xl font-bold text-[var(--text-primary)]">Administrator Access Required</h2>
         <p className="text-sm text-[var(--text-secondary)] mt-2">
           University-wide insights and operational analytics are reserved for institution administrators.
@@ -127,7 +147,7 @@ export default function UniversityInsightsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border-color)] pb-6">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl">📊</span>
+            <ChartBarIcon className="w-6 h-6 text-indigo-500 flex-shrink-0" aria-hidden="true" />
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
               University Insights
             </h1>
@@ -224,7 +244,7 @@ export default function UniversityInsightsPage() {
 
           {/* Assistant Quick Helper Prompt */}
           <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-3 py-2 rounded-xl border border-[var(--border-color)]">
-            <span>💡</span>
+            <LightBulbIcon className="w-4 h-4 text-amber-500 flex-shrink-0" aria-hidden="true" />
             <span>Tip: Ask SyncShift can answer ad-hoc questions like <em>&quot;Which rooms are most used?&quot;</em></span>
           </div>
         </div>
@@ -269,7 +289,7 @@ export default function UniversityInsightsPage() {
               {/* Students */}
               <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xl">👥</span>
+                  <UsersIcon className="w-5 h-5 text-indigo-400" aria-hidden="true" />
                   <span className="text-[10px] font-bold uppercase text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full">
                     Students
                   </span>
@@ -287,7 +307,7 @@ export default function UniversityInsightsPage() {
               {/* Active Sections */}
               <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xl">📚</span>
+                  <BookOpenIcon className="w-5 h-5 text-blue-400" aria-hidden="true" />
                   <span className="text-[10px] font-bold uppercase text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">
                     Sections
                   </span>
@@ -305,7 +325,7 @@ export default function UniversityInsightsPage() {
               {/* Scheduled Classes */}
               <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xl">🗓️</span>
+                  <CalendarDaysIcon className="w-5 h-5 text-emerald-400" aria-hidden="true" />
                   <span className="text-[10px] font-bold uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                     Meetings
                   </span>
@@ -323,7 +343,7 @@ export default function UniversityInsightsPage() {
               {/* Room Scheduled Utilization */}
               <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xl">🏫</span>
+                  <BuildingOfficeIcon className="w-5 h-5 text-amber-400" aria-hidden="true" />
                   <span className="text-[10px] font-bold uppercase text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
                     Room Usage
                   </span>
@@ -341,7 +361,7 @@ export default function UniversityInsightsPage() {
               {/* Conflicts */}
               <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xl">⚠️</span>
+                  <ExclamationTriangleIcon className="w-5 h-5 text-rose-400" aria-hidden="true" />
                   <span
                     className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
                       conflictsCount > 0
@@ -365,7 +385,7 @@ export default function UniversityInsightsPage() {
               {/* Impact */}
               <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-xl">📢</span>
+                  <MegaphoneIcon className="w-5 h-5 text-purple-400" aria-hidden="true" />
                   <span className="text-[10px] font-bold uppercase text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
                     Impact
                   </span>
@@ -385,7 +405,7 @@ export default function UniversityInsightsPage() {
             {highDemandList.length > 0 && (
               <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">⚡</span>
+                  <BoltIcon className="w-6 h-6 text-amber-500 flex-shrink-0" aria-hidden="true" />
                   <div>
                     <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
                       {highDemandList.length}{' '}
@@ -411,7 +431,7 @@ export default function UniversityInsightsPage() {
             {totalConflicts > 0 && (
               <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">🚨</span>
+                  <ExclamationCircleIcon className="w-6 h-6 text-rose-500 flex-shrink-0" aria-hidden="true" />
                   <div>
                     <p className="text-sm font-bold text-rose-800 dark:text-rose-300">
                       {totalConflicts} scheduling conflicts require attention
@@ -440,43 +460,47 @@ export default function UniversityInsightsPage() {
         <nav className="flex space-x-6 overflow-x-auto pb-px" aria-label="Insights Tabs">
           <button
             onClick={() => setActiveTab('demand')}
-            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
+            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'demand'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            📋 Enrollment & Section Demand
+            <ClipboardDocumentListIcon className="w-4 h-4" aria-hidden="true" />
+            <span>Enrollment & Section Demand</span>
           </button>
           <button
             onClick={() => setActiveTab('rooms')}
-            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
+            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'rooms'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            🏫 Room Scheduled Utilization
+            <BuildingOfficeIcon className="w-4 h-4" aria-hidden="true" />
+            <span>Room Scheduled Utilization</span>
           </button>
           <button
             onClick={() => setActiveTab('timetable')}
-            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
+            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'timetable'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            🩺 Timetable Health & Impact
+            <ShieldCheckIcon className="w-4 h-4" aria-hidden="true" />
+            <span>Timetable Health & Impact</span>
           </button>
           <button
             onClick={() => setActiveTab('departments')}
-            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap cursor-pointer ${
+            className={`pb-3 text-sm font-bold border-b-2 transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'departments'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            🏛️ Department Comparison
+            <BuildingLibraryIcon className="w-4 h-4" aria-hidden="true" />
+            <span>Department Comparison</span>
           </button>
         </nav>
       </div>
@@ -525,7 +549,8 @@ export default function UniversityInsightsPage() {
             {highDemandList.length > 0 && (
               <div className="bg-[var(--bg-card)] border border-amber-300 dark:border-amber-500/30 rounded-2xl p-5 shadow-xs">
                 <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2 mb-3">
-                  <span>🔥</span> Sections Nearing Full Capacity
+                  <FireIcon className="w-4 h-4 text-amber-500 flex-shrink-0" aria-hidden="true" />
+                  <span>Sections Nearing Full Capacity</span>
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {highDemandList.map((sec) => {
@@ -578,7 +603,7 @@ export default function UniversityInsightsPage() {
 
               {filteredSections.length === 0 ? (
                 <div className="text-center py-12 border border-dashed border-[var(--border-color)] rounded-xl">
-                  <span className="text-3xl block mb-2">📚</span>
+                  <BookOpenIcon className="w-10 h-10 mx-auto mb-2 text-[var(--text-muted)]" aria-hidden="true" />
                   <p className="text-sm font-semibold text-[var(--text-primary)]">No sections found</p>
                   <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-sm mx-auto">
                     {sectionSearch
@@ -694,7 +719,7 @@ export default function UniversityInsightsPage() {
           <div className="space-y-6">
             {/* Honest Notice */}
             <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 text-xs text-indigo-300 flex items-start gap-3">
-              <span className="text-lg">ℹ️</span>
+              <InformationCircleIcon className="w-5 h-5 text-indigo-400 flex-shrink-0" aria-hidden="true" />
               <div>
                 <p className="font-semibold">Scheduled Room Utilization</p>
                 <p className="mt-0.5 text-indigo-400/90 leading-relaxed">
@@ -757,7 +782,7 @@ export default function UniversityInsightsPage() {
               <h3 className="text-base font-bold text-[var(--text-primary)]">Classroom Scheduled Utilization</h3>
               {roomList.length === 0 ? (
                 <div className="text-center py-12 border border-dashed border-[var(--border-color)] rounded-xl">
-                  <span className="text-3xl block mb-2">🏫</span>
+                  <BuildingOfficeIcon className="w-10 h-10 mx-auto mb-2 text-[var(--text-muted)]" aria-hidden="true" />
                   <p className="text-sm font-semibold text-[var(--text-primary)]">No room utilization data yet</p>
                   <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-sm mx-auto">
                     Add rooms and timetable meetings to track classroom scheduled hours and utilization.
@@ -862,7 +887,7 @@ export default function UniversityInsightsPage() {
             <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">🗓️</span>
+                  <CalendarDaysIcon className="w-5 h-5 text-indigo-400 flex-shrink-0" aria-hidden="true" />
                   <h3 className="text-base font-bold text-[var(--text-primary)]">
                     {timetableHealth?.timetable_name || 'Current Term Timetable'}
                   </h3>
@@ -935,7 +960,7 @@ export default function UniversityInsightsPage() {
 
               {historyList.length === 0 ? (
                 <div className="text-center py-10 border border-dashed border-[var(--border-color)] rounded-xl">
-                  <span className="text-3xl block mb-2">📜</span>
+                  <DocumentTextIcon className="w-10 h-10 mx-auto mb-2 text-[var(--text-muted)]" aria-hidden="true" />
                   <p className="text-sm font-semibold text-[var(--text-primary)]">No published timetable versions yet</p>
                   <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-sm mx-auto">
                     When timetable changes are reviewed and published, student impact metrics and notification summaries will be displayed here.
@@ -1009,7 +1034,7 @@ export default function UniversityInsightsPage() {
 
             {departments.length === 0 ? (
               <div className="text-center py-12 border border-dashed border-[var(--border-color)] rounded-xl">
-                <span className="text-3xl block mb-2">🏛️</span>
+                <BuildingLibraryIcon className="w-10 h-10 mx-auto mb-2 text-[var(--text-muted)]" aria-hidden="true" />
                 <p className="text-sm font-semibold text-[var(--text-primary)]">No departments registered yet</p>
                 <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-sm mx-auto">
                   Create academic departments to track institutional resources by division.
@@ -1094,7 +1119,7 @@ export default function UniversityInsightsPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xl">✨</span>
+              <SparklesIcon className="w-5 h-5 text-indigo-400 flex-shrink-0" aria-hidden="true" />
               <h3 className="text-base font-bold text-[var(--text-primary)]">Ask SyncShift Analytics Assistant</h3>
             </div>
             <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-xl">

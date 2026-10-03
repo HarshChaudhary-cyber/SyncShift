@@ -59,6 +59,12 @@ export interface UserProfileUpdatePayload {
   avatar_url?: string | null;
 }
 
+export interface PublicInstitution {
+  id: number;
+  name: string;
+  code: string;
+}
+
 export interface ChangePasswordPayload {
   current_password: string;
   new_password: string;
@@ -800,8 +806,29 @@ export const api = {
   publishClassEvent: (id: number, eventId: number) => request(`/classes/${id}/events/${eventId}/publish`, {method: 'POST'}),
   cancelClassEvent: (id: number, eventId: number) => request(`/classes/${id}/events/${eventId}`, {method: 'DELETE'}),
   postClassAnnouncement: (id: number, title: string, body: string) => request(`/classes/${id}/announcements`, {method: 'POST', body: JSON.stringify({title, body})}),
-  login: (email: string, password: string, captcha_token?: string) =>
-    request<AuthResponseData>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password, captcha_token }) }),
+  login: (emailOrIdentifier: string, password: string, captcha_token?: string, institution_id?: number) =>
+    request<AuthResponseData>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: emailOrIdentifier.includes('@') ? emailOrIdentifier.trim() : undefined,
+        identifier: emailOrIdentifier.trim(),
+        password,
+        captcha_token,
+        institution_id,
+      }),
+    }),
+  getPublicInstitutions: () =>
+    request<PublicInstitution[]>('/auth/institutions'),
+  forgotPassword: (email: string) =>
+    request<{ message: string; reset_token?: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim() }),
+    }),
+  resetPassword: (token: string, new_password: string) =>
+    request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token: token.trim(), new_password }),
+    }),
   register: (email: string, password: string, timezone = 'Europe/London', weekly_work_hour_limit = 20.0, captcha_token?: string) =>
     request<AuthResponseData>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, timezone, weekly_work_hour_limit, captcha_token }) }),
   oauthGoogle: (id_token: string, captcha_token?: string) =>

@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useUniversity } from '../layout';
 import { api, InstitutionMembership } from '@/lib/api';
 import CustomSelect from '@/components/ui/CustomSelect';
+import { LockClosedIcon, UserPlusIcon } from '@heroicons/react/24/outline';
 
 export default function UniversityMembersPage() {
   const { institution, isAdmin } = useUniversity();
@@ -99,7 +100,7 @@ export default function UniversityMembersPage() {
   if (!isAdmin) {
     return (
       <div className="text-center py-16 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)]">
-        <span className="text-3xl block mb-2">🔒</span>
+        <LockClosedIcon className="w-10 h-10 text-[var(--text-muted)] mx-auto mb-2" aria-hidden="true" />
         <h3 className="text-base font-bold text-[var(--text-primary)]">Restricted Access</h3>
         <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-sm mx-auto">
           Institution membership management is reserved for university administrators.
@@ -129,7 +130,8 @@ export default function UniversityMembersPage() {
           }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition shadow-sm cursor-pointer"
         >
-          <span>+</span> Add Student or Member
+          <UserPlusIcon className="w-4 h-4" aria-hidden="true" />
+          <span>Add Student or Member</span>
         </button>
       </div>
 

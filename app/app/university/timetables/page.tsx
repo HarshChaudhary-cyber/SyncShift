@@ -11,6 +11,7 @@ import {
   getErrorMessage,
 } from '@/lib/api';
 import CustomSelect from '@/components/ui/CustomSelect';
+import { CalendarDaysIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function TimetablesPage() {
   const { institution, isAdmin } = useUniversity();
@@ -239,8 +240,8 @@ export default function TimetablesPage() {
         </div>
       ) : filteredTimetables.length === 0 ? (
         <div className="text-center py-16 px-4 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface)]/50">
-          <div className="w-12 h-12 rounded-full bg-blue-500/10 text-blue-600 mx-auto flex items-center justify-center text-xl mb-3">
-            🗓️
+          <div className="w-12 h-12 rounded-full bg-blue-500/10 text-blue-600 mx-auto flex items-center justify-center mb-3">
+            <CalendarDaysIcon className="w-6 h-6 text-blue-600" aria-hidden="true" />
           </div>
           <h3 className="text-base font-semibold text-[var(--text-primary)]">No Timetables Found</h3>
           <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-sm mx-auto">
@@ -270,8 +271,9 @@ export default function TimetablesPage() {
                 <div>
                   {/* Top Bar: Term & Status */}
                   <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="inline-flex items-center text-xs font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] px-2.5 py-1 rounded-md">
-                      📅 {tt.term_name || 'Academic Term'}
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-secondary)] bg-[var(--surface-hover)] px-2.5 py-1 rounded-md">
+                      <CalendarDaysIcon className="w-3.5 h-3.5 text-[var(--text-secondary)]" aria-hidden="true" />
+                      <span>{tt.term_name || 'Academic Term'}</span>
                     </span>
                     <span
                       className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize ${
@@ -334,13 +336,13 @@ export default function TimetablesPage() {
                       )}
                       {tt.status !== 'archived' && (
                         <button
+                          type="button"
                           onClick={() => handleArchive(tt)}
+                          aria-label="Archive timetable"
                           title="Archive timetable"
                           className="p-1 text-[var(--text-tertiary)] hover:text-red-500 hover:bg-red-500/10 rounded transition-all cursor-pointer"
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                          <TrashIcon className="w-4 h-4" aria-hidden="true" />
                         </button>
                       )}
                     </div>
@@ -359,10 +361,12 @@ export default function TimetablesPage() {
             <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
               <h3 className="text-lg font-bold text-[var(--text-primary)]">Create Baseline Timetable</h3>
               <button
+                type="button"
                 onClick={() => setModalOpen(false)}
-                className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] text-xl leading-none cursor-pointer"
+                className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] p-1 rounded-lg"
+                aria-label="Close dialog"
               >
-                ✕
+                <XMarkIcon className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 

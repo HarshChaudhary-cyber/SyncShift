@@ -3,18 +3,27 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import {
+  FolderIcon,
+  BookOpenIcon,
+  ClipboardDocumentListIcon,
+  AcademicCapIcon,
+  BuildingOfficeIcon,
+  BuildingOffice2Icon,
+  CalendarDaysIcon,
+} from '@heroicons/react/24/outline';
 
 export default function AcademicResourcesNav() {
   const pathname = usePathname();
 
   const resourceItems = [
-    { label: 'All Resources', href: '/university/resources', icon: '🗂️' },
-    { label: 'Courses', href: '/university/courses', icon: '📚' },
-    { label: 'Sections', href: '/university/sections', icon: '📑' },
-    { label: 'Faculty', href: '/university/faculty', icon: '👨‍🏫' },
-    { label: 'Rooms', href: '/university/rooms', icon: '🚪' },
-    { label: 'Departments', href: '/university/departments', icon: '🏢' },
-    { label: 'Academic Terms', href: '/university/terms', icon: '📅' },
+    { label: 'All Resources', href: '/university/resources', icon: <FolderIcon className="w-4 h-4" aria-hidden="true" /> },
+    { label: 'Courses', href: '/university/courses', icon: <BookOpenIcon className="w-4 h-4" aria-hidden="true" /> },
+    { label: 'Sections', href: '/university/sections', icon: <ClipboardDocumentListIcon className="w-4 h-4" aria-hidden="true" /> },
+    { label: 'Faculty', href: '/university/faculty', icon: <AcademicCapIcon className="w-4 h-4" aria-hidden="true" /> },
+    { label: 'Rooms', href: '/university/rooms', icon: <BuildingOfficeIcon className="w-4 h-4" aria-hidden="true" /> },
+    { label: 'Departments', href: '/university/departments', icon: <BuildingOffice2Icon className="w-4 h-4" aria-hidden="true" /> },
+    { label: 'Academic Terms', href: '/university/terms', icon: <CalendarDaysIcon className="w-4 h-4" aria-hidden="true" /> },
   ];
 
   return (
@@ -38,7 +47,7 @@ export default function AcademicResourcesNav() {
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
               }`}
             >
-              <span>{item.icon}</span>
+              {item.icon}
               <span>{item.label}</span>
             </Link>
           );

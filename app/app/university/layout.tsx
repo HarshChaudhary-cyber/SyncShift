@@ -7,6 +7,21 @@ import { SidebarNavItem } from '@/components/ui/PortalSidebar';
 import AppShell from '@/components/unified/AppShell';
 import Link from 'next/link';
 import { api, UserInstitutionStatus, Institution, InstitutionMembership } from '@/lib/api';
+import {
+  BuildingLibraryIcon,
+  CalendarDaysIcon,
+  BookOpenIcon,
+  ClipboardDocumentListIcon,
+  AcademicCapIcon,
+  UsersIcon,
+  BuildingOfficeIcon,
+  BuildingOffice2Icon,
+  BoltIcon,
+  ChartBarIcon,
+  BellIcon,
+  DocumentTextIcon,
+  Cog6ToothIcon,
+} from '@heroicons/react/24/outline';
 
 // ── University Context ─────────────────────────────────────────────────────
 
@@ -35,20 +50,20 @@ export function useUniversity() {
 // ── University Navigation Items ────────────────────────────────────────────
 
 const universityNavItems: SidebarNavItem[] = [
-  { label: 'Dashboard', href: '/university/dashboard', icon: '🏛️' },
-  { label: 'Timetables', href: '/university/timetables', icon: '🗓️' },
-  { label: 'Courses', href: '/university/courses', icon: '📚' },
-  { label: 'Sections', href: '/university/sections', icon: '📋' },
-  { label: 'Faculty', href: '/university/faculty', icon: '👨‍🏫' },
-  { label: 'Students', href: '/university/students', icon: '👥' },
-  { label: 'Rooms', href: '/university/rooms', icon: '🏢', adminOnly: true },
-  { label: 'Departments', href: '/university/departments', icon: '🏛️', adminOnly: true },
-  { label: 'Academic Terms', href: '/university/terms', icon: '📅', adminOnly: true },
-  { label: 'Impact Analysis', href: '/university/impact-analysis', icon: '⚡' },
-  { label: 'Analytics', href: '/university/analytics', icon: '📊', adminOnly: true },
-  { label: 'Notifications', href: '/university/notifications', icon: '🔔' },
-  { label: 'Audit Logs', href: '/university/audit-logs', icon: '📜', adminOnly: true },
-  { label: 'Settings', href: '/university/settings', icon: '⚙️', adminOnly: true },
+  { label: 'Dashboard', href: '/university/dashboard', icon: <BuildingLibraryIcon className="w-5 h-5" aria-hidden="true" /> },
+  { label: 'Timetables', href: '/university/timetables', icon: <CalendarDaysIcon className="w-5 h-5" aria-hidden="true" /> },
+  { label: 'Courses', href: '/university/courses', icon: <BookOpenIcon className="w-5 h-5" aria-hidden="true" /> },
+  { label: 'Sections', href: '/university/sections', icon: <ClipboardDocumentListIcon className="w-5 h-5" aria-hidden="true" /> },
+  { label: 'Faculty', href: '/university/faculty', icon: <AcademicCapIcon className="w-5 h-5" aria-hidden="true" /> },
+  { label: 'Students', href: '/university/students', icon: <UsersIcon className="w-5 h-5" aria-hidden="true" /> },
+  { label: 'Rooms', href: '/university/rooms', icon: <BuildingOfficeIcon className="w-5 h-5" aria-hidden="true" />, adminOnly: true },
+  { label: 'Departments', href: '/university/departments', icon: <BuildingOffice2Icon className="w-5 h-5" aria-hidden="true" />, adminOnly: true },
+  { label: 'Academic Terms', href: '/university/terms', icon: <CalendarDaysIcon className="w-5 h-5" aria-hidden="true" />, adminOnly: true },
+  { label: 'Impact Analysis', href: '/university/impact-analysis', icon: <BoltIcon className="w-5 h-5" aria-hidden="true" /> },
+  { label: 'Analytics', href: '/university/analytics', icon: <ChartBarIcon className="w-5 h-5" aria-hidden="true" />, adminOnly: true },
+  { label: 'Notifications', href: '/university/notifications', icon: <BellIcon className="w-5 h-5" aria-hidden="true" /> },
+  { label: 'Audit Logs', href: '/university/audit-logs', icon: <DocumentTextIcon className="w-5 h-5" aria-hidden="true" />, adminOnly: true },
+  { label: 'Settings', href: '/university/settings', icon: <Cog6ToothIcon className="w-5 h-5" aria-hidden="true" />, adminOnly: true },
 ];
 
 // ── Layout Component ───────────────────────────────────────────────────────

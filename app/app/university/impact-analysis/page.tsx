@@ -12,6 +12,7 @@ import {
 } from '@/lib/api';
 import { showErrorToast, showSuccessToast } from '@/lib/toast';
 import CustomSelect from '@/components/ui/CustomSelect';
+import { BoltIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 const DAYS = [
   { value: 1, label: 'Monday' },
@@ -116,7 +117,7 @@ export default function UniversityImpactAnalysisPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl">⚡</span>
+            <BoltIcon className="w-6 h-6 text-emerald-500 flex-shrink-0" aria-hidden="true" />
             <h1 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">
               Timetable Impact Analysis
             </h1>
@@ -247,7 +248,7 @@ export default function UniversityImpactAnalysisPage() {
                   </>
                 ) : (
                   <>
-                    <span>⚡</span>
+                    <BoltIcon className="w-4 h-4" aria-hidden="true" />
                     <span>Run Impact Analysis</span>
                   </>
                 )}
@@ -324,8 +325,9 @@ export default function UniversityImpactAnalysisPage() {
                 ))}
               </div>
             ) : (
-              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/25 text-xs text-emerald-800 dark:text-emerald-300">
-                ✓ No enrolled student schedule conflicts detected for this proposed change!
+              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/25 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                <CheckCircleIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" aria-hidden="true" />
+                <span>No enrolled student schedule conflicts detected for this proposed change!</span>
               </div>
             )}
           </div>

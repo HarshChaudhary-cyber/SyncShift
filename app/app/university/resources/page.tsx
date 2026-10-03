@@ -5,6 +5,16 @@ import Link from 'next/link';
 import { useUniversity } from '../layout';
 import AcademicResourcesNav from '@/components/university/AcademicResourcesNav';
 import { api } from '@/lib/api';
+import {
+  BookOpenIcon,
+  ClipboardDocumentListIcon,
+  AcademicCapIcon,
+  BuildingOfficeIcon,
+  BuildingOffice2Icon,
+  CalendarDaysIcon,
+  BuildingLibraryIcon,
+  LightBulbIcon,
+} from '@heroicons/react/24/outline';
 
 interface ResourceCounts {
   courses: number | null;
@@ -60,7 +70,7 @@ export default function AcademicResourcesHubPage() {
   const cards = [
     {
       title: 'Courses',
-      icon: '📚',
+      icon: <BookOpenIcon className="w-7 h-7 text-blue-400" aria-hidden="true" />,
       count: counts.courses,
       unit: 'Courses',
       href: '/university/courses',
@@ -70,7 +80,7 @@ export default function AcademicResourcesHubPage() {
     },
     {
       title: 'Sections',
-      icon: '📑',
+      icon: <ClipboardDocumentListIcon className="w-7 h-7 text-purple-400" aria-hidden="true" />,
       count: counts.sections,
       unit: 'Sections',
       href: '/university/sections',
@@ -80,7 +90,7 @@ export default function AcademicResourcesHubPage() {
     },
     {
       title: 'Faculty',
-      icon: '👨‍🏫',
+      icon: <AcademicCapIcon className="w-7 h-7 text-emerald-400" aria-hidden="true" />,
       count: counts.faculty,
       unit: 'Instructors',
       href: '/university/faculty',
@@ -90,7 +100,7 @@ export default function AcademicResourcesHubPage() {
     },
     {
       title: 'Rooms',
-      icon: '🚪',
+      icon: <BuildingOfficeIcon className="w-7 h-7 text-amber-400" aria-hidden="true" />,
       count: counts.rooms,
       unit: 'Rooms',
       href: '/university/rooms',
@@ -100,7 +110,7 @@ export default function AcademicResourcesHubPage() {
     },
     {
       title: 'Departments',
-      icon: '🏢',
+      icon: <BuildingOffice2Icon className="w-7 h-7 text-cyan-400" aria-hidden="true" />,
       count: counts.departments,
       unit: 'Departments',
       href: '/university/departments',
@@ -110,7 +120,7 @@ export default function AcademicResourcesHubPage() {
     },
     {
       title: 'Academic Terms',
-      icon: '📅',
+      icon: <CalendarDaysIcon className="w-7 h-7 text-rose-400" aria-hidden="true" />,
       count: counts.terms,
       unit: 'Terms',
       href: '/university/terms',
@@ -130,7 +140,8 @@ export default function AcademicResourcesHubPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-bold tracking-wide">
-              <span>🏛️</span> University Master Building Blocks
+              <BuildingLibraryIcon className="w-4 h-4 text-indigo-400" aria-hidden="true" />
+              <span>University Master Building Blocks</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
               Academic Resources
@@ -147,7 +158,7 @@ export default function AcademicResourcesHubPage() {
               href="/university/timetables"
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-sm"
             >
-              <span>🗓️</span>
+              <CalendarDaysIcon className="w-4 h-4" aria-hidden="true" />
               <span>Go to Timetables</span>
             </Link>
           </div>
@@ -164,7 +175,7 @@ export default function AcademicResourcesHubPage() {
           >
             <div>
               <div className="flex items-center justify-between gap-2 mb-4">
-                <span className="text-3xl p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+                <span className="p-2.5 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-color)] inline-flex items-center justify-center">
                   {card.icon}
                 </span>
                 <span
@@ -194,7 +205,7 @@ export default function AcademicResourcesHubPage() {
       {/* Contextual Guide Card */}
       <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-color)] text-xs text-[var(--text-secondary)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-start gap-3">
-          <span className="text-xl">💡</span>
+          <LightBulbIcon className="w-6 h-6 text-amber-400 shrink-0" aria-hidden="true" />
           <div>
             <span className="font-semibold text-[var(--text-primary)] block mb-0.5">
               How Academic Resources connect to Timetables

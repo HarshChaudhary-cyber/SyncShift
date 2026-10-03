@@ -10,6 +10,7 @@ import {
   AcademicCourseCreatePayload,
   Department,
 } from '@/lib/api';
+import { BookOpenIcon, BuildingOfficeIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function CoursesPage() {
   const { institution, isAdmin } = useUniversity();
@@ -248,7 +249,7 @@ export default function CoursesPage() {
         <div className="p-12 text-center text-[var(--text-secondary)]">Loading courses...</div>
       ) : courses.length === 0 ? (
         <div className="p-12 text-center rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)]">
-          <span className="text-4xl">📚</span>
+          <BookOpenIcon className="w-12 h-12 mx-auto text-[var(--text-muted)]" aria-hidden="true" />
           <h3 className="text-lg font-semibold text-[var(--text-primary)] mt-3">No Courses Found</h3>
           <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-md mx-auto">
             {search || deptFilter !== 'all'
@@ -304,7 +305,8 @@ export default function CoursesPage() {
                   <td className="py-3 px-4 text-xs text-[var(--text-secondary)]">
                     {c.required_room_type || c.min_room_capacity ? (
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
-                        🚪 {c.required_room_type || 'any'} {c.min_room_capacity ? `(${c.min_room_capacity}+ seats)` : ''}
+                        <BuildingOfficeIcon className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                        {c.required_room_type || 'any'} {c.min_room_capacity ? `(${c.min_room_capacity}+ seats)` : ''}
                       </span>
                     ) : (
                       <span className="text-[var(--text-muted)]">Standard</span>
@@ -356,9 +358,10 @@ export default function CoursesPage() {
               </h3>
               <button
                 onClick={() => setModalOpen(false)}
-                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition text-lg"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition p-1 rounded-lg hover:bg-[var(--bg-elevated)]"
+                aria-label="Close dialog"
               >
-                ✕
+                <XMarkIcon className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
