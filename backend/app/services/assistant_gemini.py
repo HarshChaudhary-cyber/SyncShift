@@ -581,7 +581,7 @@ def call_gemini_with_tools(
             )
 
             chat = model.start_chat(history=history)
-            response = chat.send_message(message)
+            response = chat.send_message(message, request_options={"timeout": 5.0})
 
             # Agentic loop: handle up to max_tool_calls function calls
             call_count = 0
@@ -636,7 +636,7 @@ def call_gemini_with_tools(
                         }
                     }
 
-                response = chat.send_message(fn_response_part)
+                response = chat.send_message(fn_response_part, request_options={"timeout": 5.0})
                 call_count += 1
 
             # Extract final text response
@@ -719,7 +719,7 @@ def gemini_answer_general_question(
                 generation_config={"temperature": 0.5, "max_output_tokens": 512},
             )
             chat = model.start_chat(history=history)
-            response = chat.send_message(message)
+            response = chat.send_message(message, request_options={"timeout": 5.0})
             text = ""
             for candidate in response.candidates:
                 for part in candidate.content.parts:

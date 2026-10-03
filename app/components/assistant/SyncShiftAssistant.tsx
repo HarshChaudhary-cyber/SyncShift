@@ -16,13 +16,13 @@ import {
   MapPinIcon,
   CalendarIcon,
   ArrowRightIcon,
-  InformationCircleIcon,
   ChatBubbleLeftRightIcon,
   PlusIcon,
   TrashIcon,
   ShieldCheckIcon,
   BuildingLibraryIcon,
   AcademicCapIcon,
+  PaperClipIcon,
 } from '@heroicons/react/24/outline';
 import {
   api,
@@ -33,6 +33,7 @@ import {
   AssistantConfirmResponse,
   AssistantConversationItem,
 } from '@/lib/api';
+import { isProfessor } from '@/lib/academic';
 
 interface ChatMessage {
   id: string;
@@ -50,14 +51,22 @@ interface ChatMessage {
 }
 
 const STUDENT_SUGGESTIONS = [
-  'How do I use this app?',
-  'Move my today work to tomorrow',
   'What classes do I have today?',
+  'Move my today work to tomorrow',
   'When can I work this week?',
   'Do I have any conflicts?',
   'How many work hours do I have left?',
   'Preview my weekly plan',
-  'Move my Friday shift to 4 PM',
+  'Find open study time slots',
+];
+
+const PROFESSOR_SUGGESTIONS = [
+  'When are my teaching slots today?',
+  'Show my scheduled office hours',
+  'Check for conflicts with departmental meetings',
+  'How many lecture hours are assigned this term?',
+  'Find free slots for student consultations',
+  'Summarize upcoming class lectures',
 ];
 
 const ADMIN_SUGGESTIONS = [
@@ -65,11 +74,13 @@ const ADMIN_SUGGESTIONS = [
   'Show university timetable versions',
   'Who is affected by moving CS101?',
   'Create a new draft version for timetable',
+  'Check for faculty teaching conflicts',
+  'Inspect room capacity utilization',
 ];
 
-export function openSyncShiftAssistant() {
+export function openSyncShiftAssistant(prompt?: string) {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('open-syncshift-assistant'));
+    window.dispatchEvent(new CustomEvent('open-syncshift-assistant', { detail: { prompt } }));
   }
 }
 
@@ -81,7 +92,6 @@ export default function SyncShiftAssistant() {
 function ScopedAssistant() {
   const { user, status } = useAuthContext();
   const pathname = usePathname();
-  const unified = ['/dashboard','/calendar','/classes','/planner','/notifications','/settings','/student','/profile','/professors','/admin','/appointments','/invitation','/university'].some(path => pathname === path || pathname.startsWith(path + '/'));
   const [showUpload, setShowUpload] = useState(false);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [inputMessage, setInputMessage] = useState<string>('');
@@ -90,13 +100,22 @@ function ScopedAssistant() {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [conversations, setConversations] = useState<AssistantConversationItem[]>([]);
   const [showHistory, setShowHistory] = useState<boolean>(false);
-  const [userRole, setUserRole] = useState<'student' | 'admin'>('student');
+  const [userRole, setUserRole] = useState<'student' | 'admin' | 'instructor'>('student');
   const [institutionId, setInstitutionId] = useState<number | null>(null);
 
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+
+  const isSuperAdmin = user?.institution_role === 'super_admin';
+  const isAdmin = isSuperAdmin || userRole === 'admin';
+  const isProf = isProfessor(user?.institution_role) || userRole === 'instructor';
+  const effectiveRole: 'admin' | 'professor' | 'student' = isAdmin ? 'admin' : isProf ? 'professor' : 'student';
+
   const initialWelcomeText =
-    userRole === 'admin'
-      ? "👋 Welcome, Administrator! I'm your **SyncShift Assistant**. Ask me about room availability, timetable versions, draft creation, or impact analyses. Every timetable modification requires your explicit review and confirmation."
-      : "👋 Hi! Ask me how to use SyncShift, inspect your schedule, or attach a timetable to import it. Say 'Move my today work to tomorrow' and I’ll move just today's work if it fits. Other changes may need a preview or more details.";
+    effectiveRole === 'admin'
+      ? "Welcome, Administrator! I'm your SyncShift assistant. Ask me about room availability, timetable versions, draft creation, or impact analyses. Every timetable modification requires your explicit review and confirmation."
+      : effectiveRole === 'professor'
+      ? "Welcome, Professor! I'm your SyncShift assistant. Ask me about your assigned lectures, free slots for office hours, preparation time, or conflict checks with university meetings."
+      : "Hi! Ask me how to use SyncShift, inspect your schedule, or attach a timetable to import it. Say 'Move my today work to tomorrow' and I’ll move just today's work if it fits. Other changes may need a preview or more details.";
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -114,20 +133,57 @@ function ScopedAssistant() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Private chat state is reset by the account-scoped component key.
+  // Listen for open-syncshift-assistant events, optionally carrying a suggested prompt
   useEffect(() => {
-    const handleOpen = () => { if (status === 'authenticated') setIsOpen(true); };
-    window.addEventListener('open-syncshift-assistant', handleOpen);
-    return () => window.removeEventListener('open-syncshift-assistant', handleOpen);
+    const handleOpen = (e: Event) => {
+      if (status === 'authenticated') {
+        lastFocusedElementRef.current = document.activeElement as HTMLElement;
+        setIsOpen(true);
+        const customEvent = e as CustomEvent<{ prompt?: string }>;
+        if (customEvent?.detail?.prompt) {
+          setInputMessage(customEvent.detail.prompt);
+          setTimeout(() => {
+            inputRef.current?.focus();
+          }, 50);
+        }
+      }
+    };
+    window.addEventListener('open-syncshift-assistant', handleOpen as EventListener);
+    return () => window.removeEventListener('open-syncshift-assistant', handleOpen as EventListener);
   }, [status]);
+
+  // Escape key handler for dialog accessibility
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   useEffect(() => {
     let active = true;
-    if (status === 'authenticated') api.getMyInstitutionStatus().then(res => {
-      if (!active) return;
-      setInstitutionId(res.membership?.institution_id ?? null);
-      setUserRole(['admin','super_admin'].includes(res.membership?.role || '') ? 'admin' : 'student');
-    }).catch(() => {});
-    return () => { active = false; };
+    if (status === 'authenticated') {
+      api.getMyInstitutionStatus()
+        .then((res) => {
+          if (!active) return;
+          setInstitutionId(res.membership?.institution_id ?? null);
+          const r = res.membership?.role;
+          if (r === 'admin' || r === 'super_admin') {
+            setUserRole('admin');
+          } else if (r === 'instructor' || r === 'faculty') {
+            setUserRole('instructor');
+          } else {
+            setUserRole('student');
+          }
+        })
+        .catch(() => {});
+    }
+    return () => {
+      active = false;
+    };
   }, [status, user?.user_id]);
 
   // Load user's conversations
@@ -147,6 +203,10 @@ function ScopedAssistant() {
       scrollToBottom();
       inputRef.current?.focus();
       loadConversations();
+    } else {
+      if (lastFocusedElementRef.current && typeof lastFocusedElementRef.current.focus === 'function') {
+        lastFocusedElementRef.current.focus();
+      }
     }
   }, [isOpen]);
 
@@ -162,9 +222,11 @@ function ScopedAssistant() {
         id: `welcome-${Date.now()}`,
         sender: 'assistant',
         text:
-          userRole === 'admin'
-            ? "Started a new administrator consultation. What would you like to inspect or plan?"
-            : "Started a fresh conversation. What would you like to check in your schedule today?",
+          effectiveRole === 'admin'
+            ? 'Started a new administrator consultation. What would you like to inspect or plan?'
+            : effectiveRole === 'professor'
+            ? 'Started a new faculty consultation. What would you like to check today?'
+            : 'Started a fresh conversation. What would you like to check in your schedule today?',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       },
     ]);
@@ -186,16 +248,20 @@ function ScopedAssistant() {
           timestamp: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           action: m.action_preview,
         }));
-        setMessages(loaded.length > 0 ? loaded : [
-          {
-            id: 'empty',
-            sender: 'assistant',
-            text: 'Conversation resumed.',
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          },
-        ]);
+        setMessages(
+          loaded.length > 0
+            ? loaded
+            : [
+                {
+                  id: 'empty',
+                  sender: 'assistant',
+                  text: 'Conversation resumed.',
+                  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                },
+              ]
+        );
       }
-    } catch (err: any) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
@@ -258,7 +324,7 @@ function ScopedAssistant() {
 
       if (response.conversation_id && response.conversation_id !== currentConversationId) {
         setCurrentConversationId(response.conversation_id);
-        loadConversations();
+        void loadConversations();
       }
 
       const assistantMsg: ChatMessage = {
@@ -309,7 +375,6 @@ function ScopedAssistant() {
               : m
           )
         );
-        // Trigger global calendar reload event
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('syncshift:schedule-updated'));
         }
@@ -343,28 +408,41 @@ function ScopedAssistant() {
 
   const handleCancelAction = (msgId: string) => {
     setMessages((prev) =>
-      prev.map((m) => (m.id === msgId ? { ...m, action: null, text: m.text + '\n\n*(Action cancelled by user)*' } : m))
+      prev.map((m) =>
+        m.id === msgId ? { ...m, action: null, text: m.text + '\n\n*(Action cancelled by user)*' } : m
+      )
     );
   };
 
   const handleSelectChoice = (choice: Record<string, any>) => {
-    handleSendMessage(`Move ${choice.title} on ${choice.day} to 4 PM`);
+    setInputMessage(`Move ${choice.title} on ${choice.day} to 4 PM`);
+    inputRef.current?.focus();
+  };
+
+  const handleSelectSuggestion = (chip: string) => {
+    setInputMessage(chip);
+    inputRef.current?.focus();
   };
 
   // Render text with basic bold, bullet, and link formatting
   const renderFormattedText = (text: string) => {
     const lines = text.split('\n');
     return (
-      <div className="space-y-1.5 text-sm leading-relaxed">
+      <div className="space-y-1.5 text-xs sm:text-sm leading-relaxed">
         {lines.map((line, idx) => {
           if (!line.trim()) return <div key={idx} className="h-1" />;
 
           let parsedLine: React.ReactNode = line;
-          // Simple bold parser
           if (line.includes('**')) {
             const parts = line.split('**');
             parsedLine = parts.map((part, pIdx) =>
-              pIdx % 2 === 1 ? <strong key={pIdx} className="font-semibold text-slate-900 dark:text-white">{part}</strong> : part
+              pIdx % 2 === 1 ? (
+                <strong key={pIdx} className="font-semibold text-[var(--text-primary)]">
+                  {part}
+                </strong>
+              ) : (
+                part
+              )
             );
           }
 
@@ -385,97 +463,103 @@ function ScopedAssistant() {
     );
   };
 
-  const suggestions = userRole === 'admin' ? ADMIN_SUGGESTIONS : STUDENT_SUGGESTIONS;
+  const suggestions =
+    effectiveRole === 'admin'
+      ? ADMIN_SUGGESTIONS
+      : effectiveRole === 'professor'
+      ? PROFESSOR_SUGGESTIONS
+      : STUDENT_SUGGESTIONS;
+
+  const prefersReducedMotion =
+    user?.reduced_motion ||
+    (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   if (status !== 'authenticated') return null;
+
   return (
     <>
-      {/* Floating Action Trigger Button */}
-      {!unified && <motion.button
-        id="syncshift-assistant-trigger"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className={`fixed bottom-6 right-6 z-40 flex items-center gap-2.5 px-4 py-3 rounded-full font-medium shadow-xl transition-all duration-300 ${
-          isOpen
-            ? 'bg-slate-800 text-slate-200 border border-slate-700 shadow-slate-900/50'
-            : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-105 active:scale-95'
-        }`}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        aria-label="Open SyncShift Assistant"
-      >
-        <SparklesIcon className="w-5 h-5 text-indigo-200 animate-pulse" />
-        <span className="text-sm font-semibold tracking-wide hidden sm:inline">
-          {isOpen ? 'Close Assistant' : 'Ask SyncShift'}
-        </span>
-      </motion.button>}
+      {/* Live Region for Screen Readers */}
+      <div aria-live="polite" className="sr-only">
+        {isLoading ? loadingStateText : ''}
+      </div>
 
-      {/* Floating / Drawer Assistant Panel */}
+      {/* Floating Assistant Panel Dialog */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             id="syncshift-assistant-panel"
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="syncshift-assistant-title"
+            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20, scale: prefersReducedMotion ? 1 : 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="fixed bottom-20 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[480px] max-h-[85vh] h-[680px] bg-white dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700/80 rounded-2xl shadow-2xl shadow-slate-900/15 dark:shadow-2xl flex flex-col overflow-hidden"
+            exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 20, scale: prefersReducedMotion ? 1 : 0.95 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2 }}
+            className="fixed bottom-4 sm:bottom-6 right-2 sm:right-6 z-50 w-[calc(100vw-1rem)] sm:w-[500px] max-h-[90vh] h-[660px] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl flex flex-col overflow-hidden text-[var(--text-primary)]"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/70">
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--border-color)] bg-[var(--bg-secondary)]">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-inner">
-                  {userRole === 'admin' ? (
-                    <BuildingLibraryIcon className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-xs">
+                  {effectiveRole === 'admin' ? (
+                    <BuildingLibraryIcon className="w-4 h-4" aria-hidden="true" />
+                  ) : effectiveRole === 'professor' ? (
+                    <AcademicCapIcon className="w-4 h-4" aria-hidden="true" />
                   ) : (
-                    <SparklesIcon className="w-4 h-4 text-white" />
+                    <SparklesIcon className="w-4 h-4" aria-hidden="true" />
                   )}
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
+                  <h2
+                    id="syncshift-assistant-title"
+                    className="text-sm font-bold text-[var(--text-primary)] tracking-tight flex items-center gap-1.5"
+                  >
                     SyncShift Assistant
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping inline-block" />
-                    {userRole === 'admin' && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 font-mono font-bold">
-                        ADMIN
-                      </span>
-                    )}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">App guidance, schedules and timetable imports</p>
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+                      {effectiveRole === 'admin' ? 'Admin' : effectiveRole === 'professor' ? 'Faculty' : 'Online'}
+                    </span>
+                  </h2>
+                  <p className="text-[11px] text-[var(--text-muted)]">Timetables, schedule planning & guidance</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-1">
-                {/* Conversation History Toggle */}
+                {/* Past conversations button */}
                 <button
+                  type="button"
                   onClick={() => setShowHistory((prev) => !prev)}
                   className={`p-1.5 rounded-lg transition ${
                     showHistory
-                      ? 'bg-indigo-100 dark:bg-indigo-600/30 text-indigo-700 dark:text-indigo-300'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)]'
                   }`}
                   title="Past conversations"
                   aria-label="Past conversations"
                 >
-                  <ChatBubbleLeftRightIcon className="w-4 h-4" />
+                  <ChatBubbleLeftRightIcon className="w-4 h-4" aria-hidden="true" />
                 </button>
 
-                {/* New Chat */}
+                {/* New Chat button */}
                 <button
+                  type="button"
                   onClick={handleStartNewChat}
-                  className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                  className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] rounded-lg transition"
                   title="New conversation"
                   aria-label="New conversation"
                 >
-                  <PlusIcon className="w-4 h-4" />
+                  <PlusIcon className="w-4 h-4" aria-hidden="true" />
                 </button>
 
+                {/* Close button */}
                 <button
+                  type="button"
                   onClick={() => setIsOpen(false)}
-                  className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                  className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] rounded-lg transition"
                   title="Close Assistant"
                   aria-label="Close Assistant"
                 >
-                  <XMarkIcon className="w-5 h-5" />
+                  <XMarkIcon className="w-5 h-5" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -487,21 +571,23 @@ function ScopedAssistant() {
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/90 overflow-hidden"
+                  transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.15 }}
+                  className="border-b border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden"
                 >
                   <div className="p-3 max-h-48 overflow-y-auto space-y-1.5 custom-scrollbar">
                     <div className="flex items-center justify-between px-1 pb-1">
-                      <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Conversations</span>
+                      <span className="text-xs font-semibold text-[var(--text-secondary)]">Past Inquiries</span>
                       <button
+                        type="button"
                         onClick={handleStartNewChat}
-                        className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium flex items-center gap-1"
+                        className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-medium flex items-center gap-1 cursor-pointer"
                       >
-                        <PlusIcon className="w-3 h-3" /> New
+                        <PlusIcon className="w-3 h-3" aria-hidden="true" /> New
                       </button>
                     </div>
 
                     {conversations.length === 0 ? (
-                      <p className="text-xs text-slate-500 px-1 py-2 italic">No past conversations yet.</p>
+                      <p className="text-xs text-[var(--text-muted)] px-1 py-2 italic">No past conversations yet.</p>
                     ) : (
                       conversations.map((c) => (
                         <div
@@ -509,17 +595,19 @@ function ScopedAssistant() {
                           onClick={() => handleSelectConversation(c.id)}
                           className={`group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition ${
                             c.id === currentConversationId
-                              ? 'bg-indigo-100 dark:bg-indigo-600/30 text-indigo-800 dark:text-indigo-200 border border-indigo-300 dark:border-indigo-500/40'
-                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/80'
+                              ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+                              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-card)]'
                           }`}
                         >
                           <span className="truncate flex-1">{c.title || 'Conversation'}</span>
                           <button
+                            type="button"
                             onClick={(e) => handleDeleteConversation(e, c.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 rounded transition"
+                            className="opacity-0 group-hover:opacity-100 p-1 text-[var(--text-muted)] hover:text-rose-500 rounded transition"
                             title="Delete conversation"
+                            aria-label={`Delete conversation ${c.title || ''}`}
                           >
-                            <TrashIcon className="w-3.5 h-3.5" />
+                            <TrashIcon className="w-3.5 h-3.5" aria-hidden="true" />
                           </button>
                         </div>
                       ))
@@ -530,7 +618,7 @@ function ScopedAssistant() {
             </AnimatePresence>
 
             {/* Chat Messages Feed */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 text-slate-800 dark:text-slate-200 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 text-[var(--text-primary)] custom-scrollbar">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
@@ -538,27 +626,30 @@ function ScopedAssistant() {
                 >
                   {/* Sender Bubble */}
                   <div
-                    className={`max-w-[90%] rounded-2xl px-4 py-3 shadow-md ${
+                    className={`max-w-[92%] rounded-2xl px-4 py-3 shadow-xs ${
                       msg.sender === 'user'
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-none'
-                        : 'bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/60 text-slate-800 dark:text-slate-200 rounded-bl-none'
+                        ? 'bg-indigo-600 text-white rounded-br-xs'
+                        : 'bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-bl-xs'
                     }`}
                   >
                     {renderFormattedText(msg.text)}
 
                     {/* Ambiguous Choices */}
                     {msg.choices && msg.choices.length > 0 && (
-                      <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-700/80 space-y-2">
-                        <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300">Select which shift to move:</p>
+                      <div className="mt-3 pt-2.5 border-t border-[var(--border-color)] space-y-2">
+                        <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                          Select which event to modify:
+                        </p>
                         <div className="grid grid-cols-1 gap-1.5">
                           {msg.choices.map((choice, cIdx) => (
                             <button
                               key={cIdx}
+                              type="button"
                               onClick={() => handleSelectChoice(choice)}
-                              className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white dark:bg-slate-900/60 hover:bg-indigo-50 dark:hover:bg-indigo-600/30 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 text-left text-xs transition cursor-pointer"
+                              className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:border-indigo-400 text-left text-xs transition cursor-pointer"
                             >
-                              <span className="font-semibold text-slate-900 dark:text-white">{choice.title}</span>
-                              <span className="text-slate-500 dark:text-slate-400">
+                              <span className="font-semibold text-[var(--text-primary)]">{choice.title}</span>
+                              <span className="text-[var(--text-muted)]">
                                 {choice.day} {choice.start_time}–{choice.end_time}
                               </span>
                             </button>
@@ -569,60 +660,64 @@ function ScopedAssistant() {
 
                     {/* Structured Action Preview Card */}
                     {msg.action && (
-                      <div className="mt-3.5 p-3.5 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/90 rounded-xl space-y-3 shadow-xs">
-                        <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+                      <div className="mt-3.5 p-3.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl space-y-3 shadow-xs">
+                        <div className="flex items-center justify-between pb-2 border-b border-[var(--border-color)]">
                           <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                            <ClockIcon className="w-3.5 h-3.5" /> Action Preview
+                            <ClockIcon className="w-3.5 h-3.5" aria-hidden="true" /> Action Preview
                           </span>
-                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700/40 font-medium">
-                            Explicit Confirmation Required
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-medium">
+                            Confirmation Required
                           </span>
                         </div>
 
                         {/* Title & Description */}
                         <div className="space-y-1 text-xs">
-                          <p className="font-semibold text-slate-900 dark:text-white text-sm">{msg.action.title}</p>
+                          <p className="font-semibold text-[var(--text-primary)] text-sm">{msg.action.title}</p>
                           {msg.action.description && (
-                            <p className="text-slate-600 dark:text-slate-400 text-xs">{msg.action.description}</p>
+                            <p className="text-[var(--text-secondary)] text-xs">{msg.action.description}</p>
                           )}
                         </div>
 
                         {/* From -> To Preview if available */}
                         {msg.action.original && msg.action.target && (
-                          <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 text-xs space-y-1">
-                            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                              <span className="text-slate-500 dark:text-slate-400">
-                                {msg.action.original.day} {msg.action.original.time || `${msg.action.original.start_time}–${msg.action.original.end_time}`}
+                          <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] text-xs space-y-1">
+                            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+                              <span>
+                                {msg.action.original.day}{' '}
+                                {msg.action.original.time ||
+                                  `${msg.action.original.start_time}–${msg.action.original.end_time}`}
                               </span>
-                              <ArrowRightIcon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                              <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                                {msg.action.target.day} {msg.action.target.time || `${msg.action.target.start_time}–${msg.action.target.end_time}`}
+                              <ArrowRightIcon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" aria-hidden="true" />
+                              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                {msg.action.target.day}{' '}
+                                {msg.action.target.time ||
+                                  `${msg.action.target.start_time}–${msg.action.target.end_time}`}
                               </span>
                             </div>
                             {msg.action.original.location && (
-                              <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
-                                <MapPinIcon className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                              <div className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
+                                <MapPinIcon className="w-3 h-3" aria-hidden="true" />
                                 {msg.action.original.location}
                               </div>
                             )}
                           </div>
                         )}
 
-                        {/* N6 Impact Analysis Badges (if timetable_change) */}
+                        {/* Impact Analysis Badges (if timetable_change) */}
                         {msg.action.impact_summary && (
-                          <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                          <div className="p-2.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] space-y-2 text-xs">
                             <div className="flex items-center justify-between">
-                              <span className="font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                                <ShieldCheckIcon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                                N6 Impact Analysis:
+                              <span className="font-medium text-[var(--text-secondary)] flex items-center gap-1">
+                                <ShieldCheckIcon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+                                Impact Analysis:
                               </span>
                               <span
                                 className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                                   msg.action.impact_summary.severity === 'LOW'
-                                    ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30'
+                                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
                                     : msg.action.impact_summary.severity === 'MEDIUM'
-                                    ? 'bg-amber-50 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30'
-                                    : 'bg-red-50 dark:bg-red-500/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/30'
+                                    ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                                    : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                                 }`}
                               >
                                 {msg.action.impact_summary.severity} SEVERITY
@@ -630,23 +725,23 @@ function ScopedAssistant() {
                             </div>
 
                             <div className="grid grid-cols-3 gap-1.5 text-[11px]">
-                              <div className="p-1.5 rounded bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 text-center">
-                                <div className="font-bold text-slate-900 dark:text-white">
+                              <div className="p-1.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)] text-center">
+                                <div className="font-bold text-[var(--text-primary)]">
                                   {msg.action.impact_summary.students_affected_count ?? 0}
                                 </div>
-                                <div className="text-[10px] text-slate-500 dark:text-slate-400">Students</div>
+                                <div className="text-[10px] text-[var(--text-muted)]">Students</div>
                               </div>
-                              <div className="p-1.5 rounded bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 text-center">
-                                <div className="font-bold text-slate-900 dark:text-white">
+                              <div className="p-1.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)] text-center">
+                                <div className="font-bold text-[var(--text-primary)]">
                                   {msg.action.impact_summary.new_conflicts_count ?? 0}
                                 </div>
-                                <div className="text-[10px] text-slate-500 dark:text-slate-400">New Conflicts</div>
+                                <div className="text-[10px] text-[var(--text-muted)]">New Conflicts</div>
                               </div>
-                              <div className="p-1.5 rounded bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 text-center">
-                                <div className="font-bold text-slate-900 dark:text-white">
+                              <div className="p-1.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)] text-center">
+                                <div className="font-bold text-[var(--text-primary)]">
                                   {msg.action.impact_summary.work_shift_conflicts_count ?? 0}
                                 </div>
-                                <div className="text-[10px] text-slate-500 dark:text-slate-400">Shift Clashes</div>
+                                <div className="text-[10px] text-[var(--text-muted)]">Shift Clashes</div>
                               </div>
                             </div>
                           </div>
@@ -655,23 +750,23 @@ function ScopedAssistant() {
                         {/* Safety & Constraint Checks */}
                         {msg.action.checks && msg.action.checks.length > 0 && (
                           <div className="space-y-1 pt-1">
-                            <p className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Deterministic Safety Checks:</p>
+                            <p className="text-[11px] font-medium text-[var(--text-muted)]">Safety & Rule Checks:</p>
                             {msg.action.checks.map((check, chkIdx) => (
                               <div key={chkIdx} className="flex items-center gap-1.5 text-xs">
                                 {check.warning ? (
-                                  <ExclamationTriangleIcon className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
+                                  <ExclamationTriangleIcon className="w-3.5 h-3.5 text-amber-500 shrink-0" aria-hidden="true" />
                                 ) : check.passed ? (
-                                  <CheckCircleIcon className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
+                                  <CheckCircleIcon className="w-3.5 h-3.5 text-emerald-500 shrink-0" aria-hidden="true" />
                                 ) : (
-                                  <XMarkIcon className="w-3.5 h-3.5 text-red-500 dark:text-red-400 shrink-0" />
+                                  <XMarkIcon className="w-3.5 h-3.5 text-rose-500 shrink-0" aria-hidden="true" />
                                 )}
                                 <span
                                   className={
                                     check.warning
-                                      ? 'text-amber-800 dark:text-amber-300'
+                                      ? 'text-amber-700 dark:text-amber-300'
                                       : check.passed
-                                      ? 'text-slate-700 dark:text-slate-300'
-                                      : 'text-red-700 dark:text-red-300'
+                                      ? 'text-[var(--text-secondary)]'
+                                      : 'text-rose-700 dark:text-rose-300'
                                   }
                                 >
                                   {check.label}
@@ -683,14 +778,14 @@ function ScopedAssistant() {
 
                         {/* Status Messages */}
                         {msg.confirmError && (
-                          <div className="p-2 rounded-lg bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300">
+                          <div className="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300">
                             {msg.confirmError}
                           </div>
                         )}
 
                         {msg.confirmSuccess && (
                           <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-300 font-medium flex items-center gap-1.5">
-                            <CheckCircleIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <CheckCircleIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                             {msg.confirmSuccess}
                           </div>
                         )}
@@ -699,20 +794,22 @@ function ScopedAssistant() {
                         {!msg.confirmed && (
                           <div className="flex items-center justify-end gap-2 pt-1.5">
                             <button
+                              type="button"
                               onClick={() => handleCancelAction(msg.id)}
                               disabled={msg.isConfirming}
-                              className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition disabled:opacity-50 cursor-pointer"
+                              className="px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] transition disabled:opacity-50 cursor-pointer"
                             >
                               Cancel
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleConfirmAction(msg.id, msg.action!)}
                               disabled={msg.isConfirming}
-                              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-700/20 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                             >
                               {msg.isConfirming ? (
                                 <>
-                                  <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
+                                  <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
                                   Applying...
                                 </>
                               ) : (
@@ -731,14 +828,14 @@ function ScopedAssistant() {
                       {msg.tool_progress.map((step, tIdx) => (
                         <span
                           key={tIdx}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-400"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-muted)]"
                         >
                           {step.status === 'success' ? (
-                            <CheckCircleIcon className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                            <CheckCircleIcon className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                           ) : step.status === 'error' ? (
-                            <XMarkIcon className="w-2.5 h-2.5 text-red-600 dark:text-red-400" />
+                            <XMarkIcon className="w-2.5 h-2.5 text-rose-600 dark:text-rose-400" aria-hidden="true" />
                           ) : (
-                            <ArrowPathIcon className="w-2.5 h-2.5 animate-spin text-indigo-600 dark:text-indigo-400" />
+                            <ArrowPathIcon className="w-2.5 h-2.5 animate-spin text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                           )}
                           {step.label || step.tool}
                         </span>
@@ -748,37 +845,38 @@ function ScopedAssistant() {
 
                   {/* Conflict-Free Alternatives Panel */}
                   {msg.alternatives && msg.alternatives.length > 0 && (
-                    <div className="mt-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-amber-200 dark:border-amber-500/20 space-y-2">
+                    <div className="mt-2 p-3 rounded-xl bg-[var(--bg-card)] border border-amber-300 dark:border-amber-700/60 space-y-2">
                       <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                        <CalendarIcon className="w-3.5 h-3.5" />
+                        <CalendarIcon className="w-3.5 h-3.5" aria-hidden="true" />
                         Conflict-Free Alternatives
                       </p>
                       <div className="space-y-1.5">
                         {msg.alternatives.map((alt) => (
                           <button
                             key={alt.option_number}
+                            type="button"
                             onClick={() =>
                               handleSendMessage(
                                 `Apply Option ${alt.option_number}: ${alt.day_name} ${alt.start_time}–${alt.end_time}`
                               )
                             }
-                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white dark:bg-slate-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-600/20 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 text-left transition group cursor-pointer"
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--bg-secondary)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-indigo-400 text-left transition group cursor-pointer"
                           >
                             <div className="flex items-center gap-2">
-                              <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">
+                              <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 group-hover:underline">
                                 {alt.option_label}
                               </span>
-                              <span className="text-xs text-slate-900 dark:text-white font-semibold">
+                              <span className="text-xs text-[var(--text-primary)] font-semibold">
                                 {alt.day_name}
                               </span>
-                              <span className="text-xs text-slate-600 dark:text-slate-300">
+                              <span className="text-xs text-[var(--text-secondary)]">
                                 {alt.start_time}–{alt.end_time}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
-                              <ClockIcon className="w-3 h-3" />
+                            <div className="flex items-center gap-1 text-[10px] text-[var(--text-muted)]">
+                              <ClockIcon className="w-3 h-3" aria-hidden="true" />
                               {alt.duration_minutes}m
-                              <ArrowRightIcon className="w-3 h-3 text-indigo-600 dark:text-indigo-400 ml-1" />
+                              <ArrowRightIcon className="w-3 h-3 text-indigo-600 dark:text-indigo-400 ml-1" aria-hidden="true" />
                             </div>
                           </button>
                         ))}
@@ -786,16 +884,15 @@ function ScopedAssistant() {
                     </div>
                   )}
 
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 px-1">{msg.timestamp}</span>
+                  <span className="text-[10px] text-[var(--text-muted)] mt-1 px-1">{msg.timestamp}</span>
                 </div>
               ))}
 
-
               {/* Loading indicator */}
               {isLoading && (
-                <div className="flex items-start gap-2 text-slate-600 dark:text-slate-400 text-xs">
-                  <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center gap-2 shadow-xs">
-                    <ArrowPathIcon className="w-3.5 h-3.5 animate-spin text-indigo-600 dark:text-indigo-400" />
+                <div className="flex items-start gap-2 text-[var(--text-secondary)] text-xs">
+                  <div className="p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] flex items-center gap-2 shadow-2xs">
+                    <ArrowPathIcon className="w-3.5 h-3.5 animate-spin text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
                     <span>{loadingStateText}</span>
                   </div>
                 </div>
@@ -804,34 +901,59 @@ function ScopedAssistant() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Starter Suggestion Chips */}
-            <div className="px-3 py-2 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-200 dark:border-slate-800/60 overflow-x-auto flex items-center gap-1.5 no-scrollbar">
+            {/* Quick Starter Suggestion Chips - clicking populates the prompt for review */}
+            <div className="px-3 py-2 bg-[var(--bg-secondary)] border-t border-[var(--border-color)] overflow-x-auto flex items-center gap-1.5 no-scrollbar">
               {suggestions.map((chip, idx) => (
                 <button
                   key={idx}
-                  onClick={() => handleSendMessage(chip)}
+                  type="button"
+                  onClick={() => handleSelectSuggestion(chip)}
                   disabled={isLoading}
-                  className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white dark:bg-slate-800/70 hover:bg-indigo-50 dark:hover:bg-indigo-600/30 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/40 text-slate-700 dark:text-slate-300 hover:text-indigo-900 dark:hover:text-white whitespace-nowrap transition disabled:opacity-50 cursor-pointer shadow-2xs"
+                  title="Click to place prompt in input"
+                  className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[var(--bg-card)] hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-[var(--border-color)] hover:border-indigo-400 text-[var(--text-secondary)] hover:text-indigo-600 dark:hover:text-indigo-300 whitespace-nowrap transition disabled:opacity-50 cursor-pointer shadow-2xs"
                 >
                   {chip}
                 </button>
               ))}
             </div>
 
+            {/* Timetable upload drawer */}
+            {showUpload && (
+              <AssistantTimetableUpload
+                onClose={() => setShowUpload(false)}
+                onDone={(text) => {
+                  setMessages((prev) => [
+                    ...prev,
+                    {
+                      id: `import-${Date.now()}`,
+                      sender: 'assistant',
+                      text,
+                      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    },
+                  ]);
+                  setShowUpload(false);
+                }}
+              />
+            )}
+
             {/* Input Bar */}
-            {showUpload && <AssistantTimetableUpload onClose={() => setShowUpload(false)} onDone={(text) => {
-              setMessages(prev => [...prev, {id: `import-${Date.now()}`, sender: 'assistant', text,
-                timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}]);
-              setShowUpload(false);
-            }} />}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSendMessage();
               }}
-              className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 flex items-center gap-2"
+              className="p-3 border-t border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center gap-2"
             >
-              <button type="button" aria-label="Attach timetable" title="Attach timetable" disabled={isLoading} onClick={() => setShowUpload(!showUpload)} className="p-2 text-indigo-600 dark:text-indigo-300">📎</button>
+              <button
+                type="button"
+                aria-label="Attach timetable"
+                title="Attach timetable"
+                disabled={isLoading}
+                onClick={() => setShowUpload(!showUpload)}
+                className="p-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 rounded-xl hover:bg-[var(--bg-card)] transition cursor-pointer"
+              >
+                <PaperClipIcon className="w-5 h-5" aria-hidden="true" />
+              </button>
               <input
                 ref={inputRef}
                 id="syncshift-assistant-input"
@@ -839,20 +961,22 @@ function ScopedAssistant() {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder={
-                  userRole === 'admin'
+                  effectiveRole === 'admin'
                     ? 'Ask about room vacancies, timetable drafts, or impact...'
+                    : effectiveRole === 'professor'
+                    ? 'Ask about teaching slots, office hours, or preparations...'
                     : 'Ask about your schedule, shifts, or study sessions...'
                 }
                 disabled={isLoading}
-                className="flex-1 px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 focus:border-indigo-500 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition shadow-xs"
+                className="flex-1 px-3.5 py-2.5 bg-[var(--bg-card)] border border-[var(--border-color)] focus:border-indigo-500 rounded-xl text-xs sm:text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-1 focus:ring-indigo-500 transition shadow-2xs"
               />
               <button
                 type="submit"
                 disabled={!inputMessage.trim() || isLoading}
-                className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white disabled:text-slate-400 dark:disabled:text-slate-600 transition shadow-md shadow-indigo-600/20 disabled:shadow-none cursor-pointer"
+                className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-[var(--bg-card)] text-white disabled:text-[var(--text-muted)] transition shadow-sm disabled:shadow-none cursor-pointer"
                 aria-label="Send message"
               >
-                <PaperAirplaneIcon className="w-4 h-4" />
+                <PaperAirplaneIcon className="w-4 h-4" aria-hidden="true" />
               </button>
             </form>
           </motion.div>

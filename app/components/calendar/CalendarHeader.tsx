@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { addDays, format, parseISO } from 'date-fns';
+import { ChevronLeftIcon, ChevronRightIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useCalendar, CalendarViewMode } from '@/context/CalendarContext';
 
 interface CalendarHeaderProps {
@@ -61,9 +62,9 @@ export default function CalendarHeader({
             onClick={goToPrevWeek}
             title="Previous week"
             aria-label="Previous week"
-            className="px-2.5 py-1.5 hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded font-medium transition cursor-pointer"
+            className="px-2.5 py-1.5 hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded font-medium transition cursor-pointer flex items-center justify-center"
           >
-            ◀
+            <ChevronLeftIcon className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -79,9 +80,9 @@ export default function CalendarHeader({
             onClick={goToNextWeek}
             title="Next week"
             aria-label="Next week"
-            className="px-2.5 py-1.5 hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded font-medium transition cursor-pointer"
+            className="px-2.5 py-1.5 hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded font-medium transition cursor-pointer flex items-center justify-center"
           >
-            ▶
+            <ChevronRightIcon className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </div>
 
@@ -119,7 +120,7 @@ export default function CalendarHeader({
           aria-label="Refresh schedule"
           className="p-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer shadow-2xs flex items-center justify-center"
         >
-          <span className={`inline-block ${loading ? 'animate-spin' : ''}`}>↻</span>
+          <ArrowPathIcon className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
         </button>
       </div>
 

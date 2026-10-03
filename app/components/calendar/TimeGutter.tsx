@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useCalendar } from '@/context/CalendarContext';
 
 interface TimeGutterProps {
   startHour: number;
@@ -13,6 +14,7 @@ export default function TimeGutter({
   endHour,
   hourHeight,
 }: TimeGutterProps) {
+  const { timeFormat } = useCalendar();
   const totalHours = endHour - startHour;
 
   return (
@@ -27,7 +29,9 @@ export default function TimeGutter({
         {Array.from({ length: totalHours }).map((_, idx) => {
           const hour = startHour + idx;
           const displayHour =
-            hour === 0
+            timeFormat === '24h'
+              ? `${String(hour).padStart(2, '0')}:00`
+              : hour === 0
               ? '12 AM'
               : hour === 12
               ? '12 PM'

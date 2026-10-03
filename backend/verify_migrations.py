@@ -62,7 +62,7 @@ from app.database import engine
 from sqlalchemy import text
 import json, os
 with engine.connect() as connection:
-    assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0021"
+    assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0022"
     with open(os.environ['MIGRATION_COUNTS_PATH']) as f: counts = json.load(f)
     for table, count in counts.items():
         assert connection.execute(text('SELECT COUNT(*) FROM '+table)).scalar() == count
@@ -73,7 +73,14 @@ assert response.status_code == 200, response.text
 headers = {"Authorization": "Bearer " + response.json()["data"]["token"]}
 response = client.post("/api/v1/blocks", headers=headers, json={"type": "class", "title": "Migration smoke", "day_of_week": 1, "start_time": "09:00", "end_time": "10:00"})
 assert response.status_code == 201, response.text
-assert client.get("/api/v1/auth/me", headers=headers).status_code == 200
+me_res = client.get("/api/v1/auth/me", headers=headers)
+assert me_res.status_code == 200
+assert me_res.json()["data"]["time_format"] == "12h"
+patch_res = client.patch("/api/v1/auth/me", headers=headers, json={"time_format": "24h", "week_starts_on": "sunday", "planning_hours_start": 8, "planning_hours_end": 17})
+assert patch_res.status_code == 200
+assert patch_res.json()["data"]["time_format"] == "24h"
+assert patch_res.json()["data"]["week_starts_on"] == "sunday"
+assert patch_res.json()["data"]["planning_hours_start"] == 8
 assert client.post('/api/v1/classes', headers=headers, json={'name':'Migration workspace'}).status_code == 403
 engine.dispose()
 print("Migration preserves existing users, schedules, enrollments and versions; class, registration, profile and block checks passed.")

@@ -61,6 +61,14 @@ class UserProfileData(BaseModel):
     language: Optional[str] = "en"
     theme: Optional[str] = "dark"
     minimum_transition_minutes: int = 15
+    week_starts_on: str = "monday"
+    time_format: str = "12h"
+    default_calendar_view: str = "week"
+    reduced_motion: str = "system"
+    planning_hours_start: int = 9
+    planning_hours_end: int = 18
+    preferred_session_duration: int = 45
+    preferred_break_duration: int = 15
     oauth_provider: Optional[str] = None
     has_password: bool = False
     created_at: Optional[datetime] = None
@@ -77,6 +85,14 @@ class UserProfileUpdate(BaseModel):
     theme: Optional[str] = None
     avatar_url: Optional[str] = None
     minimum_transition_minutes: Optional[int] = Field(None, ge=0, le=120)
+    week_starts_on: Optional[str] = Field(None, pattern="^(monday|sunday)$")
+    time_format: Optional[str] = Field(None, pattern="^(12h|24h)$")
+    default_calendar_view: Optional[str] = Field(None, pattern="^(week|day|month|7day|5day)$")
+    reduced_motion: Optional[str] = Field(None, pattern="^(system|reduced|normal)$")
+    planning_hours_start: Optional[int] = Field(None, ge=0, le=23)
+    planning_hours_end: Optional[int] = Field(None, ge=0, le=23)
+    preferred_session_duration: Optional[int] = Field(None, ge=15, le=240)
+    preferred_break_duration: Optional[int] = Field(None, ge=0, le=120)
 
 
 

@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:session": "node --test scripts/session.test.mjs"
+    "test": "node --test scripts/session.test.mjs scripts/preferences.test.mjs",
+    "test:session": "node --test scripts/session.test.mjs",
+    "test:preferences": "node --test scripts/preferences.test.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

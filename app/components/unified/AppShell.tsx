@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { Squares2X2Icon, CalendarDaysIcon, AcademicCapIcon, ClipboardDocumentListIcon, BellIcon, SparklesIcon, Bars3Icon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { Squares2X2Icon, CalendarDaysIcon, AcademicCapIcon, ClipboardDocumentListIcon, BellIcon, SparklesIcon, Bars3Icon, XMarkIcon, ChevronDownIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { useAuthContext } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { openSyncShiftAssistant } from '@/components/assistant/SyncShiftAssistant';
@@ -11,11 +11,13 @@ import './workspace.css';
 const navigation = [
   ['Dashboard', '/dashboard', Squares2X2Icon], ['Calendar', '/calendar', CalendarDaysIcon],
   ['Classes', '/classes', AcademicCapIcon], ['Planner', '/planner', ClipboardDocumentListIcon], ['Notifications', '/notifications', BellIcon],
+  ['Settings', '/settings', Cog6ToothIcon],
 ] as const;
 const adminNavigation = [
   ['Overview & users','/admin',Squares2X2Icon],['Subjects','/university/courses',AcademicCapIcon],
   ['Sections & assignments','/university/sections',ClipboardDocumentListIcon],['Timetables','/university/timetables',CalendarDaysIcon],
   ['Departments','/university/departments',AcademicCapIcon],['Academic terms','/university/terms',CalendarDaysIcon],
+  ['Settings', '/settings', Cog6ToothIcon],
 ] as const;
 
 export default function AppShell({ children }: {children: React.ReactNode}) {

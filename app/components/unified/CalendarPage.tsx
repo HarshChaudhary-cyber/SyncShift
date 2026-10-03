@@ -7,6 +7,7 @@ import { CalendarProvider, useCalendar } from '@/context/CalendarContext';
 import { api, BlockOut } from '@/lib/api';
 import { showErrorToast, showSuccessToast } from '@/lib/toast';
 import Link from 'next/link';
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import WeekView from '@/components/calendar/WeekView';
 import CalendarHeader from '@/components/calendar/CalendarHeader';
 import WeekSummaryBar from '@/components/calendar/WeekSummaryBar';
@@ -175,7 +176,7 @@ function StudentCalendarContent() {
       {conflicts.length > 0 && (
         <div className="p-3.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-600/70 rounded-xl text-xs text-rose-800 dark:text-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
           <div className="flex items-center gap-2.5">
-            <span className="text-lg">⚠️</span>
+            <ExclamationTriangleIcon className="w-5 h-5 text-rose-600 shrink-0" aria-hidden="true" />
             <div>
               <span className="font-semibold text-rose-950 dark:text-rose-100 text-sm">
                 {conflicts.length} Schedule Conflict{conflicts.length > 1 ? 's' : ''} Detected

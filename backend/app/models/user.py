@@ -62,5 +62,6 @@ class User(Base):
     student_availabilities = relationship("StudentAvailability", back_populates="user", cascade="all, delete-orphan")
     student_constraints = relationship("StudentConstraint", back_populates="user", cascade="all, delete-orphan")
     student_preference = relationship("StudentPreference", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    preferences = relationship("UserPreference", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 
