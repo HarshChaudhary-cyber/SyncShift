@@ -75,7 +75,7 @@ export default function PlanPreviewModal({
 
   const handleConfirm = async () => {
     if (selectedSessions.length === 0) {
-      setError('Please select at least one study session to confirm.');
+      setError('Please select at least one work session to confirm.');
       return;
     }
 
@@ -97,7 +97,7 @@ export default function PlanPreviewModal({
       onPlanConfirmed(confirmedTask);
       onClose();
     } catch (err: any) {
-      setError(err?.message || 'Failed to confirm study plan. Check for clashes with classes.');
+      setError(err?.message || 'Failed to confirm private plan. Check for clashes with classes.');
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ export default function PlanPreviewModal({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xl">✨</span>
-              <h2 className="text-base font-bold text-[var(--text-primary)]">Suggested Study Plan</h2>
+              <h2 className="text-base font-bold text-[var(--text-primary)]">Suggested private plan</h2>
             </div>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
               {task.title} · Needs {task.total_hours_required}h before {task.deadline}
@@ -158,7 +158,7 @@ export default function PlanPreviewModal({
 
             {sessions.length === 0 ? (
               <div className="p-6 text-center text-[var(--text-muted)] text-sm bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-color)]">
-                No free study gaps found before this deadline. Try clearing schedule items or extending the deadline.
+                No free available gaps found before this deadline. Try clearing schedule items or extending the deadline.
               </div>
             ) : (
               sessions.map((s) => (
@@ -193,7 +193,7 @@ export default function PlanPreviewModal({
                           )}
                         </div>
                         <span className="text-[11px] text-[var(--study-text)] font-medium block mt-0.5">
-                          {s.duration_hours}h session · 📖 Self-study
+                          {s.duration_hours}h session · Private work
                         </span>
                       </div>
                     </div>
@@ -229,7 +229,7 @@ export default function PlanPreviewModal({
                             onPlanConfirmed(updatedTask);
                             onClose();
                           } catch (err: any) {
-                            setError(err?.message || 'Failed to add study session');
+                            setError(err?.message || 'Failed to add work session');
                           } finally {
                             setLoading(false);
                           }

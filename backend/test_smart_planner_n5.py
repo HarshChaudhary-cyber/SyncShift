@@ -1,3 +1,5 @@
+from academic_test_support import administrator_enroll, administrator_drop
+from academic_test_support import bootstrap_institution
 import time
 from datetime import date, timedelta
 from fastapi.testclient import TestClient
@@ -28,8 +30,7 @@ def create_test_user(prefix: str) -> tuple[int, str]:
 def create_test_institution(admin_token: str, name_prefix: str = "Plan Univ") -> tuple[int, str]:
     headers = {"Authorization": f"Bearer {admin_token}"}
     code = f"PLAN_{int(time.time() * 1000)}"[:16]
-    resp = client.post(
-        "/api/v1/institutions",
+    resp = bootstrap_institution(
         headers=headers,
         json={
             "name": f"{name_prefix} {code}",
@@ -157,8 +158,7 @@ def test_smart_planner_hard_constraints_and_preview_immutability():
     )
 
     # Enroll in section
-    client.post(
-        "/api/v1/students/me/enrollments",
+    administrator_enroll(
         headers=student_headers,
         json={"section_id": section_id},
     )

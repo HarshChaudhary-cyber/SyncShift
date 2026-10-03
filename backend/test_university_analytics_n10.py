@@ -1,3 +1,4 @@
+from academic_test_support import bootstrap_institution
 """
 Test Suite for Task N10 — University Analytics & Decision Dashboard.
 
@@ -62,8 +63,7 @@ def setup_user(prefix: str, role: str = "student", work_limit: float = 20.0):
 
 def setup_institution(admin_headers, name_prefix="Test University"):
     code = f"N10_{str(uuid.uuid4())[:8]}"
-    resp = client.post(
-        "/api/v1/institutions",
+    resp = bootstrap_institution(
         headers=admin_headers,
         json={"name": f"{name_prefix} {code}", "code": code, "timezone": "America/New_York", "country": "US"},
     )

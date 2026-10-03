@@ -37,12 +37,12 @@ export default function CalendarHeader({
   )}`;
 
   return (
-    <div className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-3 sm:p-4 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+    <div className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-3 sm:p-4 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-3">
       {/* LEFT: Calendar Title & Current Date Range */}
       <div className="flex flex-col gap-0.5">
         <div className="flex flex-wrap items-baseline gap-2 sm:gap-3">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] flex items-center gap-2">
-            <span>My Schedule</span>
+            <span>Calendar</span>
           </h1>
           <span className="text-sm sm:text-base font-semibold text-[var(--text-secondary)]">
             {formattedDateRange}
@@ -55,7 +55,7 @@ export default function CalendarHeader({
 
       {/* CENTER: Navigation Steppers (< Today >) */}
       <div className="flex items-center gap-2 self-start lg:self-auto">
-        <div className="flex items-center bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-0.5 text-xs shadow-2xs">
+        <div className="flex items-center bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-0.5 text-xs whitespace-nowrap shadow-2xs">
           <button
             type="button"
             onClick={goToPrevWeek}
@@ -86,7 +86,7 @@ export default function CalendarHeader({
         </div>
 
         {/* View Mode Switcher: 5 Days vs 7 Days */}
-        <div className="flex items-center bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-0.5 text-xs shadow-2xs">
+        <div className="flex items-center bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-0.5 text-xs whitespace-nowrap shadow-2xs">
           <button
             type="button"
             onClick={() => setViewMode('5day')}
@@ -130,17 +130,17 @@ export default function CalendarHeader({
           onClick={onImport}
           className="px-3 py-1.5 bg-[var(--bg-secondary)] hover:bg-[var(--bg-card)] border border-[var(--border-color)] rounded-lg text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer shadow-2xs flex items-center gap-1.5"
         >
-          <span>📁</span>
+
           <span>Import Timetable</span>
         </button>
 
         <button
           type="button"
           onClick={onAddClass}
-          className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer shadow-xs flex items-center gap-1"
+          className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer shadow-xs flex items-center gap-1"
         >
           <span>+</span>
-          <span>Add Class</span>
+          <span>Add private event</span>
         </button>
 
         <button

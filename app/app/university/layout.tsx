@@ -3,7 +3,9 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import RoleGuard from '@/components/RoleGuard';
-import PortalSidebar, { SidebarNavItem } from '@/components/ui/PortalSidebar';
+import { SidebarNavItem } from '@/components/ui/PortalSidebar';
+import AppShell from '@/components/unified/AppShell';
+import Link from 'next/link';
 import { api, UserInstitutionStatus, Institution, InstitutionMembership } from '@/lib/api';
 
 // ── University Context ─────────────────────────────────────────────────────
@@ -105,17 +107,11 @@ export default function UniversityLayout({ children }: { children: React.ReactNo
             isAdmin,
           }}
         >
-          <PortalSidebar
-            portalLabel="University Portal"
-            accentColor="emerald"
-            navItems={universityNavItems}
-            userRole={membership?.role}
-            institutionName={institution?.name}
-          >
+          <AppShell><Link className="ws-link" href="/admin">← University administration</Link>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
               {children}
             </div>
-          </PortalSidebar>
+          </AppShell>
         </UniversityContext.Provider>
       </RoleGuard>
     </ProtectedRoute>

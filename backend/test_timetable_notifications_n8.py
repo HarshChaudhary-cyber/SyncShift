@@ -1,3 +1,5 @@
+from academic_test_support import administrator_enroll, administrator_drop
+from academic_test_support import bootstrap_institution
 """
 Comprehensive Test Suite for Task N8 — Automatic Timetable Change Notifications.
 
@@ -63,8 +65,7 @@ def create_test_user(prefix: str) -> tuple[int, str]:
 def create_test_institution(admin_token: str, name_prefix: str = "N8 Univ") -> tuple[int, str]:
     headers = {"Authorization": f"Bearer {admin_token}"}
     code = f"N8_{int(time.time() * 1000)}"[:16]
-    resp = client.post(
-        "/api/v1/institutions",
+    resp = bootstrap_institution(
         headers=headers,
         json={
             "name": f"{name_prefix} {code}",
@@ -258,19 +259,19 @@ def test_publish_notifications_affected_students_only():
     s1_id, s1_tok = create_test_user("s1_affected")
     s1_headers = {"Authorization": f"Bearer {s1_tok}"}
     add_member(env["admin_token"], inst_id, s1_id, "student")
-    client.post("/api/v1/students/me/enrollments", headers=s1_headers, json={"section_id": sec_a_id})
+    administrator_enroll( headers=s1_headers, json={"section_id": sec_a_id})
 
     # 2. Setup Student 2: Enrolled in Section B only (Unrelated)
     s2_id, s2_tok = create_test_user("s2_unrelated")
     s2_headers = {"Authorization": f"Bearer {s2_tok}"}
     add_member(env["admin_token"], inst_id, s2_id, "student")
-    client.post("/api/v1/students/me/enrollments", headers=s2_headers, json={"section_id": sec_b_id})
+    administrator_enroll( headers=s2_headers, json={"section_id": sec_b_id})
 
     # 3. Setup Student 3: Dropped from Section A
     s3_id, s3_tok = create_test_user("s3_dropped")
     s3_headers = {"Authorization": f"Bearer {s3_tok}"}
     add_member(env["admin_token"], inst_id, s3_id, "student")
-    enr3_resp = client.post("/api/v1/students/me/enrollments", headers=s3_headers, json={"section_id": sec_a_id})
+    enr3_resp = administrator_enroll( headers=s3_headers, json={"section_id": sec_a_id})
     # Mark enrollment as dropped using student_id
     db = SessionLocal()
     db.query(SectionEnrollment).filter(
@@ -385,7 +386,7 @@ def test_work_shift_conflict_escalates_to_urgent():
     s1_id, s1_tok = create_test_user("s1_with_shift")
     s1_headers = {"Authorization": f"Bearer {s1_tok}"}
     add_member(env["admin_token"], inst_id, s1_id, "student")
-    client.post("/api/v1/students/me/enrollments", headers=s1_headers, json={"section_id": sec_a_id})
+    administrator_enroll( headers=s1_headers, json={"section_id": sec_a_id})
 
     # Add work shift
     client.post(
@@ -406,7 +407,7 @@ def test_work_shift_conflict_escalates_to_urgent():
     s2_id, s2_tok = create_test_user("s2_no_shift")
     s2_headers = {"Authorization": f"Bearer {s2_tok}"}
     add_member(env["admin_token"], inst_id, s2_id, "student")
-    client.post("/api/v1/students/me/enrollments", headers=s2_headers, json={"section_id": sec_a_id})
+    administrator_enroll( headers=s2_headers, json={"section_id": sec_a_id})
 
     # Create V2 cloning V1
     v2_resp = client.post(
@@ -469,7 +470,7 @@ def test_idempotency_of_publication_notifications():
     s1_id, s1_tok = create_test_user("s1_idempotent")
     s1_headers = {"Authorization": f"Bearer {s1_tok}"}
     add_member(env["admin_token"], inst_id, s1_id, "student")
-    client.post("/api/v1/students/me/enrollments", headers=s1_headers, json={"section_id": sec_a_id})
+    administrator_enroll( headers=s1_headers, json={"section_id": sec_a_id})
 
     # Create & move V2
     v2_resp = client.post(
@@ -531,7 +532,7 @@ def test_failure_handling_does_not_rollback_publication():
     s1_id, s1_tok = create_test_user("s1_fail_resilient")
     s1_headers = {"Authorization": f"Bearer {s1_tok}"}
     add_member(env["admin_token"], inst_id, s1_id, "student")
-    client.post("/api/v1/students/me/enrollments", headers=s1_headers, json={"section_id": sec_a_id})
+    administrator_enroll( headers=s1_headers, json={"section_id": sec_a_id})
 
     # Enable email in prefs to trigger email code path
     client.put("/api/v1/notifications/prefs", headers=s1_headers, json={"email_enabled": True})
@@ -594,7 +595,7 @@ def test_student_schedule_synchronization():
     s1_id, s1_tok = create_test_user("s1_sync")
     s1_headers = {"Authorization": f"Bearer {s1_tok}"}
     add_member(env["admin_token"], inst_id, s1_id, "student")
-    client.post("/api/v1/students/me/enrollments", headers=s1_headers, json={"section_id": sec_a_id})
+    administrator_enroll( headers=s1_headers, json={"section_id": sec_a_id})
 
     # Student personal shift: Tuesday 09:00 - 13:00
     shift_resp = client.post(
@@ -697,7 +698,7 @@ def test_ics_export_reflects_official_schedule():
     s1_id, s1_tok = create_test_user("s1_ics")
     s1_headers = {"Authorization": f"Bearer {s1_tok}"}
     add_member(env["admin_token"], inst_id, s1_id, "student")
-    client.post("/api/v1/students/me/enrollments", headers=s1_headers, json={"section_id": sec_a_id})
+    administrator_enroll( headers=s1_headers, json={"section_id": sec_a_id})
 
     # Export ICS
     resp = client.get("/api/v1/students/me/schedule/export.ics", headers=s1_headers)
@@ -733,8 +734,8 @@ def test_student_notification_endpoints_and_authorization():
 
     add_member(env["admin_token"], inst_id, sa_id, "student")
     add_member(env["admin_token"], inst_id, sb_id, "student")
-    client.post("/api/v1/students/me/enrollments", headers=sa_headers, json={"section_id": sec_a_id})
-    client.post("/api/v1/students/me/enrollments", headers=sb_headers, json={"section_id": sec_a_id})
+    administrator_enroll( headers=sa_headers, json={"section_id": sec_a_id})
+    administrator_enroll( headers=sb_headers, json={"section_id": sec_a_id})
 
     # Publish V2 to generate notifications for both students
     v2_resp = client.post(
@@ -808,7 +809,7 @@ def test_tenant_isolation_and_admin_notification_summary():
     # Student in Inst A
     sa_id, sa_tok = create_test_user("sa_tenant")
     add_member(env["admin_token"], inst_id, sa_id, "student")
-    client.post("/api/v1/students/me/enrollments", headers={"Authorization": f"Bearer {sa_tok}"}, json={"section_id": sec_a_id})
+    administrator_enroll( headers={"Authorization": f"Bearer {sa_tok}"}, json={"section_id": sec_a_id})
 
     # Publish V2 in Inst A
     v2_resp = client.post(

@@ -86,7 +86,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
   return (
     <ProtectedRoute>
-      <RoleGuard allowedPortal="student">
+
         <StudentContext.Provider
           value={{
             status,
@@ -97,19 +97,13 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             membership,
           }}
         >
-          <PortalSidebar
-            portalLabel="Student Portal"
-            accentColor="indigo"
-            navItems={studentNavItems}
-            userRole={membership?.role || 'student'}
-            institutionName={institution?.name}
-          >
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
               {children}
             </div>
-          </PortalSidebar>
+
         </StudentContext.Provider>
-      </RoleGuard>
+
     </ProtectedRoute>
   );
 }

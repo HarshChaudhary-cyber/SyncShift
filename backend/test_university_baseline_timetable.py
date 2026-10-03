@@ -1,3 +1,5 @@
+from academic_test_support import administrator_enroll, administrator_drop
+from academic_test_support import bootstrap_institution
 import time
 from datetime import date, timedelta
 from fastapi.testclient import TestClient
@@ -29,8 +31,7 @@ def create_test_institution(admin_token: str, name_prefix: str = "Test Universit
     """Helper to create an institution where the user becomes admin."""
     headers = {"Authorization": f"Bearer {admin_token}"}
     code = f"INST_{int(time.time() * 1000)}"[:16]
-    resp = client.post(
-        "/api/v1/institutions",
+    resp = bootstrap_institution(
         headers=headers,
         json={
             "name": f"{name_prefix} {code}",
@@ -568,8 +569,7 @@ def test_student_schedule_and_calendar_integration():
     assert len(sched_resp_empty.json()["data"]["meetings"]) == 0
 
     # 3. Student enrolls in section
-    enroll_resp = client.post(
-        "/api/v1/students/me/enrollments",
+    enroll_resp = administrator_enroll(
         headers=std_headers,
         json={"section_id": sec_id},
     )
@@ -624,8 +624,7 @@ def test_student_schedule_and_calendar_integration():
     assert len(conflicts) > 0, "Expected conflict between class meeting and overlapping work shift"
 
     # 7. Student drops the section -> meetings are cleanly removed from academic schedule
-    drop_resp = client.delete(
-        f"/api/v1/students/me/enrollments/{enrollment_id}",
+    drop_resp = administrator_drop(enrollment_id,
         headers=std_headers,
     )
     assert drop_resp.status_code == 200

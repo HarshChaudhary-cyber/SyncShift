@@ -2,23 +2,16 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
 import { api, NotificationLogItem } from '@/lib/api';
 import { useAuthContext } from '@/context/AuthContext';
-import { isUniversityRole } from '@/components/RoleGuard';
 
 export default function NotificationCenterPage() {
   const { user, status } = useAuthContext();
-  const router = useRouter();
-  const pathname = usePathname();
 
-  useEffect(() => {
-    if (status === 'authenticated' && user && pathname === '/notifications') {
-      const isUniv = isUniversityRole(user.institution_role);
-      router.replace(isUniv ? '/university/notifications' : '/student/notifications');
-    }
-  }, [status, user, pathname, router]);
 
+
+
+  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'unread' | 'all'>('unread');
 
   const [notifications, setNotifications] = useState<NotificationLogItem[]>([]);
@@ -29,12 +22,13 @@ export default function NotificationCenterPage() {
 
   const fetchNotifications = async (tab: 'unread' | 'all') => {
     try {
+      setError('');
       setLoading(true);
       const res = await api.getNotifications(tab === 'unread', 50, 0);
       setNotifications(res.items || []);
       setUnreadCount(res.unread_count || 0);
     } catch (err) {
-      console.error('Failed to load notifications:', err);
+      setError(err instanceof Error ? err.message : 'Could not load notifications.');
     } finally {
       setLoading(false);
     }
@@ -58,7 +52,7 @@ export default function NotificationCenterPage() {
         setNotifications((prev) => prev.filter((n) => n.id !== id));
       }
     } catch (err) {
-      console.error('Failed to mark read:', err);
+      setError(err instanceof Error ? err.message : 'Could not mark notification as read.');
     } finally {
       setActionLoading(null);
     }
@@ -66,6 +60,7 @@ export default function NotificationCenterPage() {
 
   const handleMarkAllRead = async () => {
     try {
+      setError('');
       setLoading(true);
       await api.markAllNotificationsRead();
       setNotifications((prev) =>
@@ -76,7 +71,7 @@ export default function NotificationCenterPage() {
         setNotifications([]);
       }
     } catch (err) {
-      console.error('Failed to mark all as read:', err);
+      setError(err instanceof Error ? err.message : 'Could not mark notifications as read.');
     } finally {
       setLoading(false);
     }
@@ -133,14 +128,14 @@ export default function NotificationCenterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6">
+      <div className="space-y-6">
         {/* Header Breadcrumbs & Title */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border-color)] pb-6">
           <div>
             <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-1">
               <Link
-                href={isUniversityRole(user?.institution_role) ? "/university/dashboard" : "/student/dashboard"}
+                href="/dashboard"
                 className="hover:text-indigo-400 transition"
               >
                 Home
@@ -185,6 +180,7 @@ export default function NotificationCenterPage() {
           </div>
         </div>
 
+        {error && <div role="alert" className="notice error">{error}<button onClick={() => fetchNotifications(activeTab)}>Retry</button></div>}
         {/* Tab Selection */}
         <div className="flex items-center gap-2 border-b border-[var(--border-color)]">
           <button

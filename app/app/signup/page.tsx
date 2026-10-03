@@ -8,7 +8,7 @@ import { useAuthContext } from '@/context/AuthContext';
 import { ApiError } from '@/lib/api';
 import { OAuthButtons, OAuthDivider } from '@/components/auth/OAuthButtons';
 import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
-import { getPortalRedirect } from '@/components/RoleGuard';
+import { safeReturnUrl } from '@/lib/session-policy.mjs';
 import CustomSelect from '@/components/ui/CustomSelect';
 import { TIMEZONE_OPTIONS } from '@/lib/timezones';
 
@@ -34,7 +34,7 @@ const COMMON_TIMEZONES = [
 
 export default function SignupPage() {
   const router = useRouter();
-  const { status, user, register: authRegister } = useAuthContext();
+  const { status, user, error: sessionError, refreshUser, logout, register: authRegister } = useAuthContext();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,7 +63,7 @@ export default function SignupPage() {
   // If already authenticated, redirect to the correct portal
   useEffect(() => {
     if (status === 'authenticated' && user) {
-      router.replace(getPortalRedirect(user.institution_role));
+      router.replace(safeReturnUrl(new URLSearchParams(window.location.search).get('returnTo')));
     }
   }, [status, user, router]);
 
@@ -137,7 +137,7 @@ export default function SignupPage() {
 
     try {
       await authRegister(email.trim(), password, timezone, weeklyLimit, captchaToken);
-      router.replace('/student/dashboard');
+      router.replace(safeReturnUrl(new URLSearchParams(window.location.search).get('returnTo')));
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.status === 409 || err.code === 'email_exists') {
@@ -154,6 +154,8 @@ export default function SignupPage() {
       setLoading(false);
     }
   };
+
+  if (status === 'error') return <main className="min-h-screen flex flex-col items-center justify-center gap-4 p-6"><h1>Verify your account</h1><p role="alert">{sessionError}</p><button onClick={() => void refreshUser()}>Retry verification</button><button onClick={logout}>Return to sign in</button></main>;
 
   if (status === 'checking') {
     return (

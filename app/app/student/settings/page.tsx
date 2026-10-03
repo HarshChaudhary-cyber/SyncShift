@@ -1,18 +1,2 @@
-'use client';
-
-import React, { Suspense } from 'react';
-import { SettingsContent } from '@/app/settings/page';
-
-export default function StudentSettingsPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center py-20 text-[var(--text-muted)] text-sm">
-          Loading Settings...
-        </div>
-      }
-    >
-      <SettingsContent showNavbar={false} />
-    </Suspense>
-  );
-}
+import LegacyRedirect from '@/components/unified/LegacyRedirect';
+export default function Page() { return <LegacyRedirect to='/settings'/>; }

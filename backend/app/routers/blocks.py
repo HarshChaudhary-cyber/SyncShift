@@ -294,6 +294,7 @@ def delete_block(
     - scope="future" & occurrence_date: ends the recurrence before occurrence_date
     - scope="all": soft-deletes the entire series
     """
+    _require_personal_block(block_id, current_user.user_id, db)
     deleted = delete_recurring_scope(
         user_id=current_user.user_id,
         block_id=block_id,
@@ -378,6 +379,7 @@ def duplicate_block(
     Duplicate a block with an optional offset in days.
     Enforces user_id ownership check.
     """
+    _require_personal_block(block_id, current_user.user_id, db)
     source = get_block_by_id(block_id, user_id=current_user.user_id, db=db)
     if not source or source.get("deleted"):
         raise HTTPException(

@@ -284,101 +284,26 @@ def get_occurrences_for_range(
                 if not already_exists:
                     occurrences.append(_apply_override_to_block_out(b, ov.override_date, ov))
 
-        # Incorporate university course meetings from active section enrollments (Task N4)
-        if user_id is not None:
-            try:
-                from app.models.academic_course import AcademicCourse
-                from app.models.academic_section import AcademicSection
-                from app.models.academic_term import AcademicTerm
-                from app.models.course_meeting import CourseMeeting
-                from app.models.room import Room
-                from app.models.section_enrollment import SectionEnrollment
-                from app.models.timetable import Timetable
-
-                active_enrollments = (
-                    session.query(SectionEnrollment, AcademicSection, AcademicCourse, AcademicTerm)
-                    .join(AcademicSection, SectionEnrollment.section_id == AcademicSection.id)
-                    .join(AcademicCourse, AcademicSection.course_id == AcademicCourse.id)
-                    .join(AcademicTerm, AcademicSection.academic_term_id == AcademicTerm.id)
-                    .filter(
-                        SectionEnrollment.student_id == user_id,
-                        SectionEnrollment.status.in_(["active", "enrolled"]),
-                    )
-                    .all()
-                )
-
-                if active_enrollments:
-                    sec_map = {sec.id: (sec, crs, trm) for enr, sec, crs, trm in active_enrollments}
-                    sec_ids = list(sec_map.keys())
-
-                    from sqlalchemy import or_
-
-                    active_meetings = (
-                        session.query(CourseMeeting, Timetable, Room)
-                        .join(Timetable, CourseMeeting.timetable_id == Timetable.id)
-                        .outerjoin(Room, CourseMeeting.room_id == Room.id)
-                        .filter(
-                            CourseMeeting.section_id.in_(sec_ids),
-                            CourseMeeting.status.in_(["active", "scheduled"]),
-                            CourseMeeting.deleted_at.is_(None),
-                            Timetable.deleted_at.is_(None),
-                            or_(
-                                (Timetable.published_version_id.isnot(None)) & (CourseMeeting.version_id == Timetable.published_version_id),
-                                (Timetable.published_version_id.is_(None)) & (Timetable.status.in_(["active", "draft"])) & (CourseMeeting.version_id.is_(None)),
-                            ),
-                        )
-                        .all()
-                    )
-
-
-                    for m, tt, rm in active_meetings:
-                        sec_info = sec_map.get(m.section_id)
-                        if not sec_info:
-                            continue
-                        sec, crs, trm = sec_info
-
-                        for day_offset in range(days_count):
-                            curr_d = start_date + timedelta(days=day_offset)
-                            syncshift_dow = (curr_d.weekday() + 1) % 7
-
-                            if m.day_of_week != syncshift_dow:
-                                continue
-
-                            if trm.start_date and curr_d < trm.start_date:
-                                continue
-                            if trm.end_date and curr_d > trm.end_date:
-                                continue
-
-                            st_str = _format_time_str(m.start_time)
-                            et_str = _format_time_str(m.end_time)
-                            s_min = time_to_minutes(st_str)
-                            e_min = time_to_minutes(et_str)
-                            dur = (e_min + 24 * 60 - s_min) if e_min < s_min else (e_min - s_min)
-                            loc_str = f"{rm.building} {rm.room_number}" if rm else ""
-
-                            uni_block = BlockOut(
-                                id=-int(m.id),
-                                user_id=user_id,
-                                type="class",
-                                title=f"{crs.code} - {crs.name} ({sec.section_code})",
-                                location=loc_str,
-                                day_of_week=m.day_of_week,
-                                start_time=st_str,
-                                end_time=et_str,
-                                duration_minutes=dur,
-                                effective_from=trm.start_date,
-                                effective_until=trm.end_date,
-                                is_recurring=True,
-                                occurrence_date=curr_d,
-                                is_flexible=False,
-                                course_id=None,
-                                color="#2563eb",
-                                deleted=False,
-                            )
-                            occurrences.append(uni_block)
-            except Exception:
-                pass
-
+        from app.services.class_workspaces import shared_occurrences, role_for
+        from app.models.class_workspace import ClassWorkspace
+        from app.models.course_meeting import CourseMeeting
+        shared = shared_occurrences(session, user_id, start_date, end_date)
+        by_key = {(b.id, b.occurrence_date): b for b in occurrences}
+        # Legacy enrollments still supply their existing canonical meeting IDs.
+        # Explicit membership revocation must also remove that compatibility view.
+        for workspace in session.query(ClassWorkspace).filter(ClassWorkspace.section_id.isnot(None)):
+            if not role_for(session, workspace, user_id):
+                revoked_ids = {-r[0] for r in session.query(CourseMeeting.id).filter_by(section_id=workspace.section_id)}
+                by_key = {key: value for key, value in by_key.items() if key[0] not in revoked_ids}
+        for block in shared:
+            key = (block.id, block.occurrence_date)
+            if key in by_key:
+                by_key[key].source = "shared_class"
+                by_key[key].class_id = block.class_id
+                by_key[key].class_name = block.class_name
+            else:
+                by_key[key] = block
+        occurrences = list(by_key.values())
         occurrences.sort(key=lambda x: (x.occurrence_date or date.min, time_to_minutes(x.start_time)))
         return occurrences
 

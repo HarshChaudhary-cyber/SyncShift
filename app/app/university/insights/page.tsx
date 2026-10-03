@@ -855,7 +855,6 @@ export default function UniversityInsightsPage() {
         const roomCollisions = timetableHealth?.conflicts?.room_collisions ?? timetableHealth?.conflicts?.room_double_bookings ?? 0;
         const facultyCollisions = timetableHealth?.conflicts?.faculty_collisions ?? timetableHealth?.conflicts?.faculty_double_bookings ?? 0;
         const classCollisions = timetableHealth?.conflicts?.student_class_collisions ?? timetableHealth?.conflicts?.student_class_conflicts ?? 0;
-        const workCollisions = timetableHealth?.conflicts?.student_work_collisions ?? timetableHealth?.conflicts?.student_work_shift_clashes ?? 0;
 
         return (
           <div className="space-y-6">
@@ -918,11 +917,11 @@ export default function UniversityInsightsPage() {
                 </div>
 
                 <div className="p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)]">
-                  <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase">Work Shift Clashes</span>
+                  <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase">Private schedules</span>
                   <p className="text-2xl font-black text-blue-400 mt-1">
-                    {workCollisions}
+                    Excluded
                   </p>
-                  <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Aggregated student personal shift overlaps</p>
+                  <p className="text-[11px] text-[var(--text-muted)] mt-0.5">Members review personal conflicts in their own calendars.</p>
                 </div>
               </div>
             </div>

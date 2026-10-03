@@ -1,3 +1,4 @@
+from academic_test_support import bootstrap_institution
 import time
 from datetime import date, timedelta
 from fastapi.testclient import TestClient
@@ -29,8 +30,7 @@ def create_test_institution(admin_token: str, name_prefix: str = "Test Universit
     """Helper to create an institution where the user becomes admin."""
     headers = {"Authorization": f"Bearer {admin_token}"}
     code = f"INST_{int(time.time() * 1000)}"[:16]
-    resp = client.post(
-        "/api/v1/institutions",
+    resp = bootstrap_institution(
         headers=headers,
         json={
             "name": f"{name_prefix} {code}",

@@ -33,7 +33,9 @@ class ScheduleContextBuilder:
         with get_session(db) as session:
             # 1. Determine week range (Monday to Sunday)
             if week_start is None:
-                today_d = date.today()
+                from zoneinfo import ZoneInfo
+                user = session.get(User,user_id)
+                today_d = datetime.now(ZoneInfo(user.timezone or "Europe/London")).date()
                 w_start = today_d - timedelta(days=today_d.weekday())
             else:
                 w_start = week_start - timedelta(days=week_start.weekday())

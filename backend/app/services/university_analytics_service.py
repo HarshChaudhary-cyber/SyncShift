@@ -29,7 +29,6 @@ from app.models.notification import NotificationLog
 from app.models.room import Room
 from app.models.section_enrollment import SectionEnrollment
 from app.models.student_profile import StudentProfile
-from app.models.time_block import TimeBlock
 from app.models.timetable import Timetable
 from app.models.timetable_version import TimetableVersion
 from app.models.user import User
@@ -574,22 +573,7 @@ def get_timetable_health_analytics(
         for sid, sec_id in enrollments:
             student_sections.setdefault(sid, []).append(sec_id)
 
-        # Preload student work shifts for enrolled students
-        enrolled_student_ids = list(student_sections.keys())
-        student_work_shifts: Dict[int, List[TimeBlock]] = {}
-        if enrolled_student_ids:
-            work_blocks = (
-                db.query(TimeBlock)
-                .filter(
-                    TimeBlock.user_id.in_(enrolled_student_ids),
-                    TimeBlock.type == "shift",
-                    TimeBlock.deleted == False,
-                )
-                .all()
-            )
-            for wb in work_blocks:
-                student_work_shifts.setdefault(wb.user_id, []).append(wb)
-
+        # Private work schedules are excluded from institutional reporting.
         # Check collisions per student
         for sid, sec_list in student_sections.items():
             st_meetings: List[CourseMeeting] = []
@@ -613,24 +597,6 @@ def get_timetable_health_analytics(
                                 has_student_conflict = True
                                 break
                     if has_student_conflict:
-                        break
-
-            # Work shift clash check
-            shifts = student_work_shifts.get(sid, [])
-            if shifts and st_meetings:
-                clash_found = False
-                for m in st_meetings:
-                    for sh in shifts:
-                        if sh.day_of_week == m.day_of_week:
-                            s1 = _time_to_minutes(m.start_time)
-                            e1 = _time_to_minutes(m.end_time)
-                            s2 = _time_to_minutes(sh.start_time)
-                            e2 = _time_to_minutes(sh.end_time)
-                            if _intervals_overlap(s1, e1, s2, e2):
-                                student_work_shift_clashes += 1
-                                clash_found = True
-                                break
-                    if clash_found:
                         break
 
     total_conflicts = (

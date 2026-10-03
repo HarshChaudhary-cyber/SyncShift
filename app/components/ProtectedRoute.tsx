@@ -9,12 +9,12 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { status } = useAuthContext();
+  const { status, error, refreshUser, logout } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.replace('/login');
+      router.replace('/login?returnTo=' + encodeURIComponent(window.location.pathname + window.location.search));
     }
   }, [status, router]);
 
@@ -42,6 +42,9 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
+  if (status === 'error') {
+    return <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--bg-primary)] text-[var(--text-primary)]"><div role="alert" className="max-w-md space-y-5"><h1 className="text-xl font-semibold">Session verification unavailable</h1><p>{error}</p><div className="flex gap-5"><button className="underline" onClick={refreshUser}>Retry verification</button><button className="underline" onClick={logout}>Return to sign in</button></div></div></div>;
+  }
   if (status === 'unauthenticated') {
     return null;
   }

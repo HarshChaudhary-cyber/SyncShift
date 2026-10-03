@@ -125,10 +125,11 @@ export default function TimetableImpactModal({
             <div className="py-16 text-center space-y-3">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
               <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">Analyzing timetable impact...</p>
-              <p className="text-xs text-slate-500">Evaluating enrolled student commitments and room availability</p>
+              <p className="text-xs text-slate-500">Evaluating academic schedules and room availability</p>
             </div>
           ) : (
             <>
+              <p className="text-sm text-[var(--text-secondary)]">Private shifts, study tasks and availability are excluded from this report. Members review their own conflicts in Calendar.</p>
               {/* Stale Concurrency Warning */}
               {staleError && (
                 <div className="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-600/50 rounded-xl text-amber-900 dark:text-amber-200 text-sm space-y-2">
@@ -230,7 +231,7 @@ export default function TimetableImpactModal({
                     {summary?.new_conflicts ?? 0}
                   </p>
                   <p className="text-[10px] text-slate-500 mt-0.5">
-                    {summary?.work_conflicts ?? 0} work • {summary?.availability_conflicts ?? 0} blackout
+                    Academic clashes only; private schedules excluded
                   </p>
                 </div>
 
@@ -296,9 +297,7 @@ export default function TimetableImpactModal({
                       options={[
                         { value: 'all', label: `All Students (${students.length})` },
                         { value: 'conflicts_only', label: `New Conflicts Only (${summary?.new_conflicts ?? 0})` },
-                        { value: 'work', label: `Work Conflicts (${summary?.work_conflicts ?? 0})` },
                         { value: 'class', label: `Class Clashes (${summary?.class_conflicts ?? 0})` },
-                        { value: 'availability', label: `Blackouts (${summary?.availability_conflicts ?? 0})` },
                         { value: 'resolved', label: `Resolved (${summary?.resolved_conflicts ?? 0})` },
                       ]}
                       value={conflictFilter}

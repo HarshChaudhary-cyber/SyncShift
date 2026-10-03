@@ -1,13 +1,2 @@
-'use client';
-
-import React from 'react';
-import { CalendarProvider } from '@/context/CalendarContext';
-import { PlannerContent } from '@/app/planner/page';
-
-export default function StudentPlannerPage() {
-  return (
-    <CalendarProvider>
-      <PlannerContent showNavbar={false} />
-    </CalendarProvider>
-  );
-}
+import LegacyRedirect from '@/components/unified/LegacyRedirect';
+export default function Page() { return <LegacyRedirect to='/planner'/>; }

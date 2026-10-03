@@ -12,10 +12,12 @@ import PlanPreviewModal from '@/components/planner/PlanPreviewModal';
 import WeeklyPlanHero from '@/components/planner/WeeklyPlanHero';
 import PlanOptionsModal from '@/components/planner/PlanOptionsModal';
 import { showSuccessToast, showErrorToast } from '@/lib/toast';
+import { isProfessor } from '@/lib/academic';
 
 export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) {
   const router = useRouter();
-  const { status } = useAuthContext();
+  const { status, user } = useAuthContext();
+  const professor = isProfessor(user?.institution_role);
   const { refreshWeek } = useCalendar();
 
   const [tasks, setTasks] = useState<StudyTask[]>([]);
@@ -109,7 +111,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
         })),
       });
 
-      showSuccessToast(`Plan "${option.name}" applied! +${res.created_blocks_count} study blocks added. Zero conflicts.`);
+      showSuccessToast(`Plan "${option.name}" applied! +${res.created_blocks_count} private sessions added.`);
       setHasAppliedSmartPlan(true);
       setIsSmartPlanModalOpen(false);
       refreshWeek();
@@ -237,7 +239,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
   const completedTasks = tasks.filter((t) => t.status === 'done');
 
   const content = (
-    <div className="max-w-5xl w-full mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* N5 Weekly Smart Planning Hero */}
       <WeeklyPlanHero
         onPlanClick={handleTriggerSmartPlanning}
@@ -251,16 +253,16 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 sm:p-6 shadow-xl backdrop-blur-md">
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="text-2xl">🎯</span>
+
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-                Study Goals & Deadlines
+                {professor ? 'Teaching preparation & tasks' : 'Tasks & deadlines'}
               </h2>
             </div>
             <p className="text-xs text-indigo-400 font-medium mt-1">
-              Plan classes, work, and life in one schedule.
+              {professor ? 'Plan lecture preparation, grading, office hours, and personal work around official teaching commitments.' : 'Plan classes, work, and life in one schedule.'}
             </p>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-              Add upcoming deadlines. SyncShift automatically discovers conflict-free gaps between your university classes and work shifts.
+              {professor ? 'Add upcoming deadlines and priorities. SyncShift automatically discovers conflict-free gaps around your official lectures without changing student timetables.' : 'Add upcoming deadlines. SyncShift automatically discovers conflict-free gaps between your university classes and work shifts.'}
             </p>
           </div>
 
@@ -269,7 +271,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
             className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-md shadow-purple-950/50 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
           >
             <span>+</span>
-            <span>Add Study Task</span>
+            <span>Add task</span>
           </button>
         </div>
 
@@ -317,16 +319,16 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
 
             {activeTasks.length === 0 ? (
               <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-10 text-center space-y-3">
-                <div className="text-4xl">📚</div>
-                <h3 className="text-base font-bold text-[var(--text-primary)]">No study goals yet.</h3>
+                <div className="text-4xl">{professor ? '📝' : '📚'}</div>
+                <h3 className="text-base font-bold text-[var(--text-primary)]">{professor ? 'No preparation tasks yet.' : 'No tasks yet.'}</h3>
                 <p className="text-xs text-[var(--text-secondary)] max-w-sm mx-auto">
-                  Create a goal and SyncShift can suggest study sessions.
+                  {professor ? 'Add lecture prep, grading, office hours, or personal work to preview suitable time slots.' : 'Add preparation, grading, study or personal work and preview suitable time slots.'}
                 </p>
                 <button
                   onClick={() => setIsAddModalOpen(true)}
                   className="mt-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold transition cursor-pointer"
                 >
-                  Create study goal
+                  {professor ? 'Create preparation task' : 'Create task'}
                 </button>
               </div>
             ) : (
@@ -550,10 +552,11 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
       {/* Add Task Modal */}
       <AddTaskModal
         isOpen={isAddModalOpen}
+        isProfessor={professor}
         onClose={() => setIsAddModalOpen(false)}
         onTaskCreated={(newTask) => {
           setTasks((prev) => [newTask, ...prev]);
-          showSuccessToast(`Created study task "${newTask.title}"`);
+          showSuccessToast(`Created task "${newTask.title}"`);
           // Automatically trigger plan preview for immediate convenience
           handleGeneratePlan(newTask, false);
         }}
@@ -572,7 +575,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
         onPlanConfirmed={(updatedTask) => {
           setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
           refreshWeek();
-          showSuccessToast('✓ Study session added to calendar');
+          showSuccessToast('✓ Private session added to calendar');
         }}
       />
 
@@ -601,17 +604,4 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
   );
 }
 
-export default function PlannerPage() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace('/student/planner');
-  }, [router]);
-
-  return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    </ProtectedRoute>
-  );
-}
+export default function PlannerPage() { return <CalendarProvider><PlannerContent showNavbar={false}/></CalendarProvider>; }

@@ -1,0 +1,60 @@
+'use client';
+import { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { format } from 'date-fns';
+import Link from 'next/link';
+import { PlusIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { api, ClassDetail as ClassData, ClassEventInput, SharedClassEvent } from '@/lib/api';
+import { useAuthContext } from '@/context/AuthContext';
+import Modal from './Modal';
+import SubjectDetails from './SubjectDetails';
+
+const emptyEvent: ClassEventInput = {title:'',location:'',event_date:format(new Date(), 'yyyy-MM-dd'),start_time:'09:00',end_time:'10:00'};
+const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+export default function ClassDetail() {
+  const {id} = useParams<{id:string}>();
+  return <ClassWorkspace key={id} classId={Number(id)}/>;
+}
+
+function ClassWorkspace({classId}: {classId:number}) {
+  const {user, refreshUser} = useAuthContext();
+  const [data,setData] = useState<ClassData | null>(null); const [loading,setLoading]=useState(true);
+  const [error,setError]=useState(''); const [busy,setBusy]=useState(false); const [notice,setNotice]=useState('');
+  const [tab,setTab]=useState('Overview'); const [modal,setModal]=useState<'event'|'announce'|'invite'|null>(null);
+  const [event,setEvent]=useState<ClassEventInput>(emptyEvent); const [eventId,setEventId]=useState<number>();
+  const [title,setTitle]=useState(''); const [body,setBody]=useState(''); const [email,setEmail]=useState(''); const [role,setRole]=useState('learner');
+  const [inviteLink,setInviteLink]=useState('');
+  const load=useCallback(async()=>{setLoading(true);try{setData(await api.getClass(classId));setError('');}catch(e){setError(e instanceof Error?e.message:'Could not load class');setData(null);}finally{setLoading(false);}},[classId]);
+  useEffect(()=>{void load();const refresh=()=>void load();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[load]);
+  async function action(fn:()=>Promise<unknown>, message:string) {
+    setBusy(true);setError('');
+    try{await fn();setNotice(message);setModal(null);await load();window.dispatchEvent(new Event('syncshift:schedule-updated'));}
+    catch(e){setError(e instanceof Error?e.message:'Could not save change');}finally{setBusy(false);}
+  }
+  function editEvent(item?: SharedClassEvent){setEvent(item ? {...(item.pending || item)} : emptyEvent);setEventId(item?.id);setError('');setModal('event');}
+  async function submit(e:React.FormEvent){e.preventDefault();
+    if(modal==='invite') {setBusy(true);setError('');try{const result=await api.inviteClassMember(classId,email,role);setInviteLink(`${window.location.origin}/classes?invite=${encodeURIComponent(result.token)}`);}catch(e){setError(e instanceof Error?e.message:'Invitation failed');}finally{setBusy(false);}return;}
+    if(modal==='event') {const {title,location,event_date,start_time,end_time}=event;await action(()=>api.saveClassEvent(classId,{title,location,event_date,start_time,end_time},eventId),'Draft saved. Publish when it is ready for learners.');}
+    if(modal==='announce') await action(()=>api.postClassAnnouncement(classId,title,body),'Announcement posted.');
+  }
+  if(loading && !data) return <p role="status" className="ws-muted">Loading class workspace…</p>;
+  if(!data) return <div className="ws-panel ws-empty" role="alert"><h1>Class unavailable</h1><p>{error}</p><button className="ws-button" onClick={load}>Retry</button> <Link className="ws-link" href="/classes">Back to classes</Link></div>;
+  const instructor=data.role==='instructor';
+  return <><Link href="/classes" className="ws-link">← All classes</Link><header className="ws-header" style={{marginTop:18}}><div><div className="ws-kicker">CLASS WORKSPACE · {instructor?'TEACHING':'LEARNING'}</div><h1>{data.name}</h1><p>{data.description || 'A shared space for your learning community.'}</p></div><span className="ws-badge accent">{instructor?'Instructor':'Learner'}</span></header>
+    <div className="ws-tabs" role="tablist" aria-label="Class pages">{['Overview','Timetable','Announcements','Members'].map(name=><button key={name} role="tab" aria-selected={tab===name} onClick={()=>setTab(name)}>{name}</button>)}</div>
+    {notice&&<div role="status" className="notice">{notice}<button onClick={()=>setNotice('')}>Dismiss</button></div>}{error&&<div role="alert" className="notice error">{error}</div>}
+    {tab==='Overview'&&<SubjectDetails classId={classId} instructor={instructor}/>} 
+    {tab==='Overview'&&<div className="ws-grid"><section className="ws-panel"><div className="ws-panel-header"><h2>Coming up in class</h2><button className="ws-link" onClick={()=>setTab('Timetable')}>View timetable →</button></div>{data.events.filter(e=>e.status==='published' && e.event_date >= new Date().toLocaleDateString('en-CA')).slice(0,4).map(e=><div className="ws-list-row" key={e.id}><strong>{e.title}</strong><p>{e.event_date} · {e.start_time}–{e.end_time} · {e.location||'Location to follow'}</p></div>)}{!data.events.some(e=>e.status==='published')&&<p className="ws-muted">{data.legacy_events.length ? 'Your recurring classes are available in Timetable and Calendar.' : 'No published events yet. Published updates will appear in your calendar automatically.'}</p>}</section><aside className="ws-stack"><section className="ws-panel"><h2>Your class, your role</h2><p className="ws-muted" style={{marginTop:12}}>{instructor?'Create drafts, publish timetable changes, share announcements and invite members.':'View published events and announcements. Ask an instructor to make timetable changes.'}</p><p className="ws-muted" style={{marginTop:12}}>Your work shifts, study tasks and personal events stay private.</p></section>{instructor&&<section className="ws-panel"><h2>Invite learners</h2><p className="ws-muted">Share this code to grant learner access.</p><div className="ws-code" style={{marginTop:12}}>{data.join_code}</div></section>}</aside></div>}
+    {tab==='Timetable'&&<section className="ws-panel"><div className="ws-panel-header"><div><h2>Class timetable</h2><p className="ws-muted">Published events appear once in every member’s calendar.</p></div>{instructor&&<button className="ws-button primary" onClick={()=>editEvent()}><PlusIcon/>Add event</button>}</div>
+      {!data.events.length&&!data.legacy_events.length&&<div className="ws-empty"><CalendarDaysIcon/><h2>No events yet</h2><p>{instructor?'Add an event, then publish it to your class.':'Your instructor has not published any events yet.'}</p></div>}
+      <div className="ws-scroll"><table className="ws-table"><caption className="sr-only">Shared class events</caption><thead><tr><th>Event</th><th>When</th><th>Location</th><th>Status</th>{instructor&&<th>Actions</th>}</tr></thead><tbody>{data.events.map(item=><tr key={item.id}><td>{item.title}</td><td>{item.event_date}<br/>{item.start_time}–{item.end_time}</td><td>{item.location||'—'}</td><td><span className="ws-badge">{item.pending?'Unpublished changes':item.status}</span></td>{instructor&&<td><div className="ws-actions"><button disabled={busy} className="ws-link" onClick={()=>editEvent(item)}>Edit</button>{(item.status==='draft'||item.pending)&&<button disabled={busy} className="ws-button primary" onClick={()=>action(()=>api.publishClassEvent(classId,item.id),'Published. Members will see the update in their calendars.')}>Publish</button>}<button disabled={busy} className="ws-link" onClick={()=>{if(window.confirm('Cancel this class event for all members?'))void action(()=>api.cancelClassEvent(classId,item.id),'Event cancelled.');}}>Cancel</button></div></td>}</tr>)}{data.legacy_events.map(e=><tr key={`legacy-${e.id}`}><td>{data.name}</td><td>{days[e.day_of_week]}<br/>{e.start_time.slice(0,5)}–{e.end_time.slice(0,5)}</td><td>See calendar</td><td><span className="ws-badge">Published · recurring</span></td>{instructor&&<td>{['admin','super_admin'].includes(user?.institution_role || '') ? <Link className="ws-link" href={`/university/timetables/${e.timetable_id}`}>Manage academic timetable</Link> : <span className="ws-muted">Use the lecture register in Overview to cancel or reschedule an occurrence. Recurring pattern changes use university approval.</span>}</td>}</tr>)}</tbody></table></div></section>}
+    {tab==='Announcements'&&<section className="ws-panel"><div className="ws-panel-header"><h2>Announcements</h2>{instructor&&<button className="ws-button primary" onClick={()=>{setTitle('');setBody('');setModal('announce');}}>Post announcement</button>}</div>{data.announcements.map(a=><article className="ws-list-row" key={a.id}><div className="ws-kicker">{new Date(a.created_at+'Z').toLocaleDateString()}</div><h2>{a.title}</h2><p style={{whiteSpace:'pre-wrap',fontSize:14}}>{a.body}</p></article>)}{!data.announcements.length&&<div className="ws-empty">No announcements yet.</div>}</section>}
+    {tab==='Members'&&<section className="ws-panel"><div className="ws-panel-header"><div><h2>Class members</h2><p className="ws-muted">Only class roles and display names are shared here.</p></div>{instructor&&<button className="ws-button primary" onClick={()=>{setEmail('');setInviteLink('');setRole('learner');setModal('invite');}}>Invite member</button>}</div>{data.members.map(m=><div key={m.user_id} className="ws-list-row" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}><span>{m.name}{m.user_id===user?.user_id?' (you)':''}</span><div className="ws-actions"><span className="ws-badge">{m.role}</span>{instructor&&m.user_id!==user?.user_id&&<button disabled={busy} className="ws-link" onClick={()=>{if(window.confirm(`Remove ${m.name} from this class?`))void action(async()=>{await api.removeClassMember(classId,m.user_id);await refreshUser();},'Membership removed.');}}>Remove</button>}</div></div>)}</section>}
+    {modal&&<Modal title={modal==='event'?'Class event draft':modal==='invite'?'Invite a member':'Post an announcement'} onClose={()=>setModal(null)}><form className="ws-form" onSubmit={submit}>
+      {modal==='event'&&<><label>Event title<input required autoFocus maxLength={255} value={event.title} onChange={e=>setEvent({...event,title:e.target.value})}/></label><label>Date<input type="date" required value={event.event_date} onChange={e=>setEvent({...event,event_date:e.target.value})}/></label><div className="ws-form-row"><label>Start time<input type="time" required value={event.start_time} onChange={e=>setEvent({...event,start_time:e.target.value})}/></label><label>End time<input type="time" required value={event.end_time} onChange={e=>setEvent({...event,end_time:e.target.value})}/></label></div><label>Location<input maxLength={255} value={event.location} onChange={e=>setEvent({...event,location:e.target.value})}/></label><p className="ws-muted">Times use the university timezone. Learners see only the published version. Save this draft, then publish when ready.</p></>}
+      {modal==='announce'&&<><label>Title<input required autoFocus maxLength={160} value={title} onChange={e=>setTitle(e.target.value)}/></label><label>Message<textarea required maxLength={8000} value={body} onChange={e=>setBody(e.target.value)}/></label></>}
+      {modal==='invite'&&<><label>Email address<input autoFocus required type="email" value={email} onChange={e=>setEmail(e.target.value)}/></label><label>Class role<select value={role} onChange={e=>setRole(e.target.value)}><option value="learner">Learner</option>{user?.institution_role==='super_admin'&&<option value="instructor">Instructor</option>}</select></label><p className="ws-muted">Only this email can accept the invitation. Share the link directly; it expires in seven days.</p>{inviteLink&&<label>Invitation link<textarea readOnly value={inviteLink} onFocus={e=>e.target.select()}/></label>}</>}
+      {error&&<p role="alert" className="notice error">{error}</p>}<button disabled={busy} className="ws-button primary">{busy?'Saving…':modal==='event'?'Save draft':modal==='invite'?'Create invitation':'Post announcement'}</button>
+    </form></Modal>}
+  </>;
+}

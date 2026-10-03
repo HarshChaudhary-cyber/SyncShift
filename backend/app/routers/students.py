@@ -135,115 +135,8 @@ def update_my_student_profile(
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Update current student's academic profile (department, student number, program, year)."""
-    membership = _get_active_student_membership(current_user.user_id, db)
-    institution = db.query(Institution).filter(Institution.id == membership.institution_id).first()
-
-    profile = (
-        db.query(StudentProfile)
-        .filter(
-            StudentProfile.user_id == current_user.user_id,
-            StudentProfile.institution_id == membership.institution_id,
-            StudentProfile.deleted_at.is_(None),
-        )
-        .first()
-    )
-    if not profile:
-        profile = StudentProfile(
-            institution_id=membership.institution_id,
-            user_id=current_user.user_id,
-            status="active",
-        )
-        db.add(profile)
-
-    if body.department_id is not None:
-        if body.department_id == 0:
-            profile.department_id = None
-        else:
-            dept = (
-                db.query(Department)
-                .filter(
-                    Department.id == body.department_id,
-                    Department.institution_id == membership.institution_id,
-                    Department.deleted_at.is_(None),
-                )
-                .first()
-            )
-            if not dept:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail={"code": "department_not_found", "message": "Department not found in your institution"},
-                )
-            profile.department_id = dept.id
-
-    if body.student_number is not None:
-        trimmed = body.student_number.strip()
-        if trimmed:
-            # Check unique within institution
-            existing = (
-                db.query(StudentProfile)
-                .filter(
-                    StudentProfile.institution_id == membership.institution_id,
-                    StudentProfile.student_number == trimmed,
-                    StudentProfile.user_id != current_user.user_id,
-                    StudentProfile.deleted_at.is_(None),
-                )
-                .first()
-            )
-            if existing:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail={"code": "student_number_exists", "message": "Student ID number already in use by another student"},
-                )
-            profile.student_number = trimmed
-        else:
-            profile.student_number = None
-
-    if body.program is not None:
-        profile.program = body.program.strip() or None
-
-    if body.year_of_study is not None:
-        if body.year_of_study < 1 or body.year_of_study > 10:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail={"code": "invalid_year", "message": "Year of study must be between 1 and 10"},
-            )
-        profile.year_of_study = body.year_of_study
-
-    if body.status is not None:
-        profile.status = body.status
-
-    db.commit()
-    db.refresh(profile)
-
-    dept = None
-    if profile.department_id:
-        dept = db.query(Department).filter(Department.id == profile.department_id).first()
-
-    return DataResponse(
-        data=StudentProfileOut(
-            id=profile.id,
-            institution_id=profile.institution_id,
-            institution_name=institution.name if institution else None,
-            institution_code=institution.code if institution else None,
-            user_id=profile.user_id,
-            user_name=current_user.display_name or current_user.email,
-            user_email=current_user.email,
-            department_id=profile.department_id,
-            department_name=dept.name if dept else None,
-            department_code=dept.code if dept else None,
-            student_number=profile.student_number,
-            program=profile.program,
-            year_of_study=profile.year_of_study,
-            status=profile.status,
-            created_at=profile.created_at,
-            updated_at=profile.updated_at,
-        )
-    )
-
-
-# ── Section Enrollment Endpoints ─────────────────────────────────────────────
-
+    """Academic identity is administrator controlled."""
+    raise HTTPException(403, "Academic identifiers and assignments must be updated by a university administrator")
 @router.get("/me/enrollments", response_model=DataResponse[List[SectionEnrollmentOut]])
 def get_my_enrollments(
     status_filter: Optional[str] = Query(None, alias="status", description="Filter by status e.g. active, dropped"),
@@ -321,13 +214,22 @@ def get_my_enrollments(
 def enroll_in_section(
     body: SectionEnrollmentCreate,
     current_user: CurrentUser = Depends(get_current_user),
+):
+    raise HTTPException(403, "Official enrollment is managed by your university administrator")
+
+
+def enroll_student_record(
+    body: SectionEnrollmentCreate,
+    current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
+    institution_id: int | None = None,
 ):
     """
     Enroll student in an academic section.
     Enforces concurrency lock (FOR UPDATE), section capacity, and multi-tenant isolation.
     """
-    membership = _get_active_student_membership(current_user.user_id, db)
+    membership = (db.query(InstitutionMembership).filter_by(user_id=current_user.user_id,institution_id=institution_id,status="active",deleted_at=None).one()
+        if institution_id else _get_active_student_membership(current_user.user_id, db))
 
     # 1. Acquire row lock on section to prevent race conditions during capacity evaluation
     section = (
@@ -481,10 +383,19 @@ def enroll_in_section(
 def drop_enrollment(
     enrollment_id: int,
     current_user: CurrentUser = Depends(get_current_user),
+):
+    raise HTTPException(403, "Official enrollment is managed by your university administrator")
+
+
+def drop_student_record(
+    enrollment_id: int,
+    current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
+    institution_id: int | None = None,
 ):
     """Drop an active section enrollment."""
-    membership = _get_active_student_membership(current_user.user_id, db)
+    membership = (db.query(InstitutionMembership).filter_by(user_id=current_user.user_id,institution_id=institution_id,status="active",deleted_at=None).one()
+        if institution_id else _get_active_student_membership(current_user.user_id, db))
 
     enrollment = (
         db.query(SectionEnrollment)

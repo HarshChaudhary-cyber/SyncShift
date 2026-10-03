@@ -58,6 +58,11 @@ from app.schemas.institution import (
 router = APIRouter(prefix="/institutions", tags=["Institutions"])
 
 
+def professional_email(user, institution):
+    domain = institution.email_domain if institution else None
+    return user.email if domain and user.email.lower().endswith("@"+domain.lower()) else None
+
+
 # ---------------------------------------------------------------------------
 # Current User Institution Status & Onboarding
 # ---------------------------------------------------------------------------
@@ -144,47 +149,7 @@ def create_institution(
     Onboard a new university/institution.
     The authenticated creator is automatically enrolled as the institution ADMIN.
     """
-    # Verify code uniqueness
-    existing = (
-        db.query(Institution)
-        .filter(
-            func.lower(Institution.code) == body.code.lower(),
-            Institution.deleted_at.is_(None),
-        )
-        .first()
-    )
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={"code": "institution_code_exists", "message": f"Institution with code '{body.code}' already exists"},
-        )
-
-    institution = Institution(
-        name=body.name.strip(),
-        code=body.code.strip().upper(),
-        description=body.description,
-        country=body.country,
-        timezone=body.timezone,
-        email_domain=body.email_domain,
-        is_active=True,
-    )
-    db.add(institution)
-    db.flush()
-
-    # Assign creating user as ADMIN
-    admin_membership = InstitutionMembership(
-        user_id=current_user.user_id,
-        institution_id=institution.id,
-        role="admin",
-        status="active",
-    )
-    db.add(admin_membership)
-    db.commit()
-    db.refresh(institution)
-
-    return DataResponse(data=InstitutionOut.model_validate(institution))
-
-
+    raise HTTPException(403, "University creation requires the operator bootstrap command")
 # ---------------------------------------------------------------------------
 # Institution Details & Administration
 # ---------------------------------------------------------------------------
@@ -439,6 +404,8 @@ def add_institution_member(
     Add or invite a user to the institution with a specified role.
     Restricted to institution ADMIN.
     """
+    from app.services.academic_access import require_super
+    require_super(db, context.user_id, context.institution_id)
     target_user = None
     if body.user_id:
         target_user = db.query(User).filter(User.id == body.user_id, User.deleted_at.is_(None)).first()
@@ -1201,7 +1168,7 @@ def _get_section_instructors(section_id: int, institution_id: int, db: Session) 
                 faculty_id=a.faculty_id,
                 user_id=f.user_id,
                 faculty_name=getattr(u, "display_name", None) or getattr(u, "name", None) or u.email,
-                faculty_email=u.email,
+                faculty_email=professional_email(u,f.institution),
                 faculty_title=f.title,
                 role=a.role,
                 is_primary=a.is_primary,
@@ -1657,8 +1624,8 @@ def list_faculty(
         query = query.filter(
             func.lower(User.name).like(s)
             | func.lower(User.display_name).like(s)
-            | func.lower(User.email).like(s)
-            | func.lower(FacultyProfile.employee_code).like(s)
+            | (func.lower(User.email).like(s) if context.is_admin() else False)
+            | (func.lower(FacultyProfile.employee_code).like(s) if context.is_admin() else False)
         )
 
     records = query.order_by(User.name, User.email).all()
@@ -1670,11 +1637,11 @@ def list_faculty(
                 institution_id=f.institution_id,
                 user_id=f.user_id,
                 user_name=getattr(u, "display_name", None) or getattr(u, "name", None) or u.email,
-                user_email=u.email,
+                user_email=u.email if context.is_admin() or context.user_id == u.id else professional_email(u,context.institution),
                 department_id=f.department_id,
                 department_name=d.name if d else None,
                 department_code=d.code if d else None,
-                employee_code=f.employee_code,
+                employee_code=f.employee_code if context.is_admin() or context.user_id == f.user_id else None,
                 title=f.title,
                 status=f.status,
                 created_at=f.created_at,
@@ -1725,9 +1692,9 @@ def create_faculty_profile(
             detail={"code": "user_not_member", "message": "User is not an active member of this institution"},
         )
 
-    # Promote to professor if adding as faculty member and not already admin/professor
-    if membership.role not in ("professor", "admin", "super_admin"):
-        membership.role = "professor"
+    # Role grants require the protected super-admin operation.
+    if membership.role not in ("professor", "faculty", "admin", "super_admin"):
+        raise HTTPException(403, "Assign the professor role through super-admin user management first")
 
     # Validate unique faculty profile per user in institution
     existing = (
@@ -1784,7 +1751,7 @@ def create_faculty_profile(
         department_id=faculty.department_id,
         department_name=dept.name if dept else None,
         department_code=dept.code if dept else None,
-        employee_code=faculty.employee_code,
+        employee_code=faculty.employee_code if context.is_admin() or context.user_id == faculty.user_id else None,
         title=faculty.title,
         status=faculty.status,
         created_at=faculty.created_at,
@@ -1825,11 +1792,11 @@ def get_faculty_profile(
         institution_id=f.institution_id,
         user_id=f.user_id,
         user_name=getattr(u, "display_name", None) or getattr(u, "name", None) or u.email,
-        user_email=u.email,
+        user_email=u.email if context.is_admin() or context.user_id == u.id else professional_email(u,context.institution),
         department_id=f.department_id,
         department_name=d.name if d else None,
         department_code=d.code if d else None,
-        employee_code=f.employee_code,
+        employee_code=f.employee_code if context.is_admin() or context.user_id == f.user_id else None,
         title=f.title,
         status=f.status,
         created_at=f.created_at,
@@ -1903,7 +1870,7 @@ def update_faculty_profile(
         department_id=faculty.department_id,
         department_name=dept.name if dept else None,
         department_code=dept.code if dept else None,
-        employee_code=faculty.employee_code,
+        employee_code=faculty.employee_code if context.is_admin() or context.user_id == faculty.user_id else None,
         title=faculty.title,
         status=faculty.status,
         created_at=faculty.created_at,
@@ -2315,4 +2282,3 @@ def delete_room(
     db.commit()
 
     return DataResponse(data=DeletedData(deleted=True))
-

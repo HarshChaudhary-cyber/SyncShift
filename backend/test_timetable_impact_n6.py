@@ -1,3 +1,5 @@
+from academic_test_support import administrator_enroll, administrator_drop
+from academic_test_support import bootstrap_institution
 import time
 from datetime import date, datetime, time as dt_time, timedelta, timezone
 from fastapi.testclient import TestClient
@@ -34,8 +36,7 @@ def create_test_institution(admin_token: str, name_prefix: str = "Test Universit
     """Helper to create an institution where the user becomes admin."""
     headers = {"Authorization": f"Bearer {admin_token}"}
     code = f"INST_{int(time.time() * 1000)}"[:16]
-    resp = client.post(
-        "/api/v1/institutions",
+    resp = bootstrap_institution(
         headers=headers,
         json={
             "name": f"{name_prefix} {code}",
@@ -249,8 +250,7 @@ def test_proposed_change_preview_valid():
 
     # Enroll all 3 students in section A
     for tok in [stu1_tok, stu2_tok, stu3_tok]:
-        enr_resp = client.post(
-            f"/api/v1/students/me/enrollments",
+        enr_resp = administrator_enroll(
             headers={"Authorization": f"Bearer {tok}"},
             json={"section_id": sec_id},
         )
@@ -275,10 +275,11 @@ def test_proposed_change_preview_valid():
     assert data["is_blocked"] is False
     summary = data["summary"]
     assert summary["students_affected"] == 3  # Actual enrolled students
-    assert summary["new_conflicts"] == 2  # Stu 1 work shift + Stu 2 blackout
-    assert summary["work_conflicts"] == 1
-    assert summary["availability_conflicts"] == 1
-    assert summary["severity"] in ["HIGH", "MEDIUM"]
+    assert summary["new_conflicts"] == 0  # Private shifts and blackouts are not inspected
+    assert summary["work_conflicts"] == 0
+    assert summary["availability_conflicts"] == 0
+    assert summary["severity"] == "LOW"
+    assert summary["private_schedules_evaluated"] is False
 
     # Before / After snapshots
     assert data["before"]["day_of_week"] == 1
@@ -291,9 +292,8 @@ def test_proposed_change_preview_valid():
     student_impacts = data["student_impacts"]
     assert len(student_impacts) == 3
     conflict_types = {s["conflict_type"] for s in student_impacts}
-    assert "work_shift" in conflict_types
-    assert "unavailable" in conflict_types
-    assert "none" in conflict_types
+    assert conflict_types == {"none"}
+    assert all(s["overlap_time"] is None for s in student_impacts)
 
     # Privacy verification: no wage or private notes in description
     for s in student_impacts:
@@ -610,8 +610,7 @@ def test_student_schedule_automatic_update():
     add_member(env["admin_token"], inst_id, stu_id, "student")
     stu_headers = {"Authorization": f"Bearer {stu_tok}"}
 
-    client.post(
-        f"/api/v1/students/me/enrollments",
+    administrator_enroll(
         headers=stu_headers,
         json={"section_id": sec_id},
     )

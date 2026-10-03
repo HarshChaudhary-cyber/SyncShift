@@ -86,6 +86,11 @@ class BlockDuplicate(BaseModel):
 
 
 class BlockOut(BaseModel):
+    appointment_id: Optional[int] = None
+    can_manage_appointment: bool = False
+    source: str = "private"
+    class_id: Optional[int] = None
+    class_name: Optional[str] = None
     id: int
     user_id: Optional[int] = None
     type: str

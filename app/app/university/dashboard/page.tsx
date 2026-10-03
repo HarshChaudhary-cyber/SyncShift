@@ -1,7 +1,2 @@
-'use client';
-
-import UniversityDashboardPage from '../page';
-
-export default function UniversityDashboardRoute() {
-  return <UniversityDashboardPage />;
-}
+import LegacyRedirect from '@/components/unified/LegacyRedirect';
+export default function Page() { return <LegacyRedirect to='/dashboard'/>; }

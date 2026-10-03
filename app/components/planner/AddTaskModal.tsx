@@ -9,12 +9,14 @@ interface AddTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   onTaskCreated: (task: StudyTask) => void;
+  isProfessor?: boolean;
 }
 
 export default function AddTaskModal({
   isOpen,
   onClose,
   onTaskCreated,
+  isProfessor = false,
 }: AddTaskModalProps) {
   const [title, setTitle] = useState('');
   const [courseId, setCourseId] = useState<string>('');
@@ -61,7 +63,7 @@ export default function AddTaskModal({
     }
 
     if (!totalHours || totalHours <= 0) {
-      setError('Study hours needed must be greater than 0.');
+      setError('Required hours must be greater than 0.');
       return;
     }
 
@@ -88,7 +90,7 @@ export default function AddTaskModal({
       onTaskCreated(created);
       onClose();
     } catch (err: any) {
-      setError(err?.message || 'Failed to create study task. Please try again.');
+      setError(err?.message || 'Failed to create task. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -100,8 +102,10 @@ export default function AddTaskModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-[var(--border-color)] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xl">📖</span>
-            <h2 className="text-base font-bold text-[var(--text-primary)]">Add Study Task</h2>
+            <span className="text-xl">{isProfessor ? '📝' : '📖'}</span>
+            <h2 className="text-base font-bold text-[var(--text-primary)]">
+              {isProfessor ? 'Add preparation or private task' : 'Add private task'}
+            </h2>
           </div>
           <button
             type="button"
@@ -123,11 +127,11 @@ export default function AddTaskModal({
           {/* Title */}
           <div>
             <label className="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">
-              Task or Exam Title *
+              {isProfessor ? 'Task or Activity Title *' : 'Task or Exam Title *'}
             </label>
             <input
               type="text"
-              placeholder="e.g. DBMS Project, MATH Midterm Revision"
+              placeholder={isProfessor ? 'e.g. Midterm Grading, Lecture 5 Prep, Office Hours' : 'e.g. DBMS Project, MATH Midterm Revision'}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-xl text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-hidden focus:border-indigo-500 transition"
@@ -138,11 +142,11 @@ export default function AddTaskModal({
           {/* Course (Optional) */}
           <div>
             <label className="block text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">
-              Course (Optional)
+              {isProfessor ? 'Assigned Subject (Optional)' : 'Subject / Course (Optional)'}
             </label>
             <CustomSelect
               options={[
-                { value: '', label: 'No Course (General Study)' },
+                { value: '', label: isProfessor ? 'No subject (Personal activity)' : 'No subject (Personal work)' },
                 ...courses.map((c) => ({
                   value: c.id,
                   label: `${c.code} — ${c.name}`,

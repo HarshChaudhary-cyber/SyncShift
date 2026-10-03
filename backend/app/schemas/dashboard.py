@@ -15,6 +15,7 @@ class DashboardUser(BaseModel):
 
 
 class DashboardBlock(BaseModel):
+    source: str = "private"
     id: int
     type: str
     title: str

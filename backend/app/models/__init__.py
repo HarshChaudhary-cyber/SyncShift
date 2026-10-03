@@ -1,4 +1,5 @@
 from app.models.user import User
+from app.models.class_workspace import ClassWorkspace, ClassMember, ClassEvent, ClassAnnouncement, ClassInvitation
 from app.models.course import Course
 from app.models.time_block import TimeBlock, BlockType, BlockStatus
 from app.models.block_override import BlockOverride
@@ -62,5 +63,4 @@ __all__ = [
     "AssistantConversation",
     "AssistantMessage",
 ]
-
-
+from .academic_experience import ProfessionalProfile, AcademicInvitation, LectureRecord, AcademicHistory, SharedAppointment, AppointmentAudience

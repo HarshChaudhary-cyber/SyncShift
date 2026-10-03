@@ -93,7 +93,7 @@ export default function PlanOptionsModal({
                   </div>
 
                   <div className="pt-4 mt-3 border-t border-[var(--border-color)]/60 flex items-center justify-between text-xs text-[var(--text-secondary)]">
-                    <span>{opt.summary.added_study_blocks_count} study blocks</span>
+                    <span>{opt.summary.added_study_blocks_count} private sessions</span>
                     <span className="text-purple-600 dark:text-purple-400 font-semibold">{opt.summary.total_study_hours}h total</span>
                   </div>
                 </div>
@@ -111,7 +111,7 @@ export default function PlanOptionsModal({
                     +{selectedOption.summary.added_study_blocks_count}
                   </div>
                   <div className="text-[11px] text-purple-800/80 dark:text-purple-400/80 uppercase tracking-wide font-medium">
-                    Study Blocks Added
+                    Private Sessions Added
                   </div>
                 </div>
 
@@ -172,7 +172,7 @@ export default function PlanOptionsModal({
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    Proposed Study Schedule ({selectedOption.added_blocks.length} sessions)
+                    Proposed Private Schedule ({selectedOption.added_blocks.length} sessions)
                   </h4>
                   <button
                     onClick={() => setShowDetails(!showDetails)}

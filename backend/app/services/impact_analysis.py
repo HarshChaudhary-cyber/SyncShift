@@ -15,9 +15,6 @@ from app.models.faculty import FacultyProfile
 from app.models.room import Room
 from app.models.section_enrollment import SectionEnrollment
 from app.models.section_faculty_assignment import SectionFacultyAssignment
-from app.models.student_availability import StudentAvailability
-from app.models.student_constraint import StudentConstraint
-from app.models.time_block import TimeBlock
 from app.models.timetable import Timetable
 from app.models.user import User
 from app.schemas.timetable import (
@@ -274,20 +271,9 @@ def analyze_timetable_change(
     users = db.query(User).filter(User.id.in_(student_ids)).all()
     user_map = {u.id: u for u in users}
 
-    # Batch Query B: Student TimeBlocks on relevant days
+    # Private shifts, availability and constraints are evaluated only for their owner.
+    # Institutional reports use academic records and never query those private tables.
     relevant_days = list({before_day, after_day})
-    blocks = (
-        db.query(TimeBlock)
-        .filter(
-            TimeBlock.user_id.in_(student_ids),
-            TimeBlock.deleted == False,
-            TimeBlock.day_of_week.in_(relevant_days),
-        )
-        .all()
-    )
-    student_blocks: Dict[int, List[TimeBlock]] = {}
-    for b in blocks:
-        student_blocks.setdefault(b.user_id, []).append(b)
 
     # Batch Query C: Other active CourseMeetings for these students on relevant days
     other_enrollments = (
@@ -324,34 +310,6 @@ def analyze_timetable_change(
     for om in other_meetings:
         sec_to_meetings.setdefault(om.section_id, []).append(om)
 
-    # Batch Query D: Student Availability blackouts on relevant days
-    availabilities = (
-        db.query(StudentAvailability)
-        .filter(
-            StudentAvailability.user_id.in_(student_ids),
-            StudentAvailability.day_of_week.in_(relevant_days),
-            StudentAvailability.is_available == False,
-        )
-        .all()
-    )
-    student_avails: Dict[int, List[StudentAvailability]] = {}
-    for av in availabilities:
-        student_avails.setdefault(av.user_id, []).append(av)
-
-    # Batch Query E: Hard student constraints
-    constraints = (
-        db.query(StudentConstraint)
-        .filter(
-            StudentConstraint.user_id.in_(student_ids),
-            StudentConstraint.is_active == True,
-            StudentConstraint.is_hard == True,
-        )
-        .all()
-    )
-    student_constraints: Dict[int, List[StudentConstraint]] = {}
-    for c in constraints:
-        student_constraints.setdefault(c.user_id, []).append(c)
-
     # 6. Evaluate Conflicts For Each Student
     work_conflicts = 0
     personal_conflicts = 0
@@ -373,24 +331,6 @@ def analyze_timetable_change(
             """Returns list of (conflict_type, description, overlap_time) for a given slot."""
             results: List[Tuple[str, str, str]] = []
 
-            # A. Check TimeBlocks (work shifts, personal events, manual blocks)
-            for b in student_blocks.get(stu_id, []):
-                if b.day_of_week != dow:
-                    continue
-                b_s = time_to_minutes(b.start_time)
-                b_e = time_to_minutes(b.end_time)
-                if _intervals_overlap(s_min, e_min, b_s, b_e):
-                    ov_s = max(s_min, b_s)
-                    ov_e = min(e_min, b_e)
-                    ov_time_str = f"{ov_s // 60:02d}:{ov_s % 60:02d}–{ov_e // 60:02d}:{ov_e % 60:02d}"
-                    b_type_str = str(b.type.value if hasattr(b.type, "value") else b.type)
-                    if b_type_str == "shift":
-                        results.append(("work_shift", f"Work shift conflict on {DAY_NAMES.get(dow, '')}", ov_time_str))
-                    elif b_type_str == "class":
-                        results.append(("other_class", f"Class overlap on {DAY_NAMES.get(dow, '')}", ov_time_str))
-                    else:
-                        results.append(("personal", f"Personal commitment overlap on {DAY_NAMES.get(dow, '')}", ov_time_str))
-
             # B. Check Other Enrolled CourseMeetings
             for sec_id in student_other_sec_ids.get(stu_id, set()):
                 for om in sec_to_meetings.get(sec_id, []):
@@ -404,34 +344,6 @@ def analyze_timetable_change(
                         ov_time_str = f"{ov_s // 60:02d}:{ov_s % 60:02d}–{ov_e // 60:02d}:{ov_e % 60:02d}"
                         crs_label = om.section.course.code if om.section and om.section.course else f"Section {om.section_id}"
                         results.append(("other_class", f"Overlap with {crs_label}", ov_time_str))
-
-            # C. Check Unavailable Blackout Periods
-            for av in student_avails.get(stu_id, []):
-                if av.day_of_week != dow:
-                    continue
-                av_s = time_to_minutes(av.start_time)
-                av_e = time_to_minutes(av.end_time)
-                if _intervals_overlap(s_min, e_min, av_s, av_e):
-                    ov_s = max(s_min, av_s)
-                    ov_e = min(e_min, av_e)
-                    ov_time_str = f"{ov_s // 60:02d}:{ov_s % 60:02d}–{ov_e // 60:02d}:{ov_e % 60:02d}"
-                    results.append(("unavailable", f"Unavailable period on {DAY_NAMES.get(dow, '')}", ov_time_str))
-
-            # D. Check Hard Constraints
-            for sc in student_constraints.get(stu_id, []):
-                sc_dow = sc.day_of_week
-                if sc_dow is not None and sc_dow != dow:
-                    continue
-                if sc.constraint_type == "day_off" and sc_dow == dow:
-                    results.append(("hard_constraint", f"Day off constraint on {DAY_NAMES.get(dow, '')}", f"{s_min // 60:02d}:{s_min % 60:02d}–{e_min // 60:02d}:{e_min % 60:02d}"))
-                elif sc.constraint_type == "earliest_start" and sc.time_value:
-                    earliest_m = time_to_minutes(sc.time_value)
-                    if s_min < earliest_m:
-                        results.append(("hard_constraint", f"Starts before earliest allowed time ({_format_time_hhmm(sc.time_value)})", f"{s_min // 60:02d}:{s_min % 60:02d}"))
-                elif sc.constraint_type == "latest_end" and sc.time_value:
-                    latest_m = time_to_minutes(sc.time_value)
-                    if e_min > latest_m:
-                        results.append(("hard_constraint", f"Ends after latest allowed time ({_format_time_hhmm(sc.time_value)})", f"{e_min // 60:02d}:{e_min % 60:02d}"))
 
             return results
 
@@ -493,7 +405,7 @@ def analyze_timetable_change(
                     student_id=stu_id,
                     student_name=stu_name,
                     conflict_type="none",
-                    conflict_description="Schedule shifted (no conflicts)",
+                    conflict_description="Academic schedule shifted (private conflicts are checked by each member)",
                     overlap_time=None,
                     is_new_conflict=False,
                     is_resolved_conflict=False,
