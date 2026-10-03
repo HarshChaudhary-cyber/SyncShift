@@ -24,6 +24,8 @@ def find_free_gaps(
     start_date: date,
     deadline_date: date,
     exclude_task_id: Optional[int] = None,
+    planning_hours_start: Optional[int] = None,
+    planning_hours_end: Optional[int] = None,
 ) -> list[dict]:
     """
     Finds available free time intervals (>= 30 mins) between start_date and deadline_date:
@@ -64,15 +66,36 @@ def find_free_gaps(
 
     user_buffer = max(5, int(getattr(current_user, "minimum_transition_minutes", 10) or 10))
 
+    user_pref = getattr(current_user, "preferences", None)
+    if user_pref is None:
+        try:
+            from app.database import SessionLocal
+            from app.models.user_preference import UserPreference
+            with SessionLocal() as db_s:
+                user_pref = db_s.query(UserPreference).filter(UserPreference.user_id == current_user.user_id).first()
+        except Exception:
+            user_pref = None
+
+    plan_start_h = (
+        planning_hours_start
+        if planning_hours_start is not None
+        else (user_pref.planning_hours_start if (user_pref and user_pref.planning_hours_start is not None) else 8)
+    )
+    plan_end_h = (
+        planning_hours_end
+        if planning_hours_end is not None
+        else (user_pref.planning_hours_end if (user_pref and user_pref.planning_hours_end is not None) else 22)
+    )
+
     while curr_d <= deadline_date:
         dow = (curr_d.weekday() + 1) % 7
         day_name = curr_d.strftime("%A")
 
-        # 1. Determine day bounds
-        day_start = 8 * 60  # 08:00 AM
-        day_end = 22 * 60   # 10:00 PM
+        # 1. Determine day bounds from planning hours
+        day_start = plan_start_h * 60
+        day_end = plan_end_h * 60
 
-        # On the deadline day itself, study is allowed only until 18:00 (06:00 PM)
+        # On the deadline day itself, study is allowed only until min(day_end, 18:00)
         if curr_d == deadline_date:
             day_end = min(day_end, 18 * 60)
 
@@ -157,20 +180,43 @@ def plan_study_blocks(
     current_user: CurrentUser,
     gaps: list[dict],
     preferred_duration_min: int = 90,
+    preferred_break_min: Optional[int] = None,
 ) -> PlanResponse:
     """
     Slices free gaps into balanced study sessions:
-    - Target session length: respects preferred_duration_min (clamped between 30 and 120 mins).
+    - Target session length: respects task preference, user Settings preference, and strategy defaults.
     - Max 3 hours of study per day for one task.
     - Spreads across days, preferring earlier days and lighter workload days.
-    - Leaves 10 min buffer between study blocks.
+    - Leaves configured break buffer between study blocks.
     - Deterministically scores each session with explainable reasons.
     - Returns suggested sessions + short_by_hours if free time is insufficient.
     """
+    user_pref = getattr(current_user, "preferences", None)
+    if user_pref is None:
+        try:
+            from app.database import SessionLocal
+            from app.models.user_preference import UserPreference
+            with SessionLocal() as db_s:
+                user_pref = db_s.query(UserPreference).filter(UserPreference.user_id == current_user.user_id).first()
+        except Exception:
+            user_pref = None
+
+    if preferred_duration_min != 90:
+        session_target = preferred_duration_min
+    elif user_pref and user_pref.preferred_session_duration:
+        session_target = user_pref.preferred_session_duration
+    else:
+        session_target = 45
+
+    preferred_len = max(MIN_SESSION_MINUTES, min(MAX_SESSION_MINUTES, session_target))
+    break_len = (
+        preferred_break_min
+        if preferred_break_min is not None
+        else (user_pref.preferred_break_duration if (user_pref and user_pref.preferred_break_duration is not None) else BUFFER_MINUTES)
+    )
+
     remaining_min = int(round(total_hours_required * 60))
     suggested: list[PlanSessionSuggested] = []
-
-    preferred_len = max(MIN_SESSION_MINUTES, min(MAX_SESSION_MINUTES, preferred_duration_min))
 
     # Pre-calculate existing busy workload hours per day to score slots
     all_blocks = get_all_blocks(user_id=current_user.user_id, include_deleted=False)
@@ -280,8 +326,8 @@ def plan_study_blocks(
                 day_study_min += session_len
                 remaining_min -= session_len
 
-                # Advance gap cursor with 10 min buffer between study sessions
-                g_start = s_end + BUFFER_MINUTES
+                # Advance gap cursor with configured break buffer between study sessions
+                g_start = s_end + break_len
 
     hours_scheduled = round(sum(s.duration_hours for s in suggested), 2)
     short_by_hours = None

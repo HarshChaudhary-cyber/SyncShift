@@ -213,37 +213,17 @@ export function SettingsContent() {
   const isSuperAdmin = user?.institution_role === 'super_admin';
   const isProf = isProfessor(user?.institution_role);
 
-  // Active category determination
-  const categoryParam = searchParams.get('category') || searchParams.get('tab');
-  const initialCategory: SettingsCategoryKey = useMemo(() => {
-    if (categoryParam) {
-      if (categoryParam in LEGACY_TAB_MAP) return LEGACY_TAB_MAP[categoryParam];
-      const match = CATEGORIES.find(c => c.key === categoryParam);
-      if (match) return match.key;
-    }
-    return 'account';
-  }, [categoryParam]);
-
-  const [activeCategory, setActiveCategory] = useState<SettingsCategoryKey>(initialCategory);
-
-  // Synchronize category with URL changes and browser back/forward
-  useEffect(() => {
-    if (categoryParam) {
-      const target = categoryParam in LEGACY_TAB_MAP ? LEGACY_TAB_MAP[categoryParam] : categoryParam;
-      if (CATEGORIES.some(c => c.key === target)) {
-        setActiveCategory(target as SettingsCategoryKey);
-      }
-    }
-  }, [categoryParam]);
+  // Active category determination: derived directly from URL with fallback to 'account'
+  const activeCategory: SettingsCategoryKey = useMemo(() => {
+    const raw = searchParams.get('category') || searchParams.get('tab');
+    if (!raw) return 'account';
+    if (raw in LEGACY_TAB_MAP) return LEGACY_TAB_MAP[raw];
+    const match = CATEGORIES.find((c) => c.key === raw);
+    return match ? match.key : 'account';
+  }, [searchParams]);
 
   const selectCategory = (key: SettingsCategoryKey) => {
-    setActiveCategory(key);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('category', key);
-      url.searchParams.delete('tab');
-      window.history.pushState({}, '', url.pathname + url.search);
-    }
+    router.push(`/settings?category=${key}`);
   };
 
   // Toast feedback
@@ -292,7 +272,7 @@ export function SettingsContent() {
   const [currency, setCurrency] = useState('INR');
   const [weekStartsOn, setWeekStartsOn] = useState<WeekStartDay>('monday');
   const [timeFormat, setTimeFormat] = useState<TimeFormat>('12h');
-  const [defaultCalendarView, setDefaultCalendarView] = useState<CalendarDefaultView>('week');
+  const [defaultCalendarView, setDefaultCalendarView] = useState<CalendarDefaultView>('7day');
   const [minimumTransitionMinutes, setMinimumTransitionMinutes] = useState<number>(15);
   const [planningHoursStart, setPlanningHoursStart] = useState<number>(9);
   const [planningHoursEnd, setPlanningHoursEnd] = useState<number>(18);
@@ -1260,9 +1240,8 @@ export function SettingsContent() {
                     value={defaultCalendarView}
                     onChange={(v) => setDefaultCalendarView(v as CalendarDefaultView)}
                     options={[
-                      { value: 'week', label: 'Week View (7 days)' },
-                      { value: 'day', label: 'Day View' },
-                      { value: 'month', label: 'Month Overview' },
+                      { value: '7day', label: 'Week View (7 days)' },
+                      { value: '5day', label: 'Work Week (5 days)' },
                     ]}
                   />
                 </label>

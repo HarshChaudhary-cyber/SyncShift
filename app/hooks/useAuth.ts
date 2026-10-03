@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api, UserProfile, ClassSummary, setAuthToken, getAuthToken, clearAuthToken, AUTH_TOKEN_KEY } from '@/lib/api';
 import { verifySession } from '@/lib/session-policy.mjs';
+import { applyReducedMotion, resetReducedMotion } from '@/lib/preferences';
 
 export type AuthStatus = 'checking' | 'authenticated' | 'unauthenticated' | 'error';
 export interface UseAuthReturn {
@@ -30,6 +31,7 @@ export function useAuth(): UseAuthReturn {
   const logout = useCallback(() => {
     generation.current++;
     clearAuthToken(); previous.current = {user: null, memberships: []};
+    resetReducedMotion();
     setUser(null); setMemberships([]); setError(null); setLastVerified(null); setStatus('unauthenticated');
   }, []);
   const verifyToken = useCallback(async () => {
@@ -40,6 +42,7 @@ export function useAuth(): UseAuthReturn {
     if (requestId !== generation.current || getAuthToken() !== token) return false;
     if (result.status === 'unauthenticated') { logout(); return false; }
     setStatus(result.status); setUser(result.user); setMemberships(result.memberships); setError(result.error);
+    applyReducedMotion(result.user?.reduced_motion);
     previous.current = {user: result.user, memberships: result.memberships};
     if (result.verified) setLastVerified(new Date());
     return result.verified;

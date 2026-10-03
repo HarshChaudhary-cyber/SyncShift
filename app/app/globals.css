@@ -180,3 +180,26 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
+
+/* Reduced Motion Support */
+:root[data-reduced-motion="reduced"],
+:root[data-reduced-motion="reduced"] *,
+:root[data-reduced-motion="reduced"] *::before,
+:root[data-reduced-motion="reduced"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-reduced-motion="normal"]),
+  :root:not([data-reduced-motion="normal"]) *,
+  :root:not([data-reduced-motion="normal"]) *::before,
+  :root:not([data-reduced-motion="normal"]) *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

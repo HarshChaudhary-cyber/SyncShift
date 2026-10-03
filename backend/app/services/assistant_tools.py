@@ -279,36 +279,39 @@ def tool_preview_my_plan(db: Session, current_user: CurrentUser, strategy: str =
     user = db.query(User).filter(User.id == current_user.user_id).first()
 
     try:
-        preview_res = SmartPlannerService.preview_weekly_plan(
+        from app.schemas.planning import PlanPreviewRequest
+        req = PlanPreviewRequest(target_week_start=start_of_week)
+        preview_res = SmartPlannerService.preview_plan(
+            user_id=current_user.user_id,
+            request=req,
             db=db,
-            user=user,
-            week_start=start_of_week,
-            strategies=[strategy],
         )
+        filtered = [opt for opt in preview_res.options if opt.option_id == strategy]
+        chosen_options = filtered if filtered else preview_res.options
         return {
             "success": True,
             "week_start": start_of_week.isoformat(),
             "selected_strategy": strategy,
             "options": [
                 {
-                    "strategy": opt.strategy,
+                    "strategy": opt.option_id,
                     "score": opt.score,
-                    "total_study_minutes": opt.total_study_minutes,
-                    "planned_sessions_count": len(opt.planned_sessions),
+                    "total_study_minutes": int(round(opt.summary.total_study_hours * 60)),
+                    "planned_sessions_count": len(opt.slots),
                     "reasons": opt.reasons,
                     "trade_offs": opt.trade_offs,
                     "sessions": [
                         {
-                            "task_title": s.task_title,
-                            "day_name": DAY_NAMES[s.day_of_week],
+                            "task_title": s.title,
+                            "day_name": s.day_name,
                             "start_time": s.start_time,
                             "end_time": s.end_time,
-                            "duration_minutes": s.duration_minutes,
+                            "duration_minutes": int(round(s.duration_hours * 60)),
                         }
-                        for s in opt.planned_sessions
+                        for s in opt.slots
                     ],
                 }
-                for opt in preview_res.options
+                for opt in chosen_options
             ],
         }
     except Exception as exc:
