@@ -1,3 +1,4 @@
+from academic_test_support import bootstrap_institution
 import time
 from datetime import date, timedelta
 from fastapi.testclient import TestClient
@@ -54,8 +55,7 @@ def test_onboarding_and_institution_creation():
 
     # Create institution
     inst_code = f"MIT_{int(time.time())}"
-    resp = client.post(
-        "/api/v1/institutions",
+    resp = bootstrap_institution(
         headers=headers,
         json={
             "name": "Massachusetts Institute of Technology",
@@ -77,7 +77,7 @@ def test_onboarding_and_institution_creation():
     status_data = me_resp2.json()["data"]
     assert status_data["has_institution"] is True
     assert status_data["institution"]["id"] == inst_id
-    assert status_data["membership"]["role"] == "admin"
+    assert status_data["membership"]["role"] == "super_admin"
 
 
 def test_role_based_access_control():
@@ -92,8 +92,7 @@ def test_role_based_access_control():
 
     # Admin creates institution
     inst_code = f"STAN_{int(time.time())}"
-    inst_resp = client.post(
-        "/api/v1/institutions",
+    inst_resp = bootstrap_institution(
         headers=admin_headers,
         json={"name": "Stanford University", "code": inst_code},
     )
@@ -176,8 +175,7 @@ def test_multi_tenant_data_isolation():
     # Institution A
     admin_a_id, admin_a_token = create_test_user("admin_a")
     headers_a = {"Authorization": f"Bearer {admin_a_token}"}
-    inst_a_resp = client.post(
-        "/api/v1/institutions",
+    inst_a_resp = bootstrap_institution(
         headers=headers_a,
         json={"name": "University of Oxford", "code": f"OX_{int(time.time())}"},
     )
@@ -206,8 +204,7 @@ def test_multi_tenant_data_isolation():
     # Institution B
     admin_b_id, admin_b_token = create_test_user("admin_b")
     headers_b = {"Authorization": f"Bearer {admin_b_token}"}
-    inst_b_resp = client.post(
-        "/api/v1/institutions",
+    inst_b_resp = bootstrap_institution(
         headers=headers_b,
         json={"name": "University of Cambridge", "code": f"CAM_{int(time.time())}"},
     )
@@ -263,8 +260,7 @@ def test_department_crud_and_code_uniqueness():
     admin_id, token = create_test_user("dept_crud")
     headers = {"Authorization": f"Bearer {token}"}
 
-    inst_resp = client.post(
-        "/api/v1/institutions",
+    inst_resp = bootstrap_institution(
         headers=headers,
         json={"name": "Caltech", "code": f"CIT_{int(time.time())}"},
     )
@@ -319,8 +315,7 @@ def test_academic_term_crud_and_validation():
     admin_id, token = create_test_user("term_crud")
     headers = {"Authorization": f"Bearer {token}"}
 
-    inst_resp = client.post(
-        "/api/v1/institutions",
+    inst_resp = bootstrap_institution(
         headers=headers,
         json={"name": "Princeton University", "code": f"PRINCE_{int(time.time())}"},
     )
@@ -400,8 +395,7 @@ def test_university_dashboard_endpoint():
     admin_id, token = create_test_user("dash_test")
     headers = {"Authorization": f"Bearer {token}"}
 
-    inst_resp = client.post(
-        "/api/v1/institutions",
+    inst_resp = bootstrap_institution(
         headers=headers,
         json={"name": "Harvard University", "code": f"HARV_{int(time.time())}"},
     )
@@ -434,5 +428,5 @@ def test_university_dashboard_endpoint():
     dash_data = dash_resp.json()["data"]
     assert dash_data["department_count"] == 1
     assert dash_data["member_count"] == 1
-    assert dash_data["membership"]["role"] == "admin"
+    assert dash_data["membership"]["role"] == "super_admin"
     assert dash_data["active_term"]["name"] == "Spring 2027"

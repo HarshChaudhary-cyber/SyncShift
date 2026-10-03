@@ -39,7 +39,7 @@ app = FastAPI(
 )
 
 
-EXPECTED_ALEMBIC_HEAD = "0019"
+EXPECTED_ALEMBIC_HEAD = "0021"
 
 
 def check_db_migrated() -> None:
@@ -229,6 +229,12 @@ async def add_security_headers(request: Request, call_next):
 # Mount Routers under Base URL: /api/v1/
 # ---------------------------------------------------------------------------
 app.include_router(auth_router, prefix=settings.API_V1_STR)
+from app.routers.classes import router as classes_router
+app.include_router(classes_router, prefix=settings.API_V1_STR)
+from app.routers.academic_admin import router as academic_admin_router
+app.include_router(academic_admin_router, prefix=settings.API_V1_STR)
+from app.routers.academic_experience import router as academic_experience_router
+app.include_router(academic_experience_router, prefix=settings.API_V1_STR)
 app.include_router(courses_router, prefix=settings.API_V1_STR)
 app.include_router(blocks_router, prefix=settings.API_V1_STR)
 app.include_router(conflicts_router, prefix=settings.API_V1_STR)

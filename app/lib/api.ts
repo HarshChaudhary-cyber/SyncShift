@@ -63,6 +63,11 @@ export interface ExportDataResponse {
 }
 
 export interface BlockOut {
+  source?: 'private' | 'shared_class';
+  appointment_id?: number | null;
+  can_manage_appointment?: boolean;
+  class_id?: number | null;
+  class_name?: string | null;
   id: number;
   user_id?: number;
   type: 'class' | 'shift' | 'study';
@@ -258,6 +263,7 @@ export interface DashboardUser {
 }
 
 export interface DashboardBlock {
+  source?: 'private' | 'shared_class';
   id: number;
   type: 'class' | 'shift' | 'personal' | 'study' | 'other' | string;
   title: string;
@@ -746,6 +752,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   if (!response.ok) {
+    if (response.status === 401 && headers.has('Authorization') && typeof window !== 'undefined' && headers.get('Authorization') === `Bearer ${getAuthToken()}`) {
+      clearAuthToken();
+      window.dispatchEvent(new Event('syncshift:unauthorized'));
+    }
     const errorObj = typeof json.error === 'object' && json.error !== null ? (json.error as Record<string, unknown>) : {};
     const message =
       (errorObj.message as string) ||
@@ -760,7 +770,20 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 
+export const academicRequest = <T,>(path: string, method = 'GET', body?: unknown) => request<T>(path, {method, ...(body === undefined ? {} : {body: JSON.stringify(body)})});
+
 export const api = {
+  getClasses: () => request<ClassSummary[]>('/classes'),
+  getClass: (id: number) => request<ClassDetail>(`/classes/${id}`),
+  createClass: (name: string, description: string, institution_id?: number, course_id?: number) => request<ClassSummary>('/classes', {method: 'POST', body: JSON.stringify({name, description, institution_id, course_id})}),
+  joinClass: (code: string) => request<ClassSummary>('/classes/join', {method: 'POST', body: JSON.stringify({code})}),
+  acceptClassInvitation: (token: string) => request<ClassSummary>('/classes/invitations/accept', {method: 'POST', body: JSON.stringify({token})}),
+  inviteClassMember: (id: number, email: string, role: string) => request<{token: string}>(`/classes/${id}/invitations`, {method: 'POST', body: JSON.stringify({email, role})}),
+  removeClassMember: (id: number, userId: number) => request(`/classes/${id}/members/${userId}`, {method: 'DELETE'}),
+  saveClassEvent: (id: number, body: ClassEventInput, eventId?: number) => request<SharedClassEvent>(`/classes/${id}/events${eventId ? `/${eventId}` : ''}`, {method: eventId ? 'PATCH' : 'POST', body: JSON.stringify(body)}),
+  publishClassEvent: (id: number, eventId: number) => request(`/classes/${id}/events/${eventId}/publish`, {method: 'POST'}),
+  cancelClassEvent: (id: number, eventId: number) => request(`/classes/${id}/events/${eventId}`, {method: 'DELETE'}),
+  postClassAnnouncement: (id: number, title: string, body: string) => request(`/classes/${id}/announcements`, {method: 'POST', body: JSON.stringify({title, body})}),
   login: (email: string, password: string, captcha_token?: string) =>
     request<AuthResponseData>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password, captcha_token }) }),
   register: (email: string, password: string, timezone = 'Europe/London', weekly_work_hour_limit = 20.0, captcha_token?: string) =>
@@ -2351,3 +2374,16 @@ export interface UniversityDashboardAnalyticsResponse {
 
 
 
+
+export interface ClassSummary {
+  institution_id?: number; course_id?: number;
+  id: number; name: string; description: string; role: 'learner' | 'instructor'; section_id: number | null; join_code: string | null;
+}
+export interface ClassEventInput { title: string; location: string; event_date: string; start_time: string; end_time: string; }
+export interface SharedClassEvent extends ClassEventInput { id: number; class_id: number; status: 'draft' | 'published'; pending?: ClassEventInput | null; }
+export interface ClassDetail extends ClassSummary {
+  events: SharedClassEvent[];
+  legacy_events: {id: number; day_of_week: number; start_time: string; end_time: string; start_date: string; end_date: string; timetable_id: number}[];
+  announcements: {id: number; title: string; body: string; created_at: string}[];
+  members: {user_id: number; name: string; role: 'learner' | 'instructor'}[];
+}

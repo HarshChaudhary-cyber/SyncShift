@@ -136,7 +136,7 @@ def tool_get_my_schedule(
             "day_of_week": event.day_of_week, "day_name": DAY_NAMES[event.day_of_week],
             "date": str(event.occurrence_date), "start_time": event.start_time[:5],
             "end_time": event.end_time[:5], "start_mins": start_mins, "end_mins": end_mins,
-            "location": event.location or ""})
+            "location": event.location or "", "source": event.source, "class_id": event.class_id, "class_name": event.class_name})
 
     # Free intervals for today
     free_gaps = []
@@ -161,43 +161,22 @@ def tool_get_my_schedule(
 
 
 def tool_get_my_courses(db: Session, current_user: CurrentUser) -> dict[str, Any]:
-    """Fetches the student's enrolled university courses."""
-    user_id = current_user.user_id
-    enrollments = (
-        db.query(SectionEnrollment, AcademicSection, AcademicCourse)
-        .join(AcademicSection, SectionEnrollment.section_id == AcademicSection.id)
-        .join(AcademicCourse, AcademicSection.course_id == AcademicCourse.id)
-        .filter(
-            SectionEnrollment.student_id == user_id,
-            SectionEnrollment.status.in_(["enrolled", "active"]),
-        )
-        .all()
-    )
-
+    """Only the caller's class memberships and published class schedules."""
+    from app.services.class_workspaces import my_classes, legacy_events
+    from app.models.class_workspace import ClassWorkspace, ClassEvent
     results = []
-    for enr, sec, crs in enrollments:
-        meetings = (
-            db.query(CourseMeeting, Room)
-            .outerjoin(Room, CourseMeeting.room_id == Room.id)
-            .filter(CourseMeeting.section_id == sec.id)
-            .all()
-        )
-        sched = []
-        for m, r in meetings:
-            st = format_time_str(m.start_time)
-            et = format_time_str(m.end_time)
-            rm = f"Room {r.room_number}" if r else "TBD"
-            sched.append(f"{DAY_NAMES[m.day_of_week]} {st}–{et} ({rm})")
-
-        results.append({
-            "course_id": crs.id,
-            "code": crs.code,
-            "name": crs.name,
-            "credits": crs.credits,
-            "section_code": sec.section_code,
-            "schedule": sched,
-        })
-
+    for entry in my_classes(db, current_user.user_id):
+        workspace = db.get(ClassWorkspace, entry["id"])
+        section = db.get(AcademicSection, workspace.section_id) if workspace.section_id else None
+        course = db.get(AcademicCourse, section.course_id) if section else None
+        schedule = [f"{DAY_NAMES[m.day_of_week]} {m.start_time:%H:%M}–{m.end_time:%H:%M}"
+                    for m, _ in legacy_events(db, workspace)]
+        schedule.extend(f"{e.event_date} {e.start_time}–{e.end_time} ({e.location})"
+                        for e in db.query(ClassEvent).filter_by(class_id=workspace.id, status="published"))
+        results.append({"class_id": workspace.id, "role": entry["role"], "source": "shared_class",
+            "course_id": course.id if course else None, "code": course.code if course else "",
+            "name": workspace.name, "credits": course.credits if course else None,
+            "section_code": section.section_code if section else "", "schedule": schedule})
     return {"courses_count": len(results), "courses": results}
 
 
@@ -628,9 +607,9 @@ def tool_preview_timetable_change(
             warning=new_conflicts > 0,
         ),
         ActionCheckItem(
-            label=f"{work_conflicts} work-shift clashes",
-            passed=work_conflicts == 0,
-            warning=work_conflicts > 0,
+            label="Private schedules excluded; members review their own conflicts",
+            passed=True,
+            warning=False,
         ),
     ]
 

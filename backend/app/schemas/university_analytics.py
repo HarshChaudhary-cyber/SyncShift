@@ -116,6 +116,8 @@ class FacultyAnalyticsData(BaseModel):
 
 
 class TimetableConflictSummary(BaseModel):
+    private_schedules_evaluated: bool = False
+    privacy_notice: str = "Private schedules are excluded from institutional analytics."
     room_double_bookings: int = 0
     faculty_double_bookings: int = 0
     student_class_conflicts: int = 0

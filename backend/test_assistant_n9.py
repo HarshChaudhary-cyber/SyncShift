@@ -1,3 +1,5 @@
+from academic_test_support import administrator_enroll, administrator_drop
+from academic_test_support import bootstrap_institution
 """
 Comprehensive Test Suite for Task N9 — SyncShift AI Assistant.
 
@@ -62,8 +64,7 @@ def setup_institution_env():
     code = f"N9_{str(uuid.uuid4())[:8]}"
 
     # Institution
-    inst_resp = client.post(
-        "/api/v1/institutions",
+    inst_resp = bootstrap_institution(
         headers=admin_headers,
         json={"name": f"N9 University {code}", "code": code, "timezone": "America/New_York", "country": "US"},
     )
@@ -238,8 +239,7 @@ def test_student_schedule_and_enrolled_courses():
     )
 
     # Enroll student in section
-    enr_resp = client.post(
-        "/api/v1/students/me/enrollments",
+    enr_resp = administrator_enroll(
         headers=headers_student,
         json={"section_id": env["sec_id"]},
     )

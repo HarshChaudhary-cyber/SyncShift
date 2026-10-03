@@ -120,6 +120,7 @@ def get_today_schedule_data(
 
         today_blocks.append(
             DashboardBlock(
+                source=getattr(b,"source","private"),
                 id=b.id,
                 type=b.type,
                 title=b.title,

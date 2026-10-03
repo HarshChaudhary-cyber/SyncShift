@@ -119,8 +119,15 @@ export function CalendarProvider({ children, onUnauthorized }: CalendarProviderP
 
   useEffect(() => {
     const refresh = () => { void refreshWeek(); };
+    const refreshVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    const timer = window.setInterval(refreshVisible, 60_000);
     window.addEventListener('syncshift:schedule-updated', refresh);
-    return () => window.removeEventListener('syncshift:schedule-updated', refresh);
+    window.addEventListener('focus', refreshVisible);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('syncshift:schedule-updated', refresh);
+      window.removeEventListener('focus', refreshVisible);
+    };
   }, [refreshWeek]);
 
   // Reload whenever the selected week changes

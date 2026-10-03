@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import React, { useState, useRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { BlockOut, ConflictItem } from '@/lib/api';
@@ -29,11 +30,14 @@ export default function CalendarBlockCard({
   onResizeEnd,
   onReplanStudy,
 }: CalendarBlockCardProps) {
+  const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
   const isOfficial = block.id < 0;
   const openBlock = () => {
+    if (block.appointment_id && block.can_manage_appointment) { router.push("/appointments"); return; }
     if (isOfficial) {
-      showErrorToast('This class is managed by your university. Contact your timetable administrator to change it.');
+      if (block.class_id) router.push(`/classes/${block.class_id}`);
+      else showErrorToast('This shared event is managed in its class timetable.');
     } else {
       onClick(block);
     }
@@ -172,15 +176,16 @@ export default function CalendarBlockCard({
       data-block-card="true"
       {...attributes}
       {...listeners}
+      aria-disabled={Boolean(block.isSaving)}
       onClick={openBlock}
-      title={isOfficial ? 'University timetable · read-only' : undefined}
+      title={isOfficial ? 'Shared class · open workspace' : 'Private event · only you'}
       onKeyDown={handleKeyDown}
       onContextMenu={handleContextMenu}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={`group absolute left-1 right-1 rounded-lg border px-2 py-1 select-none transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${block.isSaving
           ? 'pointer-events-none ring-1 ring-blue-400/50'
-          : isOfficial ? 'cursor-default'
+          : isOfficial ? 'cursor-pointer'
           : isDragging
             ? 'cursor-grabbing shadow-2xl scale-[1.02]'
             : 'cursor-grab active:cursor-grabbing hover:-translate-y-0.5'
@@ -193,7 +198,7 @@ export default function CalendarBlockCard({
           {block.type === 'study' && <span className="shrink-0 text-[11px]" title="Study Session">📖</span>}
           {block.type === 'class' && <span className="shrink-0 text-[11px]" title="Class Timetable">📚</span>}
           <span className="truncate">{block.title}</span>
-          {isOfficial && <span title="Managed by your university" aria-label="University timetable, read-only">🔒</span>}
+          {isOfficial && <span title="Managed in class workspace" aria-label="Shared class, read-only here">🔒</span>}
           {block.is_recurring && (
             <span className="shrink-0 text-[10px] opacity-70" title={block.recurrence_interval === 2 ? 'Repeats every 2 weeks' : 'Repeats weekly'}>
               🔁

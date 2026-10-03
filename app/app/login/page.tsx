@@ -8,11 +8,11 @@ import { useAuthContext } from '@/context/AuthContext';
 import { ApiError } from '@/lib/api';
 import { OAuthButtons, OAuthDivider } from '@/components/auth/OAuthButtons';
 import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
-import { getPortalRedirect } from '@/components/RoleGuard';
+import { safeReturnUrl } from '@/lib/session-policy.mjs';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { status, user, login } = useAuthContext();
+  const { status, user, login, refreshUser, error: sessionError, logout } = useAuthContext();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,10 +31,10 @@ export default function LoginPage() {
     }
   }, []);
 
-  // If already authenticated, redirect to the correct portal
+  // Return only after the profile and class memberships have been verified.
   useEffect(() => {
     if (status === 'authenticated' && user) {
-      router.replace(getPortalRedirect(user.institution_role));
+      router.replace(safeReturnUrl(new URLSearchParams(window.location.search).get('returnTo')));
     }
   }, [status, user, router]);
 
@@ -56,11 +56,7 @@ export default function LoginPage() {
 
     try {
       await login(email.trim(), password, captchaToken);
-      // After login, useAuth will have updated user profile — redirect based on role
-      // We need to get the profile after login to know the role
-      const { api } = await import('@/lib/api');
-      const profile = await api.getAuthMe();
-      router.replace(getPortalRedirect(profile.institution_role));
+      router.replace(safeReturnUrl(new URLSearchParams(window.location.search).get('returnTo')));
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.status === 401) {
@@ -78,6 +74,7 @@ export default function LoginPage() {
     }
   };
 
+  if (status === 'error') return <div className="min-h-screen flex items-center justify-center p-8"><div role="alert" className="space-y-5 max-w-md"><h1 className="text-xl">Session verification unavailable</h1><p>{sessionError}</p><button onClick={refreshUser} className="underline mr-6">Retry verification</button><button onClick={logout} className="underline">Return to sign in</button></div></div>;
   // Show spinner while checking session
   if (status === 'checking') {
     return (
@@ -119,7 +116,7 @@ export default function LoginPage() {
           <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-2 text-center">
             <h1 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] tracking-tight">Welcome back</h1>
             <p className="text-xs text-[var(--text-secondary)] mt-1">
-              Sign in to manage your student timetable and work shifts
+              Sign in to your schedule, classes and university workspace
             </p>
           </div>
 

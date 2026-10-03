@@ -156,6 +156,8 @@ class StudentImpactDetail(BaseModel):
 
 
 class ImpactSummary(BaseModel):
+    private_schedules_evaluated: bool = False
+    privacy_notice: str = "Private schedules are excluded. Members review their own conflicts in Calendar."
     severity: str  # 'LOW', 'MEDIUM', 'HIGH', 'BLOCKED'
     students_affected: int = 0
     new_conflicts: int = 0

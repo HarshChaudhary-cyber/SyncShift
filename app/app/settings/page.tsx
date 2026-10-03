@@ -493,10 +493,10 @@ export function SettingsContent({ showNavbar = true }: { showNavbar?: boolean })
       )}
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className={showNavbar ? "flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" : "w-full"}>
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[var(--text-primary)] flex items-center gap-2.5">
-            <span>⚙️</span>
+
             <span>Settings</span>
           </h1>
           <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">
@@ -526,7 +526,7 @@ export function SettingsContent({ showNavbar = true }: { showNavbar?: boolean })
                     : 'bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
-                <span>{tab.icon}</span>
+
                 <span>{tab.label}</span>
               </button>
             );
@@ -1402,7 +1402,7 @@ export function SettingsContent({ showNavbar = true }: { showNavbar?: boolean })
             )}
           </div>
         </div>
-      </main>
+      </div>
 
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && (
@@ -1478,35 +1478,4 @@ export function SettingsContent({ showNavbar = true }: { showNavbar?: boolean })
   );
 }
 
-function SettingsRedirect() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { user, status } = useAuthContext();
-
-  useEffect(() => {
-    if (status === 'authenticated' && user) {
-      const isUniv = ['faculty', 'professor', 'admin', 'super_admin'].includes(
-        user.institution_role || ''
-      );
-      const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
-      router.replace((isUniv ? '/university/settings' : '/student/settings') + query);
-    }
-  }, [user, status, router, searchParams]);
-
-  return (
-    <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)] text-sm">
-      Loading Settings...
-    </div>
-  );
-}
-
-export default function SettingsPage() {
-  return (
-    <ProtectedRoute>
-      <Suspense fallback={<div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center text-[var(--text-muted)] text-sm">Loading Settings...</div>}>
-        <SettingsRedirect />
-      </Suspense>
-    </ProtectedRoute>
-  );
-}
-
+export default function SettingsPage() { return <Suspense fallback={<p>Loading settings…</p>}><SettingsContent showNavbar={false}/></Suspense>; }

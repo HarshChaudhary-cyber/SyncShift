@@ -10,7 +10,8 @@ from app.store import get_occurrences_for_range
 
 
 APP_GUIDE = {
-    "calendar": "Calendar shows your classes, work shifts and study sessions. Use Add Class or Add Shift to create an event, select an event to edit it, and choose a date or week to browse. My Timetable shows your university's published classes.",
+    "calendar": "Calendar combines your private events with published events from Classes. Add or import personal events here. Select a private event to edit it; shared events are managed in their class workspace.",
+    "classes": "Classes lists the workspaces you teach or learn in. Assigned professors can create a class; students join with a learner code, or accept an email-bound invitation. Each class has Overview, Timetable, Announcements and Members. Instructors save drafts and publish updates; learners see only published events. Teaching requires a verified university professor role and an authorized subject assignment. Students cannot create teaching classes. Work shifts and study details stay private.",
     "import": "Use Attach timetable in this chat, or Calendar → Import Timetable. Upload PDF, ICS, CSV, Excel (.xlsx/.xls), Word (.docx/.doc), PowerPoint (.pptx), text or a PNG/JPG/WebP image. Review extracted days and times, uncheck duplicates or uncertain entries, then import the selected events. Scanned documents need readable text or the configured AI/OCR service; a format alone cannot guarantee accurate extraction.",
     "work": "Work Shifts lets you add hours, location and hourly wage. The dashboard totals weekly hours and estimated earnings against your work-hour limit in Settings. Say 'Move my today work to tomorrow' to move today's work occurrences at the same times. I check conflicts first and preserve the weekly recurring schedule.",
     "study": "Study Tasks stores assignments, deadlines, required hours and progress. Add a task, then use Smart Planner to find study sessions around classes and shifts. Review a proposed plan before applying it.",
@@ -27,9 +28,10 @@ def app_help(message, role):
         return None
     if not re.search(r"\b(how|help|guide|explain|tell me about|what can|what is|what does|features|use this|use the)\b", text):
         return None
-    if not re.search(r"app|syncshift|website|platform|calendar|import|upload|timetable|work shift|study task|planner|notification|setting|feature|you do|your access", text):
+    if not re.search(r"app|syncshift|website|platform|class|calendar|import|upload|timetable|work shift|study task|planner|notification|setting|feature|you do|your access", text):
         return None
     topics = {
+        "classes": r"class|workspace|instructor|learner|join",
         "import": r"import|upload|file|pdf|excel|csv|image",
         "work": r"work shift|earn|wage|move.*work",
         "study": r"study|planner|task",
@@ -40,7 +42,7 @@ def app_help(message, role):
     }
     selected = [key for key, pattern in topics.items() if re.search(pattern, text)]
     if not selected:
-        selected = ["calendar", "import", "work", "study", "conflicts", "settings", "access"]
+        selected = ["calendar", "classes", "import", "work", "study", "conflicts", "settings", "access"]
     if role == "admin" and (not selected or re.search(r"admin|whole|app|website", text)):
         selected.append("admin")
     return "\n\n".join(f"**{key.title()}** — {APP_GUIDE[key]}" for key in selected)

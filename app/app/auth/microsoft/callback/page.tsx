@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { useAuthContext } from '@/context/AuthContext';
 import { getPortalRedirect } from '@/components/RoleGuard';
+import { safeReturnUrl } from '@/lib/session-policy.mjs';
 
 export default function MicrosoftCallbackPage() {
   const router = useRouter();
@@ -55,7 +56,9 @@ export default function MicrosoftCallbackPage() {
       try {
         const res = await api.oauthMicrosoft(idToken, captchaToken, nonce);
         await loginWithOAuthData(res);
-        router.replace(getPortalRedirect(res.institution_role));
+        const destination = safeReturnUrl(sessionStorage.getItem('syncshift_oauth_return'));
+        sessionStorage.removeItem('syncshift_oauth_return');
+        router.replace(destination);
       } catch (err: unknown) {
         if (err instanceof ApiError && (err.status === 409 || err.code === 'email_exists')) {
           router.replace('/login?error=' + encodeURIComponent('This email is already registered with email/password. Please sign in that way.'));

@@ -1,3 +1,5 @@
+from academic_test_support import administrator_enroll, administrator_drop
+from academic_test_support import bootstrap_institution
 import time
 from datetime import date, timedelta
 from fastapi.testclient import TestClient
@@ -29,8 +31,7 @@ def create_test_institution(admin_token: str, name_prefix: str = "Test Universit
     """Helper to create an institution where the user becomes admin."""
     headers = {"Authorization": f"Bearer {admin_token}"}
     code = f"INST_{int(time.time() * 1000)}"[:16]
-    resp = client.post(
-        "/api/v1/institutions",
+    resp = bootstrap_institution(
         headers=headers,
         json={
             "name": f"{name_prefix} {code}",
@@ -96,9 +97,7 @@ def test_student_profile_lifecycle():
 
     # 5. Update profile
     patch_resp = client.patch(
-        "/api/v1/students/me",
-        headers=std_headers_1,
-        json={
+        f"/api/v1/academic-admin/{inst_id}/users/{std_id_1}/academic", headers=admin_headers, json={
             "department_id": dept_id,
             "program": "Computer Science B.S.",
             "year_of_study": 3,
@@ -106,7 +105,7 @@ def test_student_profile_lifecycle():
         },
     )
     assert patch_resp.status_code == 200
-    updated = patch_resp.json()["data"]
+    updated = client.get("/api/v1/students/me", headers=std_headers_1).json()["data"]
     assert updated["department_id"] == dept_id
     assert updated["program"] == "Computer Science B.S."
     assert updated["year_of_study"] == 3
@@ -119,9 +118,7 @@ def test_student_profile_lifecycle():
     add_student_member(admin_token, inst_id, std_id_2)
 
     dup_resp = client.patch(
-        "/api/v1/students/me",
-        headers=std_headers_2,
-        json={"student_number": "STU-1001"},
+        f"/api/v1/academic-admin/{inst_id}/users/{std_id_2}/academic", headers=admin_headers, json={"student_number": "STU-1001"},
     )
     assert dup_resp.status_code == 409
     assert dup_resp.json()["error"]["code"] == "student_number_exists"
@@ -186,7 +183,7 @@ def test_section_enrollment_and_capacity():
     h3 = {"Authorization": f"Bearer {s3_token}"}
 
     # 1. Student 1 enrolls
-    r1 = client.post("/api/v1/students/me/enrollments", headers=h1, json={"section_id": section_id})
+    r1 = administrator_enroll( headers=h1, json={"section_id": section_id})
     assert r1.status_code == 201
     e1_data = r1.json()["data"]
     assert e1_data["section_id"] == section_id
@@ -195,7 +192,7 @@ def test_section_enrollment_and_capacity():
     e1_id = e1_data["id"]
 
     # 2. Student 1 attempts to re-enroll -> 409
-    r1_dup = client.post("/api/v1/students/me/enrollments", headers=h1, json={"section_id": section_id})
+    r1_dup = administrator_enroll( headers=h1, json={"section_id": section_id})
     assert r1_dup.status_code == 409
     assert r1_dup.json()["error"]["code"] == "already_enrolled"
 
@@ -210,16 +207,16 @@ def test_section_enrollment_and_capacity():
     assert sec_meta["is_enrolled_by_me"] is True
 
     # 3. Student 2 enrolls -> capacity full
-    r2 = client.post("/api/v1/students/me/enrollments", headers=h2, json={"section_id": section_id})
+    r2 = administrator_enroll( headers=h2, json={"section_id": section_id})
     assert r2.status_code == 201
 
     # 4. Student 3 attempts to enroll -> section_capacity_reached
-    r3 = client.post("/api/v1/students/me/enrollments", headers=h3, json={"section_id": section_id})
+    r3 = administrator_enroll( headers=h3, json={"section_id": section_id})
     assert r3.status_code == 400
     assert r3.json()["error"]["code"] == "section_capacity_reached"
 
     # 5. Student 1 drops enrollment
-    drop_resp = client.delete(f"/api/v1/students/me/enrollments/{e1_id}", headers=h1)
+    drop_resp = administrator_drop(e1_id, headers=h1)
     assert drop_resp.status_code == 200
     assert drop_resp.json()["data"]["dropped"] is True
 
@@ -228,7 +225,7 @@ def test_section_enrollment_and_capacity():
     assert len(enrs) == 0  # Active filter default
 
     # 6. Student 3 can now enroll in the freed seat
-    r3_retry = client.post("/api/v1/students/me/enrollments", headers=h3, json={"section_id": section_id})
+    r3_retry = administrator_enroll( headers=h3, json={"section_id": section_id})
     assert r3_retry.status_code == 201
     assert r3_retry.json()["data"]["status"] == "active"
 
@@ -279,12 +276,12 @@ def test_enrollment_validation_rules():
     std_headers = {"Authorization": f"Bearer {std_token}"}
 
     # Attempt to enroll in completed term section -> 400
-    r_archived = client.post("/api/v1/students/me/enrollments", headers=std_headers, json={"section_id": sec_in_archived})
+    r_archived = administrator_enroll( headers=std_headers, json={"section_id": sec_in_archived})
     assert r_archived.status_code == 400
     assert r_archived.json()["error"]["code"] == "term_not_active"
 
     # Nonexistent section -> 404
-    r_none = client.post("/api/v1/students/me/enrollments", headers=std_headers, json={"section_id": 999999})
+    r_none = administrator_enroll( headers=std_headers, json={"section_id": 999999})
     assert r_none.status_code == 404
     assert r_none.json()["error"]["code"] == "section_not_found"
 
@@ -449,7 +446,7 @@ def test_tenant_isolation_student_academics():
     h_std_a = {"Authorization": f"Bearer {token_a}"}
 
     # Student A attempts to enroll in Section B -> 404 (section_not_found)
-    cross_enr = client.post("/api/v1/students/me/enrollments", headers=h_std_a, json={"section_id": sec_b})
+    cross_enr = administrator_enroll( headers=h_std_a, json={"section_id": sec_b})
     assert cross_enr.status_code == 404
     assert cross_enr.json()["error"]["code"] == "section_not_found"
 
@@ -474,7 +471,7 @@ def test_dashboard_academic_summary():
     std_headers = {"Authorization": f"Bearer {std_token}"}
 
     # Enroll in section
-    client.post("/api/v1/students/me/enrollments", headers=std_headers, json={"section_id": section_id})
+    administrator_enroll( headers=std_headers, json={"section_id": section_id})
 
     # Call /api/v1/dashboard
     dash_resp = client.get("/api/v1/dashboard", headers=std_headers)

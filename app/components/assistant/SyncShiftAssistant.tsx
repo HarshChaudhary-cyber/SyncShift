@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import { useAuthContext } from '@/context/AuthContext';
 import AssistantTimetableUpload from './AssistantTimetableUpload';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -72,6 +74,14 @@ export function openSyncShiftAssistant() {
 }
 
 export default function SyncShiftAssistant() {
+  const { user } = useAuthContext();
+  return <ScopedAssistant key={user?.user_id ?? 'guest'} />;
+}
+
+function ScopedAssistant() {
+  const { user, status } = useAuthContext();
+  const pathname = usePathname();
+  const unified = ['/dashboard','/calendar','/classes','/planner','/notifications','/settings','/student','/profile','/professors','/admin','/appointments','/invitation','/university'].some(path => pathname === path || pathname.startsWith(path + '/'));
   const [showUpload, setShowUpload] = useState(false);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [inputMessage, setInputMessage] = useState<string>('');
@@ -104,26 +114,21 @@ export default function SyncShiftAssistant() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Listen for open event & check role
+  // Private chat state is reset by the account-scoped component key.
   useEffect(() => {
-    const handleOpen = () => setIsOpen(true);
+    const handleOpen = () => { if (status === 'authenticated') setIsOpen(true); };
     window.addEventListener('open-syncshift-assistant', handleOpen);
-
-    // Fetch user status to set role
-    api
-      .getMyInstitutionStatus()
-      .then((res) => {
-        if (res?.has_institution && res.membership) {
-          setInstitutionId(res.membership.institution_id);
-          if (res.membership.role === 'admin' || res.membership.role === 'super_admin') {
-            setUserRole('admin');
-          }
-        }
-      })
-      .catch(() => {});
-
     return () => window.removeEventListener('open-syncshift-assistant', handleOpen);
-  }, []);
+  }, [status]);
+  useEffect(() => {
+    let active = true;
+    if (status === 'authenticated') api.getMyInstitutionStatus().then(res => {
+      if (!active) return;
+      setInstitutionId(res.membership?.institution_id ?? null);
+      setUserRole(['admin','super_admin'].includes(res.membership?.role || '') ? 'admin' : 'student');
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [status, user?.user_id]);
 
   // Load user's conversations
   const loadConversations = async () => {
@@ -382,10 +387,11 @@ export default function SyncShiftAssistant() {
 
   const suggestions = userRole === 'admin' ? ADMIN_SUGGESTIONS : STUDENT_SUGGESTIONS;
 
+  if (status !== 'authenticated') return null;
   return (
     <>
       {/* Floating Action Trigger Button */}
-      <motion.button
+      {!unified && <motion.button
         id="syncshift-assistant-trigger"
         onClick={() => setIsOpen((prev) => !prev)}
         className={`fixed bottom-6 right-6 z-40 flex items-center gap-2.5 px-4 py-3 rounded-full font-medium shadow-xl transition-all duration-300 ${
@@ -401,7 +407,7 @@ export default function SyncShiftAssistant() {
         <span className="text-sm font-semibold tracking-wide hidden sm:inline">
           {isOpen ? 'Close Assistant' : 'Ask SyncShift'}
         </span>
-      </motion.button>
+      </motion.button>}
 
       {/* Floating / Drawer Assistant Panel */}
       <AnimatePresence>

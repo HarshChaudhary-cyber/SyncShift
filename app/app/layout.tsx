@@ -5,6 +5,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import NotificationRegistrar from '@/components/NotificationRegistrar';
 import SyncShiftAssistant from '@/components/assistant/SyncShiftAssistant';
+import { ApplicationBoundary } from '@/components/unified/AppShell';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -57,7 +58,7 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider>
             <NotificationRegistrar />
-            {children}
+            <ApplicationBoundary>{children}</ApplicationBoundary>
             <SyncShiftAssistant />
           </ThemeProvider>
         </AuthProvider>

@@ -6,6 +6,7 @@ import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 import { api, ApiError } from '@/lib/api';
 import { useAuthContext } from '@/context/AuthContext';
 import { getPortalRedirect } from '@/components/RoleGuard';
+import { safeReturnUrl } from '@/lib/session-policy.mjs';
 
 interface OAuthButtonsProps {
   onSuccessRedirect?: string;
@@ -112,7 +113,7 @@ export function OAuthButtons({
     async (data: any) => {
       try {
         await loginWithOAuthData(data);
-        const destination = onSuccessRedirect || getPortalRedirect(data.institution_role);
+        const destination = safeReturnUrl(onSuccessRedirect || new URLSearchParams(window.location.search).get('returnTo'));
         router.replace(destination);
       } catch (err: any) {
         setError(err?.message || 'Login succeeded but failed to initialize session.');
@@ -139,6 +140,7 @@ export function OAuthButtons({
       sessionStorage.setItem('syncshift_ms_oauth_state', state);
       sessionStorage.setItem('syncshift_ms_oauth_nonce', nonce);
       sessionStorage.setItem('syncshift_ms_oauth_captcha', captchaToken || '');
+      sessionStorage.setItem('syncshift_oauth_return', safeReturnUrl(new URLSearchParams(window.location.search).get('returnTo')));
 
       const authUrl =
         `https://login.microsoftonline.com/${MICROSOFT_TENANT}/oauth2/v2.0/authorize?` +

@@ -853,6 +853,9 @@ def publish_version(
 
     db.commit()
     db.refresh(ver)
+    from app.services.academic_access import history
+    history(db,user_id,"timetable_published",f"Timetable {timetable_id}, version {ver.version_number}",institution_id=institution_id)
+    db.commit()
     return ver, archived_id
 
 
