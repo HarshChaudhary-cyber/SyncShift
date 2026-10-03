@@ -57,16 +57,17 @@ class CandidateGenerator:
         preferred_time_of_day: str,
         schedule_density: str,
     ) -> GeneratedPlanOption:
-        # Configuration per strategy
+        # Configuration per strategy tailored to user's preferred_session_duration
+        user_session_pref = int(context.preferences.get("preferred_session_duration") or 45)
         if strategy == "focused":
-            target_session_min = 120
-            max_daily_study_min = 240
+            target_session_min = max(60, int(user_session_pref * 1.5))
+            max_daily_study_min = max(240, target_session_min * 2)
         elif strategy == "compact":
-            target_session_min = 90
+            target_session_min = max(45, user_session_pref)
             max_daily_study_min = 240
         else:  # balanced
-            target_session_min = 75
-            max_daily_study_min = 150
+            target_session_min = user_session_pref
+            max_daily_study_min = max(120, target_session_min * 3)
 
         # Effective time-of-day preference
         effective_tod = preferred_time_of_day if preferred_time_of_day != "any" else context.preferences.get("preferred_time_of_day", "any")
@@ -98,8 +99,12 @@ class CandidateGenerator:
             if remaining_min <= 0:
                 continue
 
-            task_pref_dur = task.get("preferred_duration") or target_session_min
-            session_dur = max(30, min(target_session_min, task_pref_dur))
+            task_pref_dur = task.get("preferred_duration")
+            if task_pref_dur and task_pref_dur != 90:
+                session_dur = task_pref_dur
+            else:
+                session_dur = target_session_min
+            session_dur = max(15, session_dur)
 
             # Try to place study sessions across week dates
             for curr_d in week_dates:
@@ -117,8 +122,8 @@ class CandidateGenerator:
                 if curr_day_study >= max_daily_study_min:
                     continue
 
-                # Determine candidate starting times based on time-of-day preference
-                candidate_starts = CandidateGenerator._get_candidate_start_times(effective_tod)
+                # Determine candidate starting times based on time-of-day preference and planning hours
+                candidate_starts = CandidateGenerator._get_candidate_start_times(effective_tod, context)
 
                 for s_min in candidate_starts:
                     if remaining_min <= 0:
@@ -129,7 +134,7 @@ class CandidateGenerator:
                     # Duration: clamp to remaining or session_dur
                     dur = min(session_dur, remaining_min)
                     # Round to 15m increments
-                    dur = max(30, (dur // 15) * 15)
+                    dur = max(15, (dur // 15) * 15)
                     e_min = s_min + dur
 
                     feasible, block_reason = ConstraintEngine.is_slot_feasible(
@@ -195,20 +200,30 @@ class CandidateGenerator:
         )
 
     @staticmethod
-    def _get_candidate_start_times(preferred_tod: str) -> list[int]:
+    def _get_candidate_start_times(preferred_tod: str, context: ScheduleContext = None) -> list[int]:
         """
-        Returns an ordered list of start minute candidates tailored to time-of-day preference.
+        Returns an ordered list of start minute candidates tailored to time-of-day preference
+        and constrained to the user's planning hours window.
         """
-        # 15-minute grid candidates
-        morning_slots = [h * 60 + m for h in range(8, 12) for m in (0, 30)]      # 08:00 - 11:30
-        afternoon_slots = [h * 60 + m for h in range(12, 17) for m in (0, 30)]  # 12:00 - 16:30
-        evening_slots = [h * 60 + m for h in range(17, 21) for m in (0, 30)]    # 17:00 - 20:30
+        plan_start_h = 8
+        plan_end_h = 22
+        if context and context.preferences:
+            plan_start_h = max(0, min(23, int(context.preferences.get("planning_hours_start", 8) or 8)))
+            plan_end_h = max(plan_start_h + 1, min(24, int(context.preferences.get("planning_hours_end", 22) or 22)))
+
+        all_slots = [h * 60 + m for h in range(plan_start_h, plan_end_h) for m in (0, 15, 30, 45)]
+
+        morning_slots = [s for s in all_slots if s < 12 * 60]
+        afternoon_slots = [s for s in all_slots if 12 * 60 <= s < 17 * 60]
+        evening_slots = [s for s in all_slots if s >= 17 * 60]
 
         if preferred_tod == "morning":
-            return morning_slots + afternoon_slots + evening_slots
+            ordered = morning_slots + afternoon_slots + evening_slots
         elif preferred_tod == "evening":
-            return evening_slots + afternoon_slots + morning_slots
+            ordered = evening_slots + afternoon_slots + morning_slots
         elif preferred_tod == "afternoon":
-            return afternoon_slots + morning_slots + evening_slots
+            ordered = afternoon_slots + morning_slots + evening_slots
         else:  # any / balanced
-            return afternoon_slots + morning_slots + evening_slots
+            ordered = afternoon_slots + morning_slots + evening_slots
+
+        return ordered or all_slots

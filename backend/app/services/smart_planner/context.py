@@ -202,16 +202,26 @@ class ScheduleContextBuilder:
                     "description": c.description,
                 })
 
-            # 7. Fetch soft preferences
+            # 7. Fetch user preferences & academic soft preferences
+            user_pref = user_rec.preferences if user_rec else None
             pref_rec = (
                 session.query(StudentPreference)
                 .filter(StudentPreference.user_id == user_id)
                 .first()
             )
+            break_min = (
+                user_pref.preferred_break_duration
+                if (user_pref and user_pref.preferred_break_duration is not None)
+                else (pref_rec.preferred_break_duration_minutes if pref_rec else 15)
+            )
             preferences = {
                 "preferred_time_of_day": pref_rec.preferred_time_of_day if pref_rec else "any",
                 "schedule_density": pref_rec.schedule_density if pref_rec else "balanced",
-                "preferred_break_duration_minutes": pref_rec.preferred_break_duration_minutes if pref_rec else 30,
+                "preferred_break_duration_minutes": break_min,
+                "planning_hours_start": user_pref.planning_hours_start if (user_pref and user_pref.planning_hours_start is not None) else 9,
+                "planning_hours_end": user_pref.planning_hours_end if (user_pref and user_pref.planning_hours_end is not None) else 18,
+                "preferred_session_duration": user_pref.preferred_session_duration if (user_pref and user_pref.preferred_session_duration is not None) else 45,
+                "preferred_break_duration": break_min,
                 "max_campus_days_per_week": pref_rec.max_campus_days_per_week if pref_rec else None,
                 "preferred_days_off": pref_rec.preferred_days_off if pref_rec else None,
                 "work_study_balance_weight": pref_rec.work_study_balance_weight if pref_rec else 3,

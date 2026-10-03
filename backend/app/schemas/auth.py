@@ -63,7 +63,7 @@ class UserProfileData(BaseModel):
     minimum_transition_minutes: int = 15
     week_starts_on: str = "monday"
     time_format: str = "12h"
-    default_calendar_view: str = "week"
+    default_calendar_view: str = "7day"
     reduced_motion: str = "system"
     planning_hours_start: int = 9
     planning_hours_end: int = 18

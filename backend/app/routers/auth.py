@@ -301,7 +301,7 @@ def get_current_user_profile(
             minimum_transition_minutes=int((user.minimum_transition_minutes if getattr(user, "minimum_transition_minutes", None) is not None else 15)),
             week_starts_on=pref.week_starts_on if pref else "monday",
             time_format=pref.time_format if pref else "12h",
-            default_calendar_view=pref.default_calendar_view if pref else "week",
+            default_calendar_view=(pref.default_calendar_view if (pref and pref.default_calendar_view in ("7day", "5day")) else "7day"),
             reduced_motion=pref.reduced_motion if pref else "system",
             planning_hours_start=int(pref.planning_hours_start if pref else 9),
             planning_hours_end=int(pref.planning_hours_end if pref else 18),
@@ -389,7 +389,16 @@ def update_current_user_profile(
         if body.time_format is not None:
             pref.time_format = body.time_format
         if body.default_calendar_view is not None:
-            pref.default_calendar_view = body.default_calendar_view
+            raw_view = body.default_calendar_view.strip().lower()
+            if raw_view in ("7day", "week", "day", "month"):
+                pref.default_calendar_view = "7day"
+            elif raw_view in ("5day", "workweek"):
+                pref.default_calendar_view = "5day"
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail={"code": "validation_error", "message": "default_calendar_view must be '7day' or '5day'"},
+                )
         if body.reduced_motion is not None:
             pref.reduced_motion = body.reduced_motion
         if body.planning_hours_start is not None:

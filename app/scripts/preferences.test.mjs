@@ -68,3 +68,85 @@ test('role-specific suggestions map to authoritative roles', () => {
   assert.deepEqual(getSuggestions('admin'), ['rooms', 'versions', 'draft']);
   assert.deepEqual(getSuggestions('super_admin'), ['rooms', 'versions', 'draft']);
 });
+
+function normalizeCalendarView(view) {
+  if (view === '5day' || view === 'workweek') return '5day';
+  return '7day';
+}
+
+test('normalizeCalendarView safely maps genuine views and unsupported values', () => {
+  assert.equal(normalizeCalendarView('7day'), '7day');
+  assert.equal(normalizeCalendarView('5day'), '5day');
+  assert.equal(normalizeCalendarView('workweek'), '5day');
+  // Legacy / unsupported values must safely normalize to genuine 7day default
+  assert.equal(normalizeCalendarView('week'), '7day');
+  assert.equal(normalizeCalendarView('day'), '7day');
+  assert.equal(normalizeCalendarView('month'), '7day');
+  assert.equal(normalizeCalendarView(null), '7day');
+  assert.equal(normalizeCalendarView(undefined), '7day');
+  assert.equal(normalizeCalendarView('unknown'), '7day');
+});
+
+function isReducedMotionActive(pref, osPrefersReduced) {
+  if (pref === 'reduced') return true;
+  if (pref === 'normal') return false;
+  return Boolean(osPrefersReduced);
+}
+
+test('isReducedMotionActive explicitly evaluates reduced, normal, and system OS preferences', () => {
+  // reduced = true regardless of OS
+  assert.equal(isReducedMotionActive('reduced', false), true);
+  assert.equal(isReducedMotionActive('reduced', true), true);
+
+  // normal = false regardless of OS (fixing truthiness bug where string 'normal' was truthy)
+  assert.equal(isReducedMotionActive('normal', false), false);
+  assert.equal(isReducedMotionActive('normal', true), false);
+
+  // system = OS preference
+  assert.equal(isReducedMotionActive('system', false), false);
+  assert.equal(isReducedMotionActive('system', true), true);
+
+  // missing/default = OS preference
+  assert.equal(isReducedMotionActive(null, false), false);
+  assert.equal(isReducedMotionActive(null, true), true);
+});
+
+const LEGACY_TAB_MAP = {
+  profile: 'account',
+  preferences: 'appearance',
+  calendar: 'calendar',
+  notifications: 'notifications',
+  security: 'security',
+  danger: 'privacy',
+};
+
+const VALID_CATEGORIES = ['account', 'appearance', 'calendar', 'notifications', 'security', 'privacy'];
+
+function resolveCategory(rawParam) {
+  if (!rawParam) return 'account';
+  if (rawParam in LEGACY_TAB_MAP) return LEGACY_TAB_MAP[rawParam];
+  if (VALID_CATEGORIES.includes(rawParam)) return rawParam;
+  return 'account';
+}
+
+test('resolveCategory derives category cleanly with default fallback and legacy tab support', () => {
+  // Valid direct categories
+  assert.equal(resolveCategory('account'), 'account');
+  assert.equal(resolveCategory('appearance'), 'appearance');
+  assert.equal(resolveCategory('calendar'), 'calendar');
+  assert.equal(resolveCategory('notifications'), 'notifications');
+  assert.equal(resolveCategory('security'), 'security');
+  assert.equal(resolveCategory('privacy'), 'privacy');
+
+  // Legacy tab parameter links
+  assert.equal(resolveCategory('preferences'), 'appearance');
+  assert.equal(resolveCategory('profile'), 'account');
+  assert.equal(resolveCategory('danger'), 'privacy');
+
+  // Missing or invalid parameters resolve to default ('account')
+  assert.equal(resolveCategory(null), 'account');
+  assert.equal(resolveCategory(''), 'account');
+  assert.equal(resolveCategory('invalid_tab_name'), 'account');
+  assert.equal(resolveCategory('unknown'), 'account');
+});
+

@@ -29,11 +29,13 @@ class ConstraintEngine:
         """
         dow = (slot_date.weekday() + 1) % 7
 
-        # 1. Day bounds
-        if start_min < 8 * 60:
-            return False, "Cannot schedule before 08:00"
-        if end_min > 22 * 60:
-            return False, "Cannot schedule after 22:00"
+        # 1. Day bounds from planning hours window
+        plan_start_m = context.preferences.get("planning_hours_start", 8) * 60
+        plan_end_m = context.preferences.get("planning_hours_end", 22) * 60
+        if start_min < plan_start_m:
+            return False, f"Cannot schedule before planning hours start ({minutes_to_time(plan_start_m)})"
+        if end_min > plan_end_m:
+            return False, f"Cannot schedule after planning hours end ({minutes_to_time(plan_end_m)})"
 
         # 2. Deadline check
         task_deadline = task.get("deadline")
@@ -104,11 +106,12 @@ class ConstraintEngine:
                 continue
             if start_min < ps["end_min"] and ps["start_min"] < end_min:
                 return False, "Overlaps with another proposed study block in this plan"
-            # 10-minute spacing between study sessions
-            if ps["end_min"] <= start_min and (start_min - ps["end_min"]) < 10:
-                return False, "Insufficient rest buffer between study sessions"
-            if end_min <= ps["start_min"] and (ps["start_min"] - end_min) < 10:
-                return False, "Insufficient rest buffer between study sessions"
+            # Rest buffer between study sessions (from preferred_break_duration)
+            break_min = int(context.preferences.get("preferred_break_duration_minutes") or 15)
+            if ps["end_min"] <= start_min and (start_min - ps["end_min"]) < break_min:
+                return False, f"Insufficient rest buffer between study sessions ({start_min - ps['end_min']}m < {break_min}m)"
+            if end_min <= ps["start_min"] and (ps["start_min"] - end_min) < break_min:
+                return False, f"Insufficient rest buffer between study sessions ({ps['start_min'] - end_min}m < {break_min}m)"
 
         # 6. Max hours per day check
         for hc in context.hard_constraints:

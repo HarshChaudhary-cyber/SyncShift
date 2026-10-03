@@ -34,6 +34,7 @@ import {
   AssistantConversationItem,
 } from '@/lib/api';
 import { isProfessor } from '@/lib/academic';
+import { isReducedMotionActive } from '@/lib/preferences';
 
 interface ChatMessage {
   id: string;
@@ -128,10 +129,26 @@ function ScopedAssistant() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  const isReducedMotion = isReducedMotionActive(user?.reduced_motion);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({
+      behavior: isReducedMotion ? 'auto' : 'smooth',
+    });
   };
+
+  // Lock body scroll while assistant dialog is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
 
   // Listen for open-syncshift-assistant events, optionally carrying a suggested prompt
   useEffect(() => {
@@ -152,13 +169,42 @@ function ScopedAssistant() {
     return () => window.removeEventListener('open-syncshift-assistant', handleOpen as EventListener);
   }, [status]);
 
-  // Escape key handler for dialog accessibility
+  // Modal dialog keyboard handling: Escape to close and Tab focus trap
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape') {
         setIsOpen(false);
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+
+        const focusables = dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusables || focusables.length === 0) return;
+
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first || !dialog.contains(document.activeElement)) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last || !dialog.contains(document.activeElement)) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
@@ -470,9 +516,7 @@ function ScopedAssistant() {
       ? PROFESSOR_SUGGESTIONS
       : STUDENT_SUGGESTIONS;
 
-  const prefersReducedMotion =
-    user?.reduced_motion ||
-    (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const prefersReducedMotion = isReducedMotionActive(user?.reduced_motion);
 
   if (status !== 'authenticated') return null;
 
@@ -483,20 +527,31 @@ function ScopedAssistant() {
         {isLoading ? loadingStateText : ''}
       </div>
 
-      {/* Floating Assistant Panel Dialog */}
+      {/* Floating Assistant Panel Dialog & Modal Backdrop */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            id="syncshift-assistant-panel"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="syncshift-assistant-title"
-            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20, scale: prefersReducedMotion ? 1 : 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 20, scale: prefersReducedMotion ? 1 : 0.95 }}
-            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2 }}
-            className="fixed bottom-4 sm:bottom-6 right-2 sm:right-6 z-50 w-[calc(100vw-1rem)] sm:w-[500px] max-h-[90vh] h-[660px] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl flex flex-col overflow-hidden text-[var(--text-primary)]"
-          >
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.15 }}
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs"
+              onClick={() => setIsOpen(false)}
+              aria-hidden="true"
+            />
+            <motion.div
+              ref={dialogRef}
+              id="syncshift-assistant-panel"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="syncshift-assistant-title"
+              initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20, scale: prefersReducedMotion ? 1 : 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 20, scale: prefersReducedMotion ? 1 : 0.95 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2 }}
+              className="fixed bottom-0 sm:bottom-6 right-0 sm:right-6 z-50 w-full sm:w-[500px] max-h-[92vh] sm:max-h-[90vh] h-[660px] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden text-[var(--text-primary)]"
+            >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--border-color)] bg-[var(--bg-secondary)]">
               <div className="flex items-center gap-2.5">
@@ -980,8 +1035,9 @@ function ScopedAssistant() {
               </button>
             </form>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </>
+      )}
+    </AnimatePresence>
     </>
   );
 }

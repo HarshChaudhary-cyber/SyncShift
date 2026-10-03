@@ -24,7 +24,7 @@ class UserPreference(Base):
 
     week_starts_on = Column(String(10), nullable=False, default="monday")
     time_format = Column(String(5), nullable=False, default="12h")
-    default_calendar_view = Column(String(10), nullable=False, default="week")
+    default_calendar_view = Column(String(10), nullable=False, default="7day")
     reduced_motion = Column(String(10), nullable=False, default="system")
     planning_hours_start = Column(Integer, nullable=False, default=9)
     planning_hours_end = Column(Integer, nullable=False, default=18)

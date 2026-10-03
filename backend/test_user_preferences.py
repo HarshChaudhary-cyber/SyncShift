@@ -26,21 +26,21 @@ def test_user_preferences_defaults_and_patch():
     me1 = client.get("/api/v1/auth/me", headers=h1).json()["data"]
     assert me1["week_starts_on"] == "monday"
     assert me1["time_format"] == "12h"
-    assert me1["default_calendar_view"] == "week"
+    assert me1["default_calendar_view"] == "7day"
     assert me1["reduced_motion"] == "system"
     assert me1["planning_hours_start"] == 9
     assert me1["planning_hours_end"] == 18
     assert me1["preferred_session_duration"] == 45
     assert me1["preferred_break_duration"] == 15
 
-    # Update preferences
+    # Update preferences with genuine 5day view
     patch1 = client.patch(
         "/api/v1/auth/me",
         headers=h1,
         json={
             "week_starts_on": "sunday",
             "time_format": "24h",
-            "default_calendar_view": "day",
+            "default_calendar_view": "5day",
             "reduced_motion": "reduced",
             "planning_hours_start": 8,
             "planning_hours_end": 16,
@@ -52,12 +52,21 @@ def test_user_preferences_defaults_and_patch():
     data1 = patch1.json()["data"]
     assert data1["week_starts_on"] == "sunday"
     assert data1["time_format"] == "24h"
-    assert data1["default_calendar_view"] == "day"
+    assert data1["default_calendar_view"] == "5day"
     assert data1["reduced_motion"] == "reduced"
     assert data1["planning_hours_start"] == 8
     assert data1["planning_hours_end"] == 16
     assert data1["preferred_session_duration"] == 60
     assert data1["preferred_break_duration"] == 20
+
+    # Verify legacy unsupported view normalization (e.g. 'day' or 'week' safely normalizes to '7day')
+    patch_legacy = client.patch(
+        "/api/v1/auth/me",
+        headers=h1,
+        json={"default_calendar_view": "day"},
+    )
+    assert patch_legacy.status_code == 200
+    assert patch_legacy.json()["data"]["default_calendar_view"] == "7day"
 
 
 def test_user_preferences_account_isolation():

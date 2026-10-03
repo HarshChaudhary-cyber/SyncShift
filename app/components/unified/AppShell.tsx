@@ -1,11 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { MotionConfig } from 'framer-motion';
 import { Squares2X2Icon, CalendarDaysIcon, AcademicCapIcon, ClipboardDocumentListIcon, BellIcon, SparklesIcon, Bars3Icon, XMarkIcon, ChevronDownIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { useAuthContext } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { openSyncShiftAssistant } from '@/components/assistant/SyncShiftAssistant';
+import { isReducedMotionActive } from '@/lib/preferences';
 import './workspace.css';
 
 const navigation = [
@@ -24,8 +26,22 @@ export default function AppShell({ children }: {children: React.ReactNode}) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const {user, logout, error, refreshUser} = useAuthContext();
+  const [isReduced, setIsReduced] = useState(() => isReducedMotionActive(user?.reduced_motion));
+
+  useEffect(() => {
+    setIsReduced(isReducedMotionActive(user?.reduced_motion));
+    const handleMotionChange = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (typeof detail?.active === 'boolean') {
+        setIsReduced(detail.active);
+      }
+    };
+    window.addEventListener('syncshift:reduced-motion-change', handleMotionChange);
+    return () => window.removeEventListener('syncshift:reduced-motion-change', handleMotionChange);
+  }, [user?.reduced_motion]);
+
   const management=user?.institution_role==='super_admin'&&(pathname==='/dashboard'||pathname.startsWith('/admin')||pathname.startsWith('/university'));
-  return <ProtectedRoute><div className="workspace-app">
+  return <ProtectedRoute><MotionConfig reducedMotion={isReduced ? 'always' : 'never'}><div className="workspace-app">
     <a className="skip-link" href="#workspace-content">Skip to content</a>
     <header className="mobile-bar"><Link href="/dashboard" className="brand">SyncShift<span>●</span></Link><button aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={mobileOpen} onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <XMarkIcon/> : <Bars3Icon/>}</button></header>
     {mobileOpen && <button className="nav-scrim" aria-label="Close navigation" onClick={() => setMobileOpen(false)}/>}
@@ -44,7 +60,7 @@ export default function AppShell({ children }: {children: React.ReactNode}) {
       </div>
     </aside>
     <main id="workspace-content" className="workspace-content" tabIndex={-1}>{error && <div className="notice" role="status">{error}<button onClick={refreshUser}>Retry verification</button></div>}{children}</main>
-  </div></ProtectedRoute>;
+  </div></MotionConfig></ProtectedRoute>;
 }
 
 export function ApplicationBoundary({children}: {children: React.ReactNode}) {
