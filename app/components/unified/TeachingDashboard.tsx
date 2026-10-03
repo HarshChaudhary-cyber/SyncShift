@@ -3,12 +3,15 @@ import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {academicRequest,api,StudyTask} from '@/lib/api';
 import {Teaching,Lecture} from '@/lib/academic';
+import {useAuthContext} from '@/context/AuthContext';
+import {formatTimeDisplay} from '@/lib/preferences';
 
 export default function TeachingDashboard(){
+  const {user} = useAuthContext();
   const [data,setData]=useState<Teaching>(); const [tasks,setTasks]=useState<StudyTask[]>([]); const [error,setError]=useState('');
   async function load(){try{const [d,t]=await Promise.all([academicRequest<Teaching>('/academic/teaching'),api.getTasks()]);setData(d);setTasks(t);setError('');}catch(e){setError((e as Error).message);}}
   useEffect(()=>{void load();const refresh=()=>void load();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[]);
-  function rows(sessions:Lecture[]){return sessions.length?sessions.map(s=><Link className="schedule-row" key={`${s.class_id}-${s.event_key}-${s.date}`} href={`/classes/${s.class_id}`}><div className="schedule-time">{s.start_time}<small>{s.end_time}</small></div><span className="schedule-marker"/><div><h3>{s.title}</h3><p>{s.date} · {s.class_name}</p></div><span className="ws-badge">{s.status}</span></Link>):<p className="ws-muted">No lectures scheduled in this period.</p>;}
+  function rows(sessions:Lecture[]){return sessions.length?sessions.map(s=><Link className="schedule-row" key={`${s.class_id}-${s.event_key}-${s.date}`} href={`/classes/${s.class_id}`}><div className="schedule-time">{formatTimeDisplay(s.start_time, user?.time_format)}<small>{formatTimeDisplay(s.end_time, user?.time_format)}</small></div><span className="schedule-marker"/><div><h3>{s.title}</h3><p>{s.date} · {s.class_name}</p></div><span className="ws-badge">{s.status}</span></Link>):<p className="ws-muted">No lectures scheduled in this period.</p>;}
   return <><header className="ws-header"><div><div className="ws-kicker">PROFESSOR WORKSPACE</div><h1>Your teaching day.</h1><p>{data?.today} · {data?.timezone} · Completion is recorded by teaching staff.</p></div><Link className="ws-button primary" href="/classes">Manage teaching classes</Link></header>
     {error&&<div role="alert" className="notice error">{error}<button onClick={load}>Retry</button></div>}
     {!data?<p role="status">Loading teaching schedule…</p>:<><div className="weekly-summary"><div><span>DELIVERED TODAY</span><strong>{data.completed_today}</strong></div><div><span>REMAINING TODAY</span><strong>{data.remaining_today}</strong></div><div><span>ASSIGNED CLASSES</span><strong>{data.classes.length}</strong></div></div>

@@ -27,7 +27,7 @@ const START_HOUR = 6;
 const END_HOUR = 22;
 const HOUR_HEIGHT = 60;
 
-const ALL_DAYS = [
+const ALL_DAYS_MONDAY = [
   { index: 1, name: 'Monday', short: 'Mon' },
   { index: 2, name: 'Tuesday', short: 'Tue' },
   { index: 3, name: 'Wednesday', short: 'Wed' },
@@ -35,6 +35,16 @@ const ALL_DAYS = [
   { index: 5, name: 'Friday', short: 'Fri' },
   { index: 6, name: 'Saturday', short: 'Sat' },
   { index: 0, name: 'Sunday', short: 'Sun' },
+];
+
+const ALL_DAYS_SUNDAY = [
+  { index: 0, name: 'Sunday', short: 'Sun' },
+  { index: 1, name: 'Monday', short: 'Mon' },
+  { index: 2, name: 'Tuesday', short: 'Tue' },
+  { index: 3, name: 'Wednesday', short: 'Wed' },
+  { index: 4, name: 'Thursday', short: 'Thu' },
+  { index: 5, name: 'Friday', short: 'Fri' },
+  { index: 6, name: 'Saturday', short: 'Sat' },
 ];
 
 /**
@@ -55,7 +65,7 @@ function getTodayDateStr(timeZone: string): string {
 }
 
 export default function WeekView({ onBlockClick, onSlotClick, onReplanStudy }: WeekViewProps) {
-  const { blocks, conflicts, weekStart, moveBlock, resizeBlock, deleteBlock, viewMode } =
+  const { blocks, conflicts, weekStart, moveBlock, resizeBlock, deleteBlock, viewMode, weekStartsOn } =
     useCalendar();
   const { user } = useAuthContext();
   const timezone =
@@ -127,7 +137,8 @@ export default function WeekView({ onBlockClick, onSlotClick, onReplanStudy }: W
   };
 
   const baseDate = parseISO(weekStart);
-  const activeDays = viewMode === '5day' ? ALL_DAYS.slice(0, 5) : ALL_DAYS;
+  const allDays = weekStartsOn === 0 ? ALL_DAYS_SUNDAY : ALL_DAYS_MONDAY;
+  const activeDays = viewMode === '5day' ? allDays.slice(0, 5) : allDays;
   const todayStr = getTodayDateStr(timezone);
 
   return (
@@ -154,12 +165,12 @@ export default function WeekView({ onBlockClick, onSlotClick, onReplanStudy }: W
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-xs shadow-purple-500/50" />
-                <span className="font-semibold text-[var(--study-text)]">Study (📖)</span>
+                <span className="font-semibold text-[var(--study-text)]">Study</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-xs shadow-rose-500/50 animate-pulse" />
                 <span className="font-bold text-rose-600 dark:text-rose-400">
-                  Conflict (⚠️)
+                  Conflict
                 </span>
               </div>
             </div>

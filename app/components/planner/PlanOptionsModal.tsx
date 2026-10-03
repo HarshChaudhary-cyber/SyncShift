@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { PlanOption, SmartPlanPreviewResponse } from '@/lib/api';
+import { useAuthContext } from '@/context/AuthContext';
+import { formatTimeRangeDisplay } from '@/lib/preferences';
 
 interface PlanOptionsModalProps {
   isOpen: boolean;
@@ -18,6 +20,7 @@ export default function PlanOptionsModal({
   onApplyPlan,
   isApplying,
 }: PlanOptionsModalProps) {
+  const { user } = useAuthContext();
   const [selectedOptionId, setSelectedOptionId] = useState<string>('balanced');
   const [showDetails, setShowDetails] = useState(false);
 
@@ -201,7 +204,7 @@ export default function PlanOptionsModal({
 
                         <div className="text-right shrink-0">
                           <div className="font-semibold text-purple-700 dark:text-purple-300">
-                            {blk.start_time.slice(0, 5)} – {blk.end_time.slice(0, 5)}
+                            {formatTimeRangeDisplay(blk.start_time, blk.end_time, user?.time_format)}
                           </div>
                           <div className="text-[var(--text-secondary)] text-[11px]">
                             {blk.duration_hours}h focus

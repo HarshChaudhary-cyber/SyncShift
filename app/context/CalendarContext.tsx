@@ -12,6 +12,7 @@ import {
   BlockUpdatePayload,
 } from '@/lib/api';
 import { showErrorToast } from '@/lib/toast';
+import { useAuthContext } from '@/context/AuthContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,8 @@ interface CalendarContextType {
   lastUpdated: Date | null;
   error: string | null;
   viewMode: CalendarViewMode;
+  weekStartsOn: 0 | 1;
+  timeFormat: '12h' | '24h';
   setViewMode: (mode: CalendarViewMode) => void;
   setWeekStart: (date: string) => void;
   goToNextWeek: () => void;
@@ -65,16 +68,35 @@ interface CalendarProviderProps {
 }
 
 export function CalendarProvider({ children, onUnauthorized }: CalendarProviderProps) {
+  const { user } = useAuthContext();
+  const weekStartsOn: 0 | 1 = user?.week_starts_on === 'sunday' ? 0 : 1;
+  const timeFormat: '12h' | '24h' = user?.time_format === '24h' ? '24h' : '12h';
+  const defaultView: CalendarViewMode = user?.default_calendar_view === '5day' ? '5day' : '7day';
+
   const [weekStart, setWeekStart] = useState<string>(() =>
-    format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
+    format(startOfWeek(new Date(), { weekStartsOn }), 'yyyy-MM-dd')
   );
-  const [viewMode, setViewMode] = useState<CalendarViewMode>('7day');
+  const [viewMode, setViewMode] = useState<CalendarViewMode>(defaultView);
   const [blocks, setBlocks] = useState<BlockOut[]>([]);
   const [conflicts, setConflicts] = useState<ConflictItem[]>([]);
   const [totals, setTotals] = useState<WeeklyTotals>(defaultTotals);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  useEffect(() => {
+    if (user?.default_calendar_view) {
+      setViewMode(user.default_calendar_view === '5day' ? '5day' : '7day');
+    }
+  }, [user?.default_calendar_view]);
+
+  useEffect(() => {
+    setWeekStart((curr) => {
+      const parsed = parseISO(curr);
+      if (isNaN(parsed.getTime())) return curr;
+      return format(startOfWeek(parsed, { weekStartsOn }), 'yyyy-MM-dd');
+    });
+  }, [weekStartsOn]);
 
   // Stable ref for onUnauthorized so it never invalidates callbacks
   const onUnauthorizedRef = useRef(onUnauthorized);
@@ -251,6 +273,8 @@ export function CalendarProvider({ children, onUnauthorized }: CalendarProviderP
         lastUpdated,
         error,
         viewMode,
+        weekStartsOn,
+        timeFormat,
         setViewMode,
         setWeekStart,
         goToNextWeek: () =>
@@ -258,7 +282,7 @@ export function CalendarProvider({ children, onUnauthorized }: CalendarProviderP
         goToPrevWeek: () =>
           setWeekStart((curr) => format(subWeeks(parseISO(curr), 1), 'yyyy-MM-dd')),
         goToCurrentWeek: () =>
-          setWeekStart(format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')),
+          setWeekStart(format(startOfWeek(new Date(), { weekStartsOn }), 'yyyy-MM-dd')),
         refreshWeek,
         refreshConflicts,
         addBlock,

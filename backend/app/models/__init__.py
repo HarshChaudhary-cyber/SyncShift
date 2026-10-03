@@ -1,4 +1,5 @@
 from app.models.user import User
+from app.models.user_preference import UserPreference
 from app.models.class_workspace import ClassWorkspace, ClassMember, ClassEvent, ClassAnnouncement, ClassInvitation
 from app.models.course import Course
 from app.models.time_block import TimeBlock, BlockType, BlockStatus
@@ -27,6 +28,7 @@ from app.models.assistant_conversation import AssistantConversation, AssistantMe
 
 __all__ = [
     "User",
+    "UserPreference",
     "Course",
     "TimeBlock",
     "BlockType",

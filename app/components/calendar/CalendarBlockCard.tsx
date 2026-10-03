@@ -3,9 +3,19 @@
 import { useRouter } from 'next/navigation';
 import React, { useState, useRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
+import {
+  BriefcaseIcon,
+  BookOpenIcon,
+  AcademicCapIcon,
+  LockClosedIcon,
+  ArrowPathIcon,
+  ExclamationTriangleIcon,
+} from '@heroicons/react/24/outline';
 import { BlockOut, ConflictItem } from '@/lib/api';
 import EventHoverCard from './EventHoverCard';
 import { showErrorToast } from '@/lib/toast';
+import { useCalendar } from '@/context/CalendarContext';
+import { formatTimeRangeDisplay } from '@/lib/preferences';
 
 interface CalendarBlockCardProps {
   block: BlockOut;
@@ -31,6 +41,7 @@ export default function CalendarBlockCard({
   onReplanStudy,
 }: CalendarBlockCardProps) {
   const router = useRouter();
+  const { timeFormat } = useCalendar();
   const [isHovered, setIsHovered] = useState(false);
   const isOfficial = block.id < 0;
   const openBlock = () => {
@@ -165,7 +176,8 @@ export default function CalendarBlockCard({
   const isShortBlock = duration <= 35;
   const isMediumBlock = duration > 35 && duration <= 55;
 
-  const ariaLabel = `${block.title}, ${block.type} event, ${block.start_time.slice(0, 5)} to ${block.end_time.slice(0, 5)}${block.location ? `, at ${block.location}` : ''
+  const formattedTime = formatTimeRangeDisplay(block.start_time, block.end_time, timeFormat);
+  const ariaLabel = `${block.title}, ${block.type} event, ${formattedTime}${block.location ? `, at ${block.location}` : ''
     }${activeConflict ? `, conflicting: ${activeConflict.overlap_minutes} minutes overlap` : ''}`;
 
   return (
@@ -194,15 +206,13 @@ export default function CalendarBlockCard({
       {/* Top row: Title + Saving/Conflict badges */}
       <div className="flex items-start justify-between gap-1 overflow-hidden leading-tight">
         <div className="flex items-center gap-1 min-w-0 font-semibold text-xs truncate">
-          {block.type === 'shift' && <span className="shrink-0 text-[11px]" title="Work Shift">💼</span>}
-          {block.type === 'study' && <span className="shrink-0 text-[11px]" title="Study Session">📖</span>}
-          {block.type === 'class' && <span className="shrink-0 text-[11px]" title="Class Timetable">📚</span>}
+          {block.type === 'shift' && <BriefcaseIcon className="w-3.5 h-3.5 shrink-0 opacity-80" title="Work Shift" aria-hidden="true" />}
+          {block.type === 'study' && <BookOpenIcon className="w-3.5 h-3.5 shrink-0 opacity-80" title="Study Session" aria-hidden="true" />}
+          {block.type === 'class' && <AcademicCapIcon className="w-3.5 h-3.5 shrink-0 opacity-80" title="Class Timetable" aria-hidden="true" />}
           <span className="truncate">{block.title}</span>
-          {isOfficial && <span title="Managed in class workspace" aria-label="Shared class, read-only here">🔒</span>}
+          {isOfficial && <LockClosedIcon className="w-3 h-3 shrink-0 opacity-70" title="Managed in class workspace" aria-label="Shared class, read-only here" />}
           {block.is_recurring && (
-            <span className="shrink-0 text-[10px] opacity-70" title={block.recurrence_interval === 2 ? 'Repeats every 2 weeks' : 'Repeats weekly'}>
-              🔁
-            </span>
+            <ArrowPathIcon className="w-3 h-3 shrink-0 opacity-70" title={block.recurrence_interval === 2 ? 'Repeats every 2 weeks' : 'Repeats weekly'} aria-hidden="true" />
           )}
           {block.is_exception && (
             <span className="shrink-0 text-[9px] px-1 rounded bg-amber-500/20 text-amber-500 border border-amber-500/30" title="Modified occurrence">
@@ -219,7 +229,7 @@ export default function CalendarBlockCard({
           )}
           {activeConflict && (
             <span className="text-[9px] font-bold px-1.5 py-0.2 bg-rose-600 text-white rounded flex items-center gap-0.5 shadow-xs">
-              <span>⚠️</span>
+              <ExclamationTriangleIcon className="w-3 h-3 shrink-0" aria-hidden="true" />
               {!isShortBlock && <span>CONFLICT</span>}
             </span>
           )}
@@ -230,7 +240,7 @@ export default function CalendarBlockCard({
       {!isShortBlock && (
         <div className="flex items-center gap-1.5 text-[11px] opacity-90 mt-0.5 font-mono">
           <span>
-            {block.start_time.slice(0, 5)}–{block.end_time.slice(0, 5)}
+            {formattedTime}
           </span>
           {block.location && !isMediumBlock && (
             <span className="truncate font-sans opacity-75">· {block.location}</span>
@@ -241,8 +251,9 @@ export default function CalendarBlockCard({
       {/* Third row: Conflict overlap summary & Auto-replan if Study */}
       {activeConflict && !isShortBlock && (
         <div className="mt-1 flex items-center justify-between gap-1 text-[10px] font-medium text-rose-600 dark:text-rose-400">
-          <span className="truncate">
-            ⚠️ {activeConflict.overlap_minutes}m overlap
+          <span className="truncate flex items-center gap-1">
+            <ExclamationTriangleIcon className="w-3 h-3 shrink-0" aria-hidden="true" />
+            {activeConflict.overlap_minutes}m overlap
           </span>
           {studyTaskId && onReplanStudy && (
             <button
@@ -251,10 +262,11 @@ export default function CalendarBlockCard({
                 e.stopPropagation();
                 onReplanStudy(studyTaskId);
               }}
-              className="px-1.5 py-0.2 bg-purple-600 hover:bg-purple-500 text-white rounded text-[9px] font-semibold transition cursor-pointer"
+              className="px-1.5 py-0.2 bg-purple-600 hover:bg-purple-500 text-white rounded text-[9px] font-semibold transition cursor-pointer flex items-center gap-1"
               title="Automatically move study session into an open free gap"
             >
-              🔄 Replan
+              <ArrowPathIcon className="w-2.5 h-2.5 inline" aria-hidden="true" />
+              Replan
             </button>
           )}
         </div>

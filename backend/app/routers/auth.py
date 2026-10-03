@@ -15,6 +15,7 @@ from app.models.notification import NotificationPrefs
 from app.models.study_task import StudyTask
 from app.models.time_block import TimeBlock
 from app.models.user import User
+from app.models.user_preference import UserPreference
 from app.schemas.auth import (
     AuthResponseData,
     ChangePasswordRequest,
@@ -285,6 +286,7 @@ def get_current_user_profile(
         .first()
     )
 
+    pref = getattr(user, "preferences", None)
     return DataResponse(
         data=UserProfileData(
             user_id=user.id,
@@ -297,6 +299,14 @@ def get_current_user_profile(
             language=user.language or "en",
             theme=user.theme or "dark",
             minimum_transition_minutes=int((user.minimum_transition_minutes if getattr(user, "minimum_transition_minutes", None) is not None else 15)),
+            week_starts_on=pref.week_starts_on if pref else "monday",
+            time_format=pref.time_format if pref else "12h",
+            default_calendar_view=pref.default_calendar_view if pref else "week",
+            reduced_motion=pref.reduced_motion if pref else "system",
+            planning_hours_start=int(pref.planning_hours_start if pref else 9),
+            planning_hours_end=int(pref.planning_hours_end if pref else 18),
+            preferred_session_duration=int(pref.preferred_session_duration if pref else 45),
+            preferred_break_duration=int(pref.preferred_break_duration if pref else 15),
             oauth_provider=user.oauth_provider,
             has_password=bool(user.password_hash),
             created_at=user.created_at,
@@ -358,6 +368,45 @@ def update_current_user_profile(
     if body.minimum_transition_minutes is not None:
         user.minimum_transition_minutes = body.minimum_transition_minutes
 
+    pref = user.preferences
+    if (
+        body.week_starts_on is not None
+        or body.time_format is not None
+        or body.default_calendar_view is not None
+        or body.reduced_motion is not None
+        or body.planning_hours_start is not None
+        or body.planning_hours_end is not None
+        or body.preferred_session_duration is not None
+        or body.preferred_break_duration is not None
+    ):
+        if not pref:
+            pref = UserPreference(user_id=user.id)
+            db.add(pref)
+            db.flush()
+
+        if body.week_starts_on is not None:
+            pref.week_starts_on = body.week_starts_on
+        if body.time_format is not None:
+            pref.time_format = body.time_format
+        if body.default_calendar_view is not None:
+            pref.default_calendar_view = body.default_calendar_view
+        if body.reduced_motion is not None:
+            pref.reduced_motion = body.reduced_motion
+        if body.planning_hours_start is not None:
+            pref.planning_hours_start = body.planning_hours_start
+        if body.planning_hours_end is not None:
+            pref.planning_hours_end = body.planning_hours_end
+        if body.preferred_session_duration is not None:
+            pref.preferred_session_duration = body.preferred_session_duration
+        if body.preferred_break_duration is not None:
+            pref.preferred_break_duration = body.preferred_break_duration
+
+        if pref.planning_hours_start > pref.planning_hours_end:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "validation_error", "message": "Planning start hour cannot be after end hour"},
+            )
+
     db.commit()
     db.refresh(user)
 
@@ -367,7 +416,7 @@ def update_current_user_profile(
         action="SETTINGS_CHANGED",
         entity_type="user",
         entity_id=user.id,
-        description="Student updated profile and preferences",
+        description="User updated profile and preferences",
         request=request,
     )
 
@@ -382,6 +431,7 @@ def update_current_user_profile(
         .first()
     )
 
+    pref = user.preferences
     return DataResponse(
         data=UserProfileData(
             user_id=user.id,
@@ -394,6 +444,14 @@ def update_current_user_profile(
             language=user.language or "en",
             theme=user.theme or "dark",
             minimum_transition_minutes=int((user.minimum_transition_minutes if getattr(user, "minimum_transition_minutes", None) is not None else 15)),
+            week_starts_on=pref.week_starts_on if pref else "monday",
+            time_format=pref.time_format if pref else "12h",
+            default_calendar_view=pref.default_calendar_view if pref else "week",
+            reduced_motion=pref.reduced_motion if pref else "system",
+            planning_hours_start=int(pref.planning_hours_start if pref else 9),
+            planning_hours_end=int(pref.planning_hours_end if pref else 18),
+            preferred_session_duration=int(pref.preferred_session_duration if pref else 45),
+            preferred_break_duration=int(pref.preferred_break_duration if pref else 15),
             oauth_provider=user.oauth_provider,
             has_password=bool(user.password_hash),
             created_at=user.created_at,
