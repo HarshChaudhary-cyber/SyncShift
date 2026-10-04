@@ -29,29 +29,33 @@ client = TestClient(app)
 @pytest.fixture(scope="module")
 def seeded_db():
     """Ensure database has the demo dataset seeded."""
+    from app.scripts import seed_demo
+    patcher = pytest.MonkeyPatch()
+    patcher.setattr(seed_demo, "apply_migrations", lambda: None)
     session = next(get_db())
     try:
         seed_demo_data(session)
         yield session
     finally:
         session.close()
+        patcher.undo()
 
 
 def test_idempotent_seeding(seeded_db):
     """Re-running seeding must not create duplicate entities."""
     # Count entities before second run
-    inst_count_before = seeded_db.query(Institution).filter(Institution.code.in_(["APEX", "BEACON"])).count()
+    inst_count_before = seeded_db.query(Institution).filter(Institution.code.in_(["SSDEMO", "RIVERDEMO"])).count()
     user_count_before = seeded_db.query(User).filter(
-        (User.email.like("%@apex.example")) | (User.email.like("%@beacon.example"))
+        (User.email.like("%@ssdemo.example")) | (User.email.like("%@riverdemo.example"))
     ).count()
     section_count_before = seeded_db.query(AcademicSection).count()
 
     # Re-run seed
     seed_demo_data(seeded_db)
 
-    inst_count_after = seeded_db.query(Institution).filter(Institution.code.in_(["APEX", "BEACON"])).count()
+    inst_count_after = seeded_db.query(Institution).filter(Institution.code.in_(["SSDEMO", "RIVERDEMO"])).count()
     user_count_after = seeded_db.query(User).filter(
-        (User.email.like("%@apex.example")) | (User.email.like("%@beacon.example"))
+        (User.email.like("%@ssdemo.example")) | (User.email.like("%@riverdemo.example"))
     ).count()
     section_count_after = seeded_db.query(AcademicSection).count()
 
@@ -62,17 +66,17 @@ def test_idempotent_seeding(seeded_db):
 
 def test_institution_scoped_enrollment_login(seeded_db):
     """
-    Enrollment '00101' exists in both Apex (Maya Lin) and Beacon (Marcus Wright).
+    Enrollment '00041001' exists in both Apex (Maya Lin) and Beacon (Marcus Wright).
     1. Authenticating without context must return 400 institution_selection_required (never guess first match).
     2. Authenticating with Apex institution context logs in Maya Lin.
     3. Authenticating with Beacon institution context logs in Marcus Wright.
     """
-    inst_apex = seeded_db.query(Institution).filter_by(code="APEX").first()
-    inst_beacon = seeded_db.query(Institution).filter_by(code="BEACON").first()
+    inst_apex = seeded_db.query(Institution).filter_by(code="SSDEMO").first()
+    inst_beacon = seeded_db.query(Institution).filter_by(code="RIVERDEMO").first()
 
     # 1. Ambiguous without institution context
     res_ambig = client.post("/api/v1/auth/login", json={
-        "identifier": "00101",
+        "identifier": "00041001",
         "password": DEMO_PASSWORDS["student_primary"],
     })
     assert res_ambig.status_code == 400
@@ -80,24 +84,24 @@ def test_institution_scoped_enrollment_login(seeded_db):
 
     # 2. Login to Apex with institution_id
     res_apex = client.post("/api/v1/auth/login", json={
-        "identifier": "  00101  ",
+        "identifier": "  00041001  ",
         "password": DEMO_PASSWORDS["student_primary"],
         "institution_id": inst_apex.id,
     })
     assert res_apex.status_code == 200, res_apex.text
     data_apex = res_apex.json()["data"]
-    assert data_apex["email"] == "student.maya@apex.example"
+    assert data_apex["email"] == "student.arjun@ssdemo.example"
     assert data_apex["institution_role"] == "student"
 
     # 3. Login to Beacon with institution_id
     res_beacon = client.post("/api/v1/auth/login", json={
-        "identifier": "00101",
+        "identifier": "00041001",
         "password": DEMO_PASSWORDS["beacon_student"],
         "institution_id": inst_beacon.id,
     })
     assert res_beacon.status_code == 200, res_beacon.text
     data_beacon = res_beacon.json()["data"]
-    assert data_beacon["email"] == "marcus@beacon.example"
+    assert data_beacon["email"] == "student.kabir@riverdemo.example"
     assert data_beacon["institution_role"] == "student"
 
 
@@ -106,8 +110,8 @@ def test_shared_class_updates_visible_to_enrolled_students(seeded_db):
     When a professor updates an official class or shared class event time,
     the enrolled student sees the updated time immediately upon calendar fetch.
     """
-    maya = seeded_db.query(User).filter_by(email="student.maya@apex.example").first()
-    turing = seeded_db.query(User).filter_by(email="prof.turing@apex.example").first()
+    maya = seeded_db.query(User).filter_by(email="student.arjun@ssdemo.example").first()
+    turing = seeded_db.query(User).filter_by(email="professor.asha@ssdemo.example").first()
 
     # Find Dr. Turing's CS101 workspace
     sec_cs101 = seeded_db.query(AcademicSection).filter_by(section_code="CS101-SEC-A").first()
@@ -153,7 +157,7 @@ def test_student_rejection_when_attempting_to_edit_official_classes(seeded_db):
     Enrolled students have read-only access to official shared classes and cannot edit them.
     Attempting to modify the class via workspace or personal blocks API must be rejected.
     """
-    maya = seeded_db.query(User).filter_by(email="student.maya@apex.example").first()
+    maya = seeded_db.query(User).filter_by(email="student.arjun@ssdemo.example").first()
     sec_cs101 = seeded_db.query(AcademicSection).filter_by(section_code="CS101-SEC-A").first()
     ws = seeded_db.query(ClassWorkspace).filter_by(section_id=sec_cs101.id).first()
 
@@ -183,8 +187,8 @@ def test_professor_student_private_task_isolation(seeded_db):
     """
     Personal tasks and private planner items must never leak between professors and students.
     """
-    maya = seeded_db.query(User).filter_by(email="student.maya@apex.example").first()
-    turing = seeded_db.query(User).filter_by(email="prof.turing@apex.example").first()
+    maya = seeded_db.query(User).filter_by(email="student.arjun@ssdemo.example").first()
+    turing = seeded_db.query(User).filter_by(email="professor.asha@ssdemo.example").first()
 
     # Query tasks directly from DB
     maya_tasks = seeded_db.query(StudyTask).filter_by(user_id=maya.id).all()
@@ -217,8 +221,8 @@ def test_cross_university_access_rejection(seeded_db):
     Users in Beacon University must not access Apex University classes or resources.
     Unrelated students in Apex cannot access classes they are not enrolled in.
     """
-    marcus = seeded_db.query(User).filter_by(email="marcus@beacon.example").first()
-    liam = seeded_db.query(User).filter_by(email="student.liam@apex.example").first()
+    marcus = seeded_db.query(User).filter_by(email="student.kabir@riverdemo.example").first()
+    liam = seeded_db.query(User).filter_by(email="student.meera@ssdemo.example").first()
     sec_cs101 = seeded_db.query(AcademicSection).filter_by(section_code="CS101-SEC-A").first()
     ws_cs101 = seeded_db.query(ClassWorkspace).filter_by(section_id=sec_cs101.id).first()
 

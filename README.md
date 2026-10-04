@@ -142,8 +142,10 @@ pip install -r requirements.txt
 # The application enforces Alembic as the single source of truth and will NOT auto-create tables.
 alembic upgrade head
 
-# Seed realistic demo data (Northbridge University ecosystem)
-python seed_demo_data.py
+# Seed a separate demo database; see docs/demo-testing.md for the full command
+# Set DATABASE_URL=sqlite:///./syncshift-demo.db and a unique JWT_SECRET
+# before migrations, seed and startup (commands in docs/demo-testing.md).
+python seed_demo.py --verify
 
 # Start FastAPI development server
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
@@ -167,30 +169,17 @@ Frontend application will be live at `http://localhost:3000`.
 
 ## 🎭 Demo Personas & Portfolio Walkthrough
 
-The project includes an idempotent seed script (`backend/seed_demo_data.py`) setting up **Northbridge University (NBU)**:
+The canonical local demo seed (`backend/seed_demo.py`) sets up **SyncShift Demo University (SSDEMO)** and **Riverside Demo University (RIVERDEMO)**. It generates random passwords in the Git-ignored `backend/.demo-credentials.json`. See [demo testing](docs/demo-testing.md) for setup and current scenarios.
 
 | Persona | Email | Password | Role / Details |
 | :--- | :--- | :--- | :--- |
-| **University Administrator** | `admin@northbridge.edu` | `Northbridge2026!` | Admin: Manages timetable, reviews impact, publishes updates, views analytics. |
-| **Student (Alex Taylor)** | `alex.taylor@student.northbridge.edu` | `Student2026!` | 3rd-year CS student. Works Tue/Thu barista shifts. Enrolled in CS301 & CS302. |
-| **Student (Jordan Lee)** | `jordan.lee@student.northbridge.edu` | `Student2026!` | 3rd-year IT student. Works campus shifts. Enrolled in CS301 & IT305. |
+| **Super admin** | `admin@ssdemo.example` | See local credentials file | University management and private workspace. |
+| **Professor** | `professor.asha@ssdemo.example` | See local credentials file | Teaches two sections attended by Arjun. |
+| **Student** | `student.arjun@ssdemo.example` or `00041001` with SSDEMO selected | See local credentials file | Shared classes and private study tasks. |
 
-### Flagship Portfolio Demonstration Flow
+### Demo walkthrough
 
-1. **Log in as Admin (`admin@northbridge.edu`):**
-   - Navigate to **Timetable** (`/university/timetables`).
-   - Open the active timetable and create a new **Draft Version** (v1.1).
-   - Move `CS301-A` from Monday 09:00 to Tuesday 17:00.
-   - Run **Impact Analysis**: See immediate flags that Alex Taylor's barista work shift collides with the new lecture slot.
-   - Submit for review, approve, and **Publish**.
-2. **Log in as Student (`alex.taylor@student.northbridge.edu`):**
-   - Notice the **Notification Bell** alert: *"Fall 2026 Timetable Released / Class Moved"*.
-   - View **My Schedule** (`/calendar`): The official university class is updated; the barista work shift remains intact.
-   - Navigate to **Plan** (`/planner`): Run the smart optimizer to receive a conflict-free study schedule adapting to the change.
-   - Open **Ask SyncShift** (✨ floating assistant) and ask: *"What classes do I have tomorrow?"* or *"Do I have any conflicts this week?"*
-3. **Review Institutional Analytics (`/university/insights`):**
-   - View aggregate classroom utilization rates, term registration progress, and student conflict density heatmaps.
-
+Sign in as `admin@ssdemo.example` to inspect university management, as `professor.asha@ssdemo.example` to manage assigned classes, and as `student.arjun@ssdemo.example` or `00041001` with SSDEMO selected to view the student calendar. Read `docs/demo-testing.md` for the connected API scenario and refresh behavior.
 ---
 
 ## 🧪 Testing & Quality Assurance

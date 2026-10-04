@@ -32,11 +32,11 @@ services:
       - "127.0.0.1:8000:8000"
     environment:
       ENV: development
-      DATABASE_URL: sqlite:////data/syncshift.db
+      DATABASE_URL: sqlite:////data/syncshift-demo.db
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1,::1,172.16.0.0/12,10.0.0.0/8,192.168.0.0/16,testclient}
-      JWT_SECRET: ${JWT_SECRET:-syncshift-dev-secret-key-32-chars-minimum!!}
-      SECRET_KEY: ${SECRET_KEY:-syncshift-dev-secret-key-32-chars-minimum!!}
+      JWT_SECRET: ${JWT_SECRET:?Set a unique demo JWT_SECRET}
+      SECRET_KEY: ${SECRET_KEY:?Set a unique demo SECRET_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
       AI_PROVIDER: ${AI_PROVIDER:-gemini}
@@ -49,6 +49,12 @@ services:
       # Set both provider keys and CAPTCHA_ENFORCE=true when enabling Turnstile.
       CAPTCHA_SECRET_KEY: ${CAPTCHA_SECRET_KEY:-}
       CAPTCHA_ENFORCE: ${CAPTCHA_ENFORCE:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-notifications@syncshift.app}
+      PASSWORD_RESET_PUBLIC_URL: ${PASSWORD_RESET_PUBLIC_URL:-}
     depends_on:
       redis:
         condition: service_healthy

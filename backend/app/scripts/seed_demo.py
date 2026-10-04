@@ -4,7 +4,7 @@ Repeatable, idempotent demo database seeding script for SyncShift.
 Features:
 - Restricted to local/test/development environments (strictly refuses execution in production).
 - Idempotent: re-running updates or skips existing seed-owned records without duplication.
-- Reset support (--reset): removes only seed-owned records (.example domains and APEX/BEACON codes).
+- CLI seed targets a separate, initially empty local demo database.
 - Verification support (--verify): verifies authentications against the seeded database.
 - Writes credentials to local excluded file and prints manual test table.
 """
@@ -13,6 +13,10 @@ import os
 import sys
 import argparse
 import json
+import hashlib
+import secrets
+from pathlib import Path
+from zoneinfo import ZoneInfo
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Dict, Any
 
@@ -50,18 +54,30 @@ from app.routers.auth import hash_password, verify_password
 from app.services.class_workspaces import ensure_legacy_workspaces
 
 
-DEMO_PASSWORDS = {
-    "admin": "ApexAdminPass2026!",
-    "professor": "AlanTuringPass2026!",
-    "student_primary": "MayaStudentPass2026!",
-    "student_unrelated": "LiamStudentPass2026!",
-    "beacon_student": "MarcusBeaconPass2026!",
-    "beacon_admin": "BeaconAdminPass2026!",
-    "default_user": "DemoUserPass2026!",
-}
+DEMO_PASSWORDS = {key: secrets.token_urlsafe(18) + "A1!" for key in (
+    "admin", "professor", "student_primary", "student_unrelated",
+    "beacon_student", "beacon_admin", "default_user",
+)}
 
-DEMO_DOMAINS = ["@apex.example", "@beacon.example"]
-DEMO_INSTITUTION_CODES = ["APEX", "BEACON"]
+DEMO_DOMAINS = ["@ssdemo.example", "@riverdemo.example"]
+DEMO_INSTITUTION_CODES = ["SSDEMO", "RIVERDEMO"]
+SEED_DATE = datetime.now(ZoneInfo("Europe/London")).date()
+CREDENTIALS_PATH = Path(BACKEND_DIR) / ".demo-credentials.json"
+MANIFEST_PATH = Path(BACKEND_DIR) / ".demo-manifest.json"
+
+
+def demo_database_path() -> Path:
+    verify_not_production()
+    if not settings.DATABASE_URL.startswith("sqlite:///"):
+        raise RuntimeError("Use a dedicated local SQLite demo database")
+    db_path = Path(engine.url.database).resolve()
+    if db_path.name != "syncshift-demo.db":
+        raise RuntimeError("Refusing to seed another database; set DATABASE_URL to sqlite:///./syncshift-demo.db")
+    return db_path
+
+
+def database_digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def verify_not_production():
@@ -80,11 +96,8 @@ def apply_migrations():
         alembic_cfg = Config(alembic_ini_path)
         command.upgrade(alembic_cfg, "head")
         print("[+] Database schema is up to date.")
-    except Exception as e:
-        if "already exists" in str(e).lower():
-            print("[*] Schema already created, proceeding with seed.")
-        else:
-            raise
+    except Exception:
+        raise RuntimeError("Demo schema migration failed; inspect the database before seeding")
 
 
 def reset_demo_data(db):
@@ -92,6 +105,8 @@ def reset_demo_data(db):
     Remove seed-owned demo records deterministically without dropping tables
     or touching non-demo user data.
     """
+    if not getattr(db, "_seed_reset_authorized", False):
+        raise RuntimeError("Reset requires the isolated database manifest and unchanged database")
     verify_not_production()
     print("[*] Resetting demo-owned records...")
 
@@ -101,7 +116,7 @@ def reset_demo_data(db):
 
     # 2. Identify demo users
     demo_users = db.query(User).filter(
-        (User.email.like("%@apex.example")) | (User.email.like("%@beacon.example"))
+        (User.email.like("%@ssdemo.example")) | (User.email.like("%@riverdemo.example"))
     ).all()
     demo_user_ids = [u.id for u in demo_users]
 
@@ -165,12 +180,8 @@ def get_or_create_user(db, email: str, display_name: str, password_plain: str, t
         db.commit()
         db.refresh(user)
     else:
-        user.display_name = display_name
-        user.name = display_name
-        user.password_hash = hash_password(password_plain)
-        user.deleted_at = None
-        db.commit()
-        db.refresh(user)
+        # Existing accounts and manual edits are never changed by a repeated seed.
+        return user
     return user
 
 
@@ -182,17 +193,17 @@ def seed_demo_data(db) -> Dict[str, Any]:
     print("[*] Starting idempotent seeding of SyncShift demo dataset...")
 
     # ──────────────────────────────────────────────────────────────────────────
-    # 1. PRIMARY UNIVERSITY: Apex Institute of Technology
+    # 1. PRIMARY UNIVERSITY: SyncShift Demo University
     # ──────────────────────────────────────────────────────────────────────────
-    inst_apex = db.query(Institution).filter_by(code="APEX").first()
+    inst_apex = db.query(Institution).filter_by(code="SSDEMO").first()
     if not inst_apex:
         inst_apex = Institution(
-            name="Apex Institute of Technology",
-            code="APEX",
+            name="SyncShift Demo University",
+            code="SSDEMO",
             description="Premier research and technology university in London.",
             country="United Kingdom",
             timezone="Europe/London",
-            email_domain="apex.example",
+            email_domain="ssdemo.example",
             is_active=True,
         )
         db.add(inst_apex)
@@ -215,17 +226,18 @@ def seed_demo_data(db) -> Dict[str, Any]:
             db.refresh(dept)
         dept_map[code] = dept
 
-    # 1 Current Academic Term based on execution date (Autumn 2026)
-    today = date(2026, 10, 3)
-    term = db.query(AcademicTerm).filter_by(institution_id=inst_apex.id, name="Autumn Semester 2026").first()
+    # Academic term spans the configured seed date and the following weeks.
+    today = SEED_DATE
+    term_name = f"Demo Term {today.year}"
+    term = db.query(AcademicTerm).filter_by(institution_id=inst_apex.id, name=term_name).first()
     if not term:
         term = AcademicTerm(
             institution_id=inst_apex.id,
-            name="Autumn Semester 2026",
-            academic_year="2026-2027",
+            name=term_name,
+            academic_year=f"{today.year}-{today.year + 1}",
             term_type="semester",
-            start_date=date(2026, 9, 1),
-            end_date=date(2027, 1, 31),
+            start_date=today - timedelta(days=14),
+            end_date=today + timedelta(days=120),
             status="active",
         )
         db.add(term)
@@ -325,10 +337,10 @@ def seed_demo_data(db) -> Dict[str, Any]:
 
     # 4 Professors
     prof_data = [
-        ("prof.turing@apex.example", "Dr. Alan Turing", DEMO_PASSWORDS["professor"], "CS", "FAC-CS-001", "Professor of Computer Science"),
-        ("prof.lovelace@apex.example", "Dr. Ada Lovelace", DEMO_PASSWORDS["default_user"], "CS", "FAC-CS-002", "Associate Professor of Computing"),
-        ("prof.gauss@apex.example", "Dr. Carl Friedrich Gauss", DEMO_PASSWORDS["default_user"], "MATH", "FAC-MATH-001", "Professor of Mathematics"),
-        ("prof.faraday@apex.example", "Dr. Michael Faraday", DEMO_PASSWORDS["default_user"], "EE", "FAC-EE-001", "Senior Lecturer in Electrical Engineering"),
+        ("professor.asha@ssdemo.example", "Dr. Asha Rao", DEMO_PASSWORDS["professor"], "CS", "FAC-CS-001", "Professor of Computer Science"),
+        ("prof.lovelace@ssdemo.example", "Dr. Ada Lovelace", DEMO_PASSWORDS["default_user"], "CS", "FAC-CS-002", "Associate Professor of Computing"),
+        ("prof.gauss@ssdemo.example", "Dr. Carl Friedrich Gauss", DEMO_PASSWORDS["default_user"], "MATH", "FAC-MATH-001", "Professor of Mathematics"),
+        ("prof.faraday@ssdemo.example", "Dr. Michael Faraday", DEMO_PASSWORDS["default_user"], "EE", "FAC-EE-001", "Senior Lecturer in Electrical Engineering"),
     ]
     prof_map = {}
     for email, dname, pw, dcode, ecode, title in prof_data:
@@ -359,7 +371,7 @@ def seed_demo_data(db) -> Dict[str, Any]:
 
     # 1 University Super-Admin
     admin_apex = get_or_create_user(
-        db, "admin@apex.example", "Dr. Eleanor Vance", DEMO_PASSWORDS["admin"]
+        db, "admin@ssdemo.example", "Dr. Eleanor Vance", DEMO_PASSWORDS["admin"]
     )
     admin_mem = db.query(InstitutionMembership).filter_by(institution_id=inst_apex.id, user_id=admin_apex.id).first()
     if not admin_mem:
@@ -374,12 +386,12 @@ def seed_demo_data(db) -> Dict[str, Any]:
     # Assign Professors to Sections
     # Primary Professor (Dr. Turing) teaches at least two sections: CS101-SEC-A and CS201-SEC-A
     section_assignments = [
-        ("CS101-SEC-A", "prof.turing@apex.example", True),
-        ("CS201-SEC-A", "prof.turing@apex.example", True),
-        ("CS301-SEC-A", "prof.lovelace@apex.example", True),
-        ("MATH101-SEC-A", "prof.gauss@apex.example", True),
-        ("MATH201-SEC-A", "prof.gauss@apex.example", True),
-        ("EE101-SEC-A", "prof.faraday@apex.example", True),
+        ("CS101-SEC-A", "professor.asha@ssdemo.example", True),
+        ("CS201-SEC-A", "professor.asha@ssdemo.example", True),
+        ("CS301-SEC-A", "prof.lovelace@ssdemo.example", True),
+        ("MATH101-SEC-A", "prof.gauss@ssdemo.example", True),
+        ("MATH201-SEC-A", "prof.gauss@ssdemo.example", True),
+        ("EE101-SEC-A", "prof.faraday@ssdemo.example", True),
     ]
     for scode, p_email, is_prim in section_assignments:
         _, fp = prof_map[p_email]
@@ -399,18 +411,18 @@ def seed_demo_data(db) -> Dict[str, Any]:
     # 12 Students with institution-scoped enrollment numbers (strings with leading zeros preserved)
     students_info = [
         # (email, display_name, password, enrollment_number, program, dept_code)
-        ("student.maya@apex.example", "Maya Lin", DEMO_PASSWORDS["student_primary"], "00101", "B.Sc. Computer Science", "CS"),
-        ("student.liam@apex.example", "Liam Davies", DEMO_PASSWORDS["student_unrelated"], "00102", "B.Eng. Electrical Engineering", "EE"),
-        ("student.sophia@apex.example", "Sophia Chen", DEMO_PASSWORDS["default_user"], "00103", "B.Sc. Computer Science", "CS"),
-        ("student.noah@apex.example", "Noah Patel", DEMO_PASSWORDS["default_user"], "00104", "B.Sc. Computer Science", "CS"),
-        ("student.emma@apex.example", "Emma Watson", DEMO_PASSWORDS["default_user"], "00105", "B.Sc. Mathematics & Computing", "MATH"),
-        ("student.lucas@apex.example", "Lucas Kim", DEMO_PASSWORDS["default_user"], "00106", "B.Sc. Mathematics & Computing", "MATH"),
-        ("student.olivia@apex.example", "Olivia Garcia", DEMO_PASSWORDS["default_user"], "00107", "B.Sc. Computer Science", "CS"),
-        ("student.ethan@apex.example", "Ethan Brown", DEMO_PASSWORDS["default_user"], "00108", "B.Eng. Electrical Engineering", "EE"),
-        ("student.ava@apex.example", "Ava Martinez", DEMO_PASSWORDS["default_user"], "00109", "B.Sc. Computer Science", "CS"),
-        ("student.oliver@apex.example", "Oliver Wilson", DEMO_PASSWORDS["default_user"], "00110", "B.Sc. Mathematics & Computing", "MATH"),
-        ("student.isabella@apex.example", "Isabella Taylor", DEMO_PASSWORDS["default_user"], "00111", "B.Eng. Electrical Engineering", "EE"),
-        ("student.mason@apex.example", "Mason Anderson", DEMO_PASSWORDS["default_user"], "00112", "B.Sc. Computer Science", "CS"),
+        ("student.arjun@ssdemo.example", "Arjun Mehta", DEMO_PASSWORDS["student_primary"], "00041001", "B.Sc. Computer Science", "CS"),
+        ("student.meera@ssdemo.example", "Meera Shah", DEMO_PASSWORDS["student_unrelated"], "00041002", "B.Eng. Electrical Engineering", "EE"),
+        ("student.sophia@ssdemo.example", "Sophia Chen", DEMO_PASSWORDS["default_user"], "00103", "B.Sc. Computer Science", "CS"),
+        ("student.noah@ssdemo.example", "Noah Patel", DEMO_PASSWORDS["default_user"], "00104", "B.Sc. Computer Science", "CS"),
+        ("student.emma@ssdemo.example", "Emma Watson", DEMO_PASSWORDS["default_user"], "00105", "B.Sc. Mathematics & Computing", "MATH"),
+        ("student.lucas@ssdemo.example", "Lucas Kim", DEMO_PASSWORDS["default_user"], "00106", "B.Sc. Mathematics & Computing", "MATH"),
+        ("student.olivia@ssdemo.example", "Olivia Garcia", DEMO_PASSWORDS["default_user"], "00107", "B.Sc. Computer Science", "CS"),
+        ("student.ethan@ssdemo.example", "Ethan Brown", DEMO_PASSWORDS["default_user"], "00108", "B.Eng. Electrical Engineering", "EE"),
+        ("student.ava@ssdemo.example", "Ava Martinez", DEMO_PASSWORDS["default_user"], "00109", "B.Sc. Computer Science", "CS"),
+        ("student.oliver@ssdemo.example", "Oliver Wilson", DEMO_PASSWORDS["default_user"], "00110", "B.Sc. Mathematics & Computing", "MATH"),
+        ("student.isabella@ssdemo.example", "Isabella Taylor", DEMO_PASSWORDS["default_user"], "00111", "B.Eng. Electrical Engineering", "EE"),
+        ("student.mason@ssdemo.example", "Mason Anderson", DEMO_PASSWORDS["default_user"], "00112", "B.Sc. Computer Science", "CS"),
     ]
     student_map = {}
     for email, dname, pw, snum, prog, dcode in students_info:
@@ -446,22 +458,22 @@ def seed_demo_data(db) -> Dict[str, Any]:
         student_map[email] = (u, sp)
 
     # Enroll Students:
-    # 1. Primary Student (Maya Lin): Enrolled in Dr. Turing's sections (CS101-SEC-A, CS201-SEC-A) and MATH101-SEC-A
-    # 2. Unrelated Student (Liam Davies): Enrolled strictly in EE101-SEC-A (NOT in Dr. Turing's sections)
+    # 1. Primary Student (Arjun Mehta): Enrolled in Dr. Turing's sections (CS101-SEC-A, CS201-SEC-A) and MATH101-SEC-A
+    # 2. Unrelated Student (Meera Shah): Enrolled strictly in EE101-SEC-A (NOT in Dr. Turing's sections)
     # 3. Other students enrolled across sections
     enrollment_matrix = [
-        ("student.maya@apex.example", ["CS101-SEC-A", "CS201-SEC-A", "MATH101-SEC-A"]),
-        ("student.liam@apex.example", ["EE101-SEC-A"]),
-        ("student.sophia@apex.example", ["CS101-SEC-A", "CS201-SEC-A", "CS301-SEC-A"]),
-        ("student.noah@apex.example", ["CS101-SEC-A", "CS301-SEC-A", "MATH201-SEC-A"]),
-        ("student.emma@apex.example", ["MATH101-SEC-A", "MATH201-SEC-A", "CS101-SEC-A"]),
-        ("student.lucas@apex.example", ["MATH101-SEC-A", "MATH201-SEC-A"]),
-        ("student.olivia@apex.example", ["CS101-SEC-A", "CS201-SEC-A"]),
-        ("student.ethan@apex.example", ["EE101-SEC-A"]),
-        ("student.ava@apex.example", ["CS101-SEC-A", "MATH101-SEC-A"]),
-        ("student.oliver@apex.example", ["MATH101-SEC-A", "MATH201-SEC-A"]),
-        ("student.isabella@apex.example", ["EE101-SEC-A"]),
-        ("student.mason@apex.example", ["CS201-SEC-A", "CS301-SEC-A"]),
+        ("student.arjun@ssdemo.example", ["CS101-SEC-A", "CS201-SEC-A", "MATH101-SEC-A"]),
+        ("student.meera@ssdemo.example", ["EE101-SEC-A"]),
+        ("student.sophia@ssdemo.example", ["CS101-SEC-A", "CS201-SEC-A", "CS301-SEC-A"]),
+        ("student.noah@ssdemo.example", ["CS101-SEC-A", "CS301-SEC-A", "MATH201-SEC-A"]),
+        ("student.emma@ssdemo.example", ["MATH101-SEC-A", "MATH201-SEC-A", "CS101-SEC-A"]),
+        ("student.lucas@ssdemo.example", ["MATH101-SEC-A", "MATH201-SEC-A"]),
+        ("student.olivia@ssdemo.example", ["CS101-SEC-A", "CS201-SEC-A"]),
+        ("student.ethan@ssdemo.example", ["EE101-SEC-A"]),
+        ("student.ava@ssdemo.example", ["CS101-SEC-A", "MATH101-SEC-A"]),
+        ("student.oliver@ssdemo.example", ["MATH101-SEC-A", "MATH201-SEC-A"]),
+        ("student.isabella@ssdemo.example", ["EE101-SEC-A"]),
+        ("student.mason@ssdemo.example", ["CS201-SEC-A", "CS301-SEC-A"]),
     ]
     for s_email, sec_codes in enrollment_matrix:
         u, sp = student_map[s_email]
@@ -479,27 +491,29 @@ def seed_demo_data(db) -> Dict[str, Any]:
                 db.add(enr)
     db.commit()
 
-    # Published Timetable for Autumn 2026
-    tt_active = db.query(Timetable).filter_by(institution_id=inst_apex.id, name="Autumn 2026 Master Timetable").first()
+    # Published timetable and supported draft, both tied to the configured term.
+    tt_active_name = f"Demo {today.year} Master Timetable"
+    tt_active = db.query(Timetable).filter_by(institution_id=inst_apex.id, name=tt_active_name).first()
     if not tt_active:
         tt_active = Timetable(
             institution_id=inst_apex.id,
             academic_term_id=term.id,
-            name="Autumn 2026 Master Timetable",
+            name=tt_active_name,
             status="active",
-            description="Official published university schedule for Autumn Semester 2026.",
+            description=f"Official published university schedule for {term_name}.",
         )
         db.add(tt_active)
         db.commit()
         db.refresh(tt_active)
 
     # Draft Timetable for Spring exploratory scenarios
-    tt_draft = db.query(Timetable).filter_by(institution_id=inst_apex.id, name="Spring 2027 Draft Timetable").first()
+    tt_draft_name = f"Demo {today.year} Draft Timetable"
+    tt_draft = db.query(Timetable).filter_by(institution_id=inst_apex.id, name=tt_draft_name).first()
     if not tt_draft:
         tt_draft = Timetable(
             institution_id=inst_apex.id,
             academic_term_id=term.id,
-            name="Spring 2027 Draft Timetable",
+            name=tt_draft_name,
             status="draft",
             description="Draft timetable for upcoming curriculum planning and room scheduling.",
         )
@@ -512,24 +526,24 @@ def seed_demo_data(db) -> Dict[str, Any]:
     # Day mapping in CourseMeeting: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
     meetings_data = [
         # Monday (day 1)
-        ("CS101-SEC-A", 1, time(9, 0), time(10, 30), "Alan Turing Building:LH-101", "prof.turing@apex.example", "lecture"),
-        ("MATH101-SEC-A", 1, time(11, 0), time(12, 30), "Mathematics Wing:CR-105", "prof.gauss@apex.example", "lecture"),
-        ("CS201-SEC-A", 1, time(14, 0), time(15, 30), "Grace Hopper Complex:LAB-201", "prof.turing@apex.example", "laboratory"),
+        ("CS101-SEC-A", 1, time(9, 0), time(10, 30), "Alan Turing Building:LH-101", "professor.asha@ssdemo.example", "lecture"),
+        ("MATH101-SEC-A", 1, time(11, 0), time(12, 30), "Mathematics Wing:CR-105", "prof.gauss@ssdemo.example", "lecture"),
+        ("CS201-SEC-A", 1, time(14, 0), time(15, 30), "Grace Hopper Complex:LAB-201", "professor.asha@ssdemo.example", "laboratory"),
         # Tuesday (day 2)
-        ("CS301-SEC-A", 2, time(10, 0), time(11, 30), "Ada Lovelace Tower:SEM-301", "prof.lovelace@apex.example", "lecture"),
-        ("EE101-SEC-A", 2, time(13, 0), time(15, 0), "Engineering Pavilion:LAB-104", "prof.faraday@apex.example", "laboratory"),
+        ("CS301-SEC-A", 2, time(10, 0), time(11, 30), "Ada Lovelace Tower:SEM-301", "prof.lovelace@ssdemo.example", "lecture"),
+        ("EE101-SEC-A", 2, time(13, 0), time(15, 0), "Engineering Pavilion:LAB-104", "prof.faraday@ssdemo.example", "laboratory"),
         # Wednesday (day 3)
-        ("CS101-SEC-A", 3, time(9, 0), time(10, 30), "Alan Turing Building:LH-101", "prof.turing@apex.example", "lecture"),
-        ("CS201-SEC-A", 3, time(11, 0), time(12, 30), "Grace Hopper Complex:LAB-201", "prof.turing@apex.example", "lecture"),
-        ("MATH201-SEC-A", 3, time(14, 0), time(15, 30), "Mathematics Wing:CR-105", "prof.gauss@apex.example", "lecture"),
+        ("CS101-SEC-A", 3, time(9, 0), time(10, 30), "Alan Turing Building:LH-101", "professor.asha@ssdemo.example", "lecture"),
+        ("CS201-SEC-A", 3, time(11, 0), time(12, 30), "Grace Hopper Complex:LAB-201", "professor.asha@ssdemo.example", "lecture"),
+        ("MATH201-SEC-A", 3, time(14, 0), time(15, 30), "Mathematics Wing:CR-105", "prof.gauss@ssdemo.example", "lecture"),
         # Thursday (day 4)
-        ("CS301-SEC-A", 4, time(10, 0), time(11, 30), "Grace Hopper Complex:LAB-201", "prof.lovelace@apex.example", "laboratory"),
-        ("MATH101-SEC-A", 4, time(13, 0), time(14, 30), "Mathematics Wing:CR-105", "prof.gauss@apex.example", "lecture"),
+        ("CS301-SEC-A", 4, time(10, 0), time(11, 30), "Grace Hopper Complex:LAB-201", "prof.lovelace@ssdemo.example", "laboratory"),
+        ("MATH101-SEC-A", 4, time(13, 0), time(14, 30), "Mathematics Wing:CR-105", "prof.gauss@ssdemo.example", "lecture"),
         # Friday (day 5)
-        ("CS101-SEC-A", 5, time(10, 0), time(11, 30), "Alan Turing Building:LH-101", "prof.turing@apex.example", "tutorial"),
-        ("EE101-SEC-A", 5, time(13, 0), time(14, 30), "Claude Shannon Building:LH-102", "prof.faraday@apex.example", "lecture"),
+        ("CS101-SEC-A", 5, time(10, 0), time(11, 30), "Alan Turing Building:LH-101", "professor.asha@ssdemo.example", "tutorial"),
+        ("EE101-SEC-A", 5, time(13, 0), time(14, 30), "Claude Shannon Building:LH-102", "prof.faraday@ssdemo.example", "lecture"),
         # Saturday (day 6 - Today, Oct 3, 2026)
-        ("CS201-SEC-A", 6, time(10, 0), time(11, 30), "Alan Turing Building:LH-101", "prof.turing@apex.example", "lecture"),
+        ("CS201-SEC-A", 6, time(10, 0), time(11, 30), "Alan Turing Building:LH-101", "professor.asha@ssdemo.example", "lecture"),
     ]
     for scode, dow, st, et, rkey, p_email, mtype in meetings_data:
         sec = section_map[scode]
@@ -586,7 +600,7 @@ def seed_demo_data(db) -> Dict[str, Any]:
                 class_id=cs101_ws.id,
                 title="Industry Guest Lecture: High-Scale Distributed Systems",
                 location="Turing Lecture Hall (LH-101)",
-                event_date=date(2026, 10, 6),
+                event_date=SEED_DATE + timedelta(days=2),
                 start_time="16:00",
                 end_time="17:30",
                 status="published",
@@ -600,7 +614,7 @@ def seed_demo_data(db) -> Dict[str, Any]:
                 class_id=cs101_ws.id,
                 title="Midterm Review & Q&A Session",
                 location="Turing Lecture Hall (LH-101)",
-                event_date=date(2026, 10, 9),
+                event_date=SEED_DATE + timedelta(days=5),
                 start_time="15:00",
                 end_time="16:30",
                 status="draft",
@@ -608,12 +622,12 @@ def seed_demo_data(db) -> Dict[str, Any]:
             db.add(evt_draft)
         db.commit()
 
-    # Personal Tasks & Personal Planner Blocks for Primary Student (Maya Lin)
-    maya_user, _ = student_map["student.maya@apex.example"]
+    # Personal Tasks & Personal Planner Blocks for Primary Student (Arjun Mehta)
+    maya_user, _ = student_map["student.arjun@ssdemo.example"]
     tasks_maya = [
-        ("Implement Red-Black Tree in C++", 6.0, date(2026, 10, 8), TaskStatus.PENDING, "high"),
-        ("Database Normalization Problem Set 2", 4.0, date(2026, 10, 11), TaskStatus.PENDING, "medium"),
-        ("Linear Algebra Eigenvector Practice", 3.0, date(2026, 10, 5), TaskStatus.DONE, "medium"),
+        ("Implement Red-Black Tree in C++", 6.0, SEED_DATE + timedelta(days=4), TaskStatus.PENDING, "high"),
+        ("Database Normalization Problem Set 2", 4.0, SEED_DATE + timedelta(days=7), TaskStatus.PENDING, "medium"),
+        ("Linear Algebra Eigenvector Practice", 3.0, SEED_DATE + timedelta(days=1), TaskStatus.DONE, "medium"),
     ]
     for title, hrs, deadline, tstatus, priority in tasks_maya:
         task = db.query(StudyTask).filter_by(user_id=maya_user.id, title=title).first()
@@ -671,11 +685,11 @@ def seed_demo_data(db) -> Dict[str, Any]:
     db.commit()
 
     # Personal Tasks & Private Planner Blocks for Primary Professor (Dr. Turing)
-    turing_user, _ = prof_map["prof.turing@apex.example"]
+    turing_user, _ = prof_map["professor.asha@ssdemo.example"]
     tasks_turing = [
-        ("Finalize Midterm Exam Questions & Solutions", 5.0, date(2026, 10, 10), TaskStatus.PENDING, "high"),
-        ("Review Graduate Research Proposals", 8.0, date(2026, 10, 15), TaskStatus.PENDING, "medium"),
-        ("Grade Assignment 1 Coding Submissions", 6.0, date(2026, 10, 2), TaskStatus.DONE, "high"),
+        ("Finalize Midterm Exam Questions & Solutions", 5.0, SEED_DATE + timedelta(days=6), TaskStatus.PENDING, "high"),
+        ("Review Graduate Research Proposals", 8.0, SEED_DATE + timedelta(days=11), TaskStatus.PENDING, "medium"),
+        ("Grade Assignment 1 Coding Submissions", 6.0, SEED_DATE - timedelta(days=2), TaskStatus.DONE, "high"),
     ]
     for title, hrs, deadline, tstatus, priority in tasks_turing:
         task = db.query(StudyTask).filter_by(user_id=turing_user.id, title=title).first()
@@ -700,7 +714,7 @@ def seed_demo_data(db) -> Dict[str, Any]:
             title="Doctor Appointment (Private)",
             location="City Health Clinic",
             is_recurring=False,
-            specific_date=date(2026, 10, 7),
+            specific_date=SEED_DATE + timedelta(days=3),
             day_of_week=3,
             start_time=time(8, 0),
             end_time=time(9, 0),
@@ -712,7 +726,7 @@ def seed_demo_data(db) -> Dict[str, Any]:
     # Notifications for Maya and Dr. Turing
     notifs = [
         (maya_user.id, "TIMETABLE_UPDATE", "Official Timetable Published", "Your Autumn 2026 timetable has been published and synced.", True),
-        (maya_user.id, "CLASS_UPDATE", "CS101 Workshop Scheduled", "Dr. Alan Turing announced the Complexity Theory Workshop.", False),
+        (maya_user.id, "CLASS_UPDATE", "CS101 Workshop Scheduled", "Dr. Asha Rao announced the Complexity Theory Workshop.", False),
         (turing_user.id, "TIMETABLE_UPDATE", "Teaching Schedule Activated", "You are assigned as primary instructor for CS101 and CS201.", True),
     ]
     for uid, ntype, title, body, is_read in notifs:
@@ -745,17 +759,17 @@ def seed_demo_data(db) -> Dict[str, Any]:
     db.commit()
 
     # ──────────────────────────────────────────────────────────────────────────
-    # 2. SECOND UNIVERSITY: Beacon State University (for tenant isolation)
+    # 2. SECOND UNIVERSITY: Riverside Demo University (for tenant isolation)
     # ──────────────────────────────────────────────────────────────────────────
-    inst_beacon = db.query(Institution).filter_by(code="BEACON").first()
+    inst_beacon = db.query(Institution).filter_by(code="RIVERDEMO").first()
     if not inst_beacon:
         inst_beacon = Institution(
-            name="Beacon State University",
-            code="BEACON",
+            name="Riverside Demo University",
+            code="RIVERDEMO",
             description="Autonomous technical state university.",
             country="United Kingdom",
             timezone="Europe/London",
-            email_domain="beacon.example",
+            email_domain="riverdemo.example",
             is_active=True,
         )
         db.add(inst_beacon)
@@ -777,7 +791,7 @@ def seed_demo_data(db) -> Dict[str, Any]:
 
     # Beacon Super Admin
     admin_beacon = get_or_create_user(
-        db, "admin@beacon.example", "Dr. Raymond Holt", DEMO_PASSWORDS["beacon_admin"]
+        db, "admin@riverdemo.example", "Dr. Raymond Holt", DEMO_PASSWORDS["beacon_admin"]
     )
     b_admin_mem = db.query(InstitutionMembership).filter_by(institution_id=inst_beacon.id, user_id=admin_beacon.id).first()
     if not b_admin_mem:
@@ -789,9 +803,9 @@ def seed_demo_data(db) -> Dict[str, Any]:
         b_admin_mem.deleted_at = None
     db.commit()
 
-    # Beacon Student with IDENTICAL ENROLLMENT NUMBER "00101" as Maya Lin
+    # Beacon Student with IDENTICAL ENROLLMENT NUMBER "00041001" as Arjun Mehta
     beacon_student = get_or_create_user(
-        db, "marcus@beacon.example", "Marcus Wright", DEMO_PASSWORDS["beacon_student"]
+        db, "student.kabir@riverdemo.example", "Kabir Khan", DEMO_PASSWORDS["beacon_student"]
     )
     b_stud_mem = db.query(InstitutionMembership).filter_by(institution_id=inst_beacon.id, user_id=beacon_student.id).first()
     if not b_stud_mem:
@@ -808,14 +822,14 @@ def seed_demo_data(db) -> Dict[str, Any]:
             institution_id=inst_beacon.id,
             user_id=beacon_student.id,
             department_id=dept_beacon.id,
-            student_number="00101",  # Exactly the same enrollment number as Maya Lin!
+            student_number="00041001",  # Exactly the same enrollment number as Arjun Mehta!
             program="B.Sc. Computing",
             year_of_study=1,
             status="active",
         )
         db.add(b_sp)
     else:
-        b_sp.student_number = "00101"
+        b_sp.student_number = "00041001"
         b_sp.status = "active"
         b_sp.deleted_at = None
     db.commit()
@@ -841,10 +855,10 @@ def seed_demo_data(db) -> Dict[str, Any]:
         "accounts": [
             {
                 "role": "Super Admin",
-                "university": "Apex Institute of Technology",
-                "university_code": "APEX",
+                "university": "SyncShift Demo University",
+                "university_code": "SSDEMO",
                 "institution_id": inst_apex.id,
-                "email": "admin@apex.example",
+                "email": "admin@ssdemo.example",
                 "display_name": "Dr. Eleanor Vance",
                 "enrollment_number": None,
                 "password": DEMO_PASSWORDS["admin"],
@@ -852,67 +866,61 @@ def seed_demo_data(db) -> Dict[str, Any]:
             },
             {
                 "role": "Professor",
-                "university": "Apex Institute of Technology",
-                "university_code": "APEX",
+                "university": "SyncShift Demo University",
+                "university_code": "SSDEMO",
                 "institution_id": inst_apex.id,
-                "email": "prof.turing@apex.example",
-                "display_name": "Dr. Alan Turing",
+                "email": "professor.asha@ssdemo.example",
+                "display_name": "Dr. Asha Rao",
                 "enrollment_number": None,
                 "password": DEMO_PASSWORDS["professor"],
                 "notes": "Teaches CS101-SEC-A and CS201-SEC-A.",
             },
             {
                 "role": "Student (Primary)",
-                "university": "Apex Institute of Technology",
-                "university_code": "APEX",
+                "university": "SyncShift Demo University",
+                "university_code": "SSDEMO",
                 "institution_id": inst_apex.id,
-                "email": "student.maya@apex.example",
-                "display_name": "Maya Lin",
-                "enrollment_number": "00101",
+                "email": "student.arjun@ssdemo.example",
+                "display_name": "Arjun Mehta",
+                "enrollment_number": "00041001",
                 "password": DEMO_PASSWORDS["student_primary"],
                 "notes": "Enrolled in Dr. Turing's sections.",
             },
             {
                 "role": "Student (Unrelated)",
-                "university": "Apex Institute of Technology",
-                "university_code": "APEX",
+                "university": "SyncShift Demo University",
+                "university_code": "SSDEMO",
                 "institution_id": inst_apex.id,
-                "email": "student.liam@apex.example",
-                "display_name": "Liam Davies",
-                "enrollment_number": "00102",
+                "email": "student.meera@ssdemo.example",
+                "display_name": "Meera Shah",
+                "enrollment_number": "00041002",
                 "password": DEMO_PASSWORDS["student_unrelated"],
                 "notes": "Enrolled only in EE101-SEC-A; cannot see Dr. Turing's classes.",
             },
             {
                 "role": "Student (Cross-University)",
-                "university": "Beacon State University",
-                "university_code": "BEACON",
+                "university": "Riverside Demo University",
+                "university_code": "RIVERDEMO",
                 "institution_id": inst_beacon.id,
-                "email": "marcus@beacon.example",
-                "display_name": "Marcus Wright",
-                "enrollment_number": "00101",
+                "email": "student.kabir@riverdemo.example",
+                "display_name": "Kabir Khan",
+                "enrollment_number": "00041001",
                 "password": DEMO_PASSWORDS["beacon_student"],
-                "notes": "Duplicate enrollment '00101' in different university.",
+                "notes": "Duplicate enrollment '00041001' in different university.",
             },
             {
                 "role": "Super Admin (Beacon)",
-                "university": "Beacon State University",
-                "university_code": "BEACON",
+                "university": "Riverside Demo University",
+                "university_code": "RIVERDEMO",
                 "institution_id": inst_beacon.id,
-                "email": "admin@beacon.example",
+                "email": "admin@riverdemo.example",
                 "display_name": "Dr. Raymond Holt",
                 "enrollment_number": None,
                 "password": DEMO_PASSWORDS["beacon_admin"],
-                "notes": "Admin for Beacon State University.",
+                "notes": "Admin for Riverside Demo University.",
             },
         ],
     }
-
-    # Save to local gitignored credentials file
-    creds_file = os.path.join(BACKEND_DIR, ".demo-credentials.json")
-    with open(creds_file, "w", encoding="utf-8") as f:
-        json.dump(credentials, f, indent=2)
-    print(f"[+] Credentials saved to local file: {creds_file}")
 
     return credentials
 
@@ -967,21 +975,52 @@ def print_credentials_table(creds: Dict[str, Any]):
 
 
 def main():
+    global SEED_DATE
     parser = argparse.ArgumentParser(description="SyncShift Repeatable Demo Seeding & Reset Utility")
     parser.add_argument("--reset", action="store_true", help="Remove seed-owned demo records without touching non-demo data")
     parser.add_argument("--verify", action="store_true", help="Verify seeded accounts authentication")
+    parser.add_argument("--date", type=date.fromisoformat, help="University-local seed date (YYYY-MM-DD)")
     args = parser.parse_args()
+
+    if args.date:
+        SEED_DATE = args.date
+    db_path = demo_database_path()
+
+    if MANIFEST_PATH.exists():
+        manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        if manifest.get("database") != str(db_path):
+            raise RuntimeError("Demo manifest belongs to another database")
+        if args.reset:
+            if database_digest(db_path) != manifest["sha256"]:
+                raise RuntimeError("Demo database has changed since seeding; preserve manual edits and reset manually after review")
+        else:
+            if not CREDENTIALS_PATH.exists():
+                raise RuntimeError("Credentials missing; refusing to reseed or reset passwords")
+            if args.verify:
+                with SessionLocal() as verify_db:
+                    verify_demo_dataset(verify_db, json.loads(CREDENTIALS_PATH.read_text(encoding="utf-8")))
+            print("Demo already seeded. Existing data and passwords preserved.")
+            return
+    elif args.reset:
+        raise RuntimeError("No tracked demo seed exists for reset")
+    elif db_path.exists() and db_path.stat().st_size:
+        raise RuntimeError("Demo target is not empty or tracked; choose a fresh dedicated syncshift-demo.db")
 
     db = SessionLocal()
     try:
         if args.reset:
+            db._seed_reset_authorized = True
             reset_demo_data(db)
+            MANIFEST_PATH.unlink()
+            CREDENTIALS_PATH.unlink(missing_ok=True)
             return
 
         creds = seed_demo_data(db)
         if args.verify:
             verify_demo_dataset(db, creds)
-        print_credentials_table(creds)
+        CREDENTIALS_PATH.write_text(json.dumps(creds, indent=2), encoding="utf-8")
+        MANIFEST_PATH.write_text(json.dumps({"database": str(db_path), "sha256": database_digest(db_path), "date": SEED_DATE.isoformat()}), encoding="utf-8")
+        print(f"Demo credentials saved to {CREDENTIALS_PATH}; passwords are not printed.")
     finally:
         db.close()
 

@@ -39,6 +39,9 @@ dump.rdb
 .env.*.local
 *.pem
 *demo-credentials*
+*.demo-manifest.json
+.demo-manifest.json
+.demo-secret
 *credentials.local*
 *credentials.json
 
