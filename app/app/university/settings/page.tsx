@@ -90,7 +90,7 @@ export default function UniversitySettingsPage() {
               <input
                 type="text"
                 required
-                disabled={!isAdmin}
+                disabled={!isSuperAdmin}
                 value={form.name || ''}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full px-3 py-2 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
@@ -115,7 +115,7 @@ export default function UniversitySettingsPage() {
             </label>
             <textarea
               rows={3}
-              disabled={!isAdmin}
+              disabled={!isSuperAdmin}
               value={form.description || ''}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               className="w-full px-3 py-2 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
@@ -129,7 +129,7 @@ export default function UniversitySettingsPage() {
               </label>
               <input
                 type="text"
-                disabled={!isAdmin}
+                disabled={!isSuperAdmin}
                 value={form.country || ''}
                 onChange={(e) => setForm({ ...form, country: e.target.value })}
                 className="w-full px-3 py-2 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
@@ -141,7 +141,7 @@ export default function UniversitySettingsPage() {
               </label>
               <input
                 type="text"
-                disabled={!isAdmin}
+                disabled={!isSuperAdmin}
                 value={form.timezone || 'Europe/London'}
                 onChange={(e) => setForm({ ...form, timezone: e.target.value })}
                 className="w-full px-3 py-2 rounded-xl bg-[var(--bg-input)] border border-[var(--border-color)] text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-60"
@@ -153,7 +153,7 @@ export default function UniversitySettingsPage() {
               </label>
               <input
                 type="text"
-                disabled={!isAdmin}
+                disabled={!isSuperAdmin}
                 placeholder="e.g. university.edu"
                 value={form.email_domain || ''}
                 onChange={(e) => setForm({ ...form, email_domain: e.target.value })}
@@ -162,7 +162,7 @@ export default function UniversitySettingsPage() {
             </div>
           </div>
 
-          {isAdmin && (
+          {isSuperAdmin && (
             <div className="flex justify-end pt-4 border-t border-[var(--border-color)]">
               <button
                 type="submit"

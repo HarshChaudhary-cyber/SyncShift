@@ -22,7 +22,7 @@ export default function AdminArea(){
    await load();
  }catch(e){setError((e as Error).message);}finally{setBusy(false);}}
  if(!allowed)return <div className="ws-panel"><h1>Administration access required</h1><p>This area is available only to verified university super admins.</p><Link href="/dashboard">Return to dashboard</Link></div>;
- const links=[['Departments','departments'],['Subjects & credits','courses'],['Sections & teaching assignments','sections'],['Academic terms','terms'],['University timetables','timetables'],['Rooms','rooms'],['Official teaching load','analytics']];
+ const links=[['Users','members'],['Faculty','faculty'],['Departments','departments'],['Subjects & credits','courses'],['Sections & teaching assignments','sections'],['Academic terms','terms'],['University timetables','timetables'],['Rooms','rooms'],['Institutional settings','settings'],['Audit history','audit-logs'],['Official teaching load','analytics']];
  return <><header className="ws-header"><div><div className="ws-kicker">SUPER ADMIN · UNIVERSITY MANAGEMENT</div><h1>Administration</h1><p>Manage academic records and access. Personal schedules remain private.</p></div><button className="ws-button primary" onClick={()=>{setMode('invite');setRole('student');setEmail('');setLink('');}}>Invite user</button></header>
  {error&&<p className="notice error" role="alert">{error}<button onClick={load}>Retry</button></p>}
  <nav className="admin-resource-grid" aria-label="Academic administration">{links.map(([name,path])=><Link className="ws-panel" key={path} href={`/university/${path}`}>{name} →</Link>)}<Link className="ws-panel" href="/classes">Shared classes & announcements →</Link><Link className="ws-panel" href="/appointments">Shared university events →</Link></nav>

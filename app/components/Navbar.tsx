@@ -10,6 +10,7 @@ import { openSyncShiftAssistant } from '@/components/assistant/SyncShiftAssistan
 
 import OfflineBanner from '@/components/ui/OfflineBanner';
 import { isUniversityRole } from '@/components/RoleGuard';
+import { HomeIcon, CalendarDaysIcon, AcademicCapIcon, BookOpenIcon, ChartBarIcon, BuildingLibraryIcon, Cog6ToothIcon, FolderOpenIcon, SunIcon, MoonIcon, BellIcon, ExclamationTriangleIcon, ArrowPathIcon, EnvelopeIcon, ArrowRightOnRectangleIcon, BoltIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
 interface NavbarProps {
   onImportClick?: () => void;
@@ -35,34 +36,34 @@ export default function Navbar({ onImportClick }: NavbarProps) {
     {
       name: 'Home',
       href: '/student/dashboard',
-      icon: '🏠',
+      icon: <HomeIcon className="h-4 w-4" aria-hidden="true" />,
       isActive: pathname === '/dashboard' || pathname === '/student/dashboard',
     },
     {
       name: 'My Schedule',
       href: '/student/calendar',
-      icon: '📅',
+      icon: <CalendarDaysIcon className="h-4 w-4" aria-hidden="true" />,
       isActive: pathname.startsWith('/student/calendar') || pathname.startsWith('/calendar'),
     },
     {
       name: 'My Courses',
       href: '/student/courses',
-      icon: '🎓',
+      icon: <AcademicCapIcon className="h-4 w-4" aria-hidden="true" />,
       isActive: pathname.startsWith('/student/courses') || pathname.startsWith('/student/academics'),
     },
     {
       name: 'Plan',
       href: '/student/planner',
-      icon: '📖',
+      icon: <BookOpenIcon className="h-4 w-4" aria-hidden="true" />,
       isActive: pathname.startsWith('/student/planner') || pathname.startsWith('/planner'),
     },
   ];
 
   const isUniv = isUniversityRole(user?.institution_role);
   const secondaryNavLinks = [
-    { name: 'Analytics', href: '/analytics', icon: '📊' },
-    ...(isUniv ? [{ name: 'University Portal', href: '/university/dashboard', icon: '🏛️' }] : []),
-    { name: 'Settings', href: '/student/settings', icon: '⚙️' },
+    { name: 'Analytics', href: '/analytics', icon: <ChartBarIcon className="h-4 w-4" aria-hidden="true" /> },
+    ...(isUniv ? [{ name: 'University Portal', href: '/university/dashboard', icon: <BuildingLibraryIcon className="h-4 w-4" aria-hidden="true" /> }] : []),
+    { name: 'Settings', href: '/student/settings', icon: <Cog6ToothIcon className="h-4 w-4" aria-hidden="true" /> },
   ];
 
   const handleImport = () => {
@@ -137,7 +138,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
             href="/dashboard"
             className="flex items-center gap-2 text-[var(--text-primary)] font-black text-lg tracking-tight hover:opacity-90 transition"
           >
-            <span className="text-xl text-indigo-500">⚡</span>
+            <BoltIcon className="h-5 w-5 text-indigo-500" aria-hidden="true" />
             <span>SyncShift</span>
           </Link>
 
@@ -165,7 +166,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
               className="px-3 py-1.5 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-950 dark:hover:text-white bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-600/30 border border-indigo-200 dark:border-indigo-500/30 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
               title="Open SyncShift Assistant"
             >
-              <span>✨</span>
+              <SparklesIcon className="h-4 w-4" aria-hidden="true" />
               <span>Ask SyncShift</span>
             </button>
 
@@ -208,7 +209,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                       }}
                       className="w-full px-3.5 py-2 text-left text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition flex items-center gap-2 cursor-pointer"
                     >
-                      <span>📁</span>
+                      <FolderOpenIcon className="h-4 w-4" aria-hidden="true" />
                       <span>Import Schedule</span>
                     </button>
                   </div>
@@ -225,9 +226,9 @@ export default function Navbar({ onImportClick }: NavbarProps) {
             onClick={toggleTheme}
             className="p-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition cursor-pointer shadow-xs"
             aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            title={resolvedTheme === 'dark' ? 'Switch to light mode (☀️)' : 'Switch to dark mode (🌙)'}
+            title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            <span className="text-sm select-none">{resolvedTheme === 'dark' ? '☀️' : '🌙'}</span>
+            {resolvedTheme === 'dark' ? <SunIcon className="h-4 w-4" aria-hidden="true" /> : <MoonIcon className="h-4 w-4" aria-hidden="true" />}
           </button>
 
           {/* Notification Bell with Badge & Dropdown */}
@@ -239,7 +240,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                 aria-label="Today's Notifications"
                 title="Notifications"
               >
-                <span className="text-sm">🔔</span>
+                <BellIcon className="h-4 w-4" aria-hidden="true" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-4 rounded-full bg-indigo-600 text-[10px] font-black text-white leading-none shadow-sm flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -315,8 +316,8 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                                 {isUnread && (
                                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
                                 )}
-                                <span className="text-xs shrink-0">
-                                  {n.priority === 'URGENT' ? '🚨' : n.type === 'CLASS_MOVED' ? '🔄' : n.channel === 'push' ? '🔔' : '📧'}
+                                <span className="shrink-0">
+                                  {n.priority === 'URGENT' ? <ExclamationTriangleIcon className="h-4 w-4" aria-hidden="true" /> : n.type === 'CLASS_MOVED' ? <ArrowPathIcon className="h-4 w-4" aria-hidden="true" /> : n.channel === 'push' ? <BellIcon className="h-4 w-4" aria-hidden="true" /> : <EnvelopeIcon className="h-4 w-4" aria-hidden="true" />}
                                 </span>
                                 <span className="text-xs font-bold text-[var(--text-primary)] truncate">
                                   {n.title}
@@ -346,7 +347,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                       onClick={() => setNotificationsOpen(false)}
                       className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition"
                     >
-                      Settings ⚙️
+                      Settings
                     </Link>
                   </div>
                 </div>
@@ -391,7 +392,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                       onClick={() => setProfileMenuOpen(false)}
                       className="w-full px-4 py-2 text-left text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition flex items-center gap-2"
                     >
-                      <span>⚙️</span>
+                      <Cog6ToothIcon className="h-4 w-4" aria-hidden="true" />
                       <span>Settings</span>
                     </Link>
                   </div>
@@ -405,7 +406,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
                       }}
                       className="w-full px-4 py-2 text-left text-xs font-semibold text-red-500 hover:bg-red-500/10 transition flex items-center gap-2 cursor-pointer"
                     >
-                      <span>🚪</span>
+                      <ArrowRightOnRectangleIcon className="h-4 w-4" aria-hidden="true" />
                       <span>Sign Out</span>
                     </button>
                   </div>
@@ -433,7 +434,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
             aria-label="Toggle light/dark theme"
             title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            <span className="text-sm select-none">{resolvedTheme === 'dark' ? '☀️' : '🌙'}</span>
+            {resolvedTheme === 'dark' ? <SunIcon className="h-4 w-4" aria-hidden="true" /> : <MoonIcon className="h-4 w-4" aria-hidden="true" />}
           </button>
 
           {user && (
@@ -442,7 +443,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
               className="relative p-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               aria-label="Settings & Notifications"
             >
-              <span className="text-sm">🔔</span>
+              <BellIcon className="h-4 w-4" aria-hidden="true" />
               {notifCount > 0 && (
                 <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-indigo-600 text-[9px] font-bold text-white leading-none">
                   {notifCount}
@@ -496,7 +497,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
               }}
               className="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition flex items-center gap-2 cursor-pointer"
             >
-              <span>✨</span>
+              <SparklesIcon className="h-4 w-4" aria-hidden="true" />
               <span>Ask SyncShift</span>
             </button>
           </div>
@@ -524,7 +525,7 @@ export default function Navbar({ onImportClick }: NavbarProps) {
               }}
               className="w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)] transition flex items-center gap-2 cursor-pointer"
             >
-              <span>📁</span>
+              <FolderOpenIcon className="h-4 w-4" aria-hidden="true" />
               <span>Import Schedule</span>
             </button>
           </div>

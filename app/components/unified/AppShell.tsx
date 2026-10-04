@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { MotionConfig } from 'framer-motion';
-import { Squares2X2Icon, CalendarDaysIcon, AcademicCapIcon, ClipboardDocumentListIcon, BellIcon, SparklesIcon, Bars3Icon, XMarkIcon, ChevronDownIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { Squares2X2Icon, CalendarDaysIcon, AcademicCapIcon, ClipboardDocumentListIcon, BellIcon, SparklesIcon, Bars3Icon, XMarkIcon, ChevronDownIcon, Cog6ToothIcon, UsersIcon, BuildingOfficeIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { useAuthContext } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { openSyncShiftAssistant } from '@/components/assistant/SyncShiftAssistant';
@@ -18,8 +18,9 @@ const navigation = [
 const adminNavigation = [
   ['Overview & users','/admin',Squares2X2Icon],['Subjects','/university/courses',AcademicCapIcon],
   ['Sections & assignments','/university/sections',ClipboardDocumentListIcon],['Timetables','/university/timetables',CalendarDaysIcon],
+  ['Faculty','/university/faculty',UsersIcon],['Rooms','/university/rooms',BuildingOfficeIcon],
   ['Departments','/university/departments',AcademicCapIcon],['Academic terms','/university/terms',CalendarDaysIcon],
-  ['Settings', '/settings', Cog6ToothIcon],
+  ['Institutional settings', '/university/settings', Cog6ToothIcon],['Audit history','/university/audit-logs',DocumentTextIcon],
 ] as const;
 
 export default function AppShell({ children }: {children: React.ReactNode}) {
