@@ -286,8 +286,8 @@ export default function AcademicTermsPage() {
 
       {/* Modal for Create/Edit */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xl">
+        <div className="viewport-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="viewport-dialog w-full max-w-md bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xl">
             <h3 className="text-base font-bold text-[var(--text-primary)] mb-4">
               {editingTerm ? 'Edit Academic Term' : 'Add Academic Term'}
             </h3>

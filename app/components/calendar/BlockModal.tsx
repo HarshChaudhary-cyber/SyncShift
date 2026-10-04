@@ -328,10 +328,10 @@ export default function BlockModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-[var(--modal-overlay)] backdrop-blur-sm"
+      className="viewport-overlay fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-[var(--modal-overlay)] backdrop-blur-sm"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full h-full sm:h-auto sm:max-w-[500px] bg-[var(--bg-card)] sm:border border-[var(--border-color)] rounded-none sm:rounded-2xl shadow-2xl text-[var(--text-primary)] flex flex-col max-h-full sm:max-h-[90vh]">
+      <div className="viewport-dialog w-full h-full sm:h-auto sm:max-w-[500px] bg-[var(--bg-card)] sm:border border-[var(--border-color)] rounded-none sm:rounded-2xl shadow-2xl text-[var(--text-primary)] flex flex-col max-h-full sm:max-h-[90vh]">
 
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[var(--border-color)] shrink-0">

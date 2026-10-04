@@ -128,12 +128,12 @@ export default function UniversityLayout({ children }: { children: React.ReactNo
         >
           <AppShell>
             {isSuperAdmin && (
-              <div className="bg-indigo-50 dark:bg-indigo-900/30 border-b border-indigo-100 dark:border-indigo-800/50 px-6 py-2 flex items-center justify-between">
+              <div className="university-banner bg-indigo-50 dark:bg-indigo-900/30 border-b border-indigo-100 dark:border-indigo-800/50 py-2 flex flex-wrap gap-2 items-center justify-between">
                 <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">Super Admin Mode</span>
                 <Link className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline" href="/admin">Open Legacy Super-Admin Portal →</Link>
               </div>
             )}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+            <div className="university-content">
               {children}
             </div>
           </AppShell>

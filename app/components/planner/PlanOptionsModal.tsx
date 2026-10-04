@@ -31,8 +31,8 @@ export default function PlanOptionsModal({
     previewData.options[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="viewport-overlay fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-sm overflow-y-auto">
+      <div className="viewport-dialog relative w-full max-w-4xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Modal Header */}
         <div className="px-6 py-5 border-b border-[var(--border-color)] flex items-center justify-between bg-gradient-to-r from-purple-950/30 via-transparent to-transparent">
           <div className="space-y-0.5">

@@ -181,7 +181,7 @@ export default function WeekView({ onBlockClick, onSlotClick, onReplanStudy }: W
           </div>
 
           {/* Horizontal scroll container on mobile/tablet */}
-          <div className="overflow-x-auto min-w-full">
+          <div className="calendar-scroll overflow-x-auto w-full min-w-0" tabIndex={0} role="region" aria-label="Weekly calendar, scroll horizontally for more days">
             <div
               style={{
                 minWidth: viewMode === '5day' ? '680px' : '900px',

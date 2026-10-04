@@ -1,0 +1,56 @@
+/* Overlays have their own scrolling surface; the underlying page keeps its height. */
+.viewport-overlay {
+  top: var(--visible-viewport-top, 0px);
+  bottom: auto;
+  height: var(--visible-viewport-height, 100dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.viewport-dialog {
+  min-width: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+}
+.viewport-dialog :where(.flex, .grid) > :where(div, form, label, h2) { min-width: 0; }
+.viewport-dialog :where(input, select, textarea) { min-width: 0; max-width: 100%; }
+.viewport-dialog :where(input, select, textarea):not([type=checkbox]):not([type=radio]) { width: 100%; }
+.viewport-dialog :where(button) { max-width: 100%; }
+.viewport-dialog :where(.flex) > button { flex-shrink: 0; }
+.viewport-dialog :where(.overflow-y-auto) { min-height: 0; }
+@media (max-width: 600px) {
+  .viewport-dialog :where(.grid-cols-2) { grid-template-columns: minmax(0, 1fr); }
+  .viewport-dialog :where(.grid-cols-3):not(:has(> button)) { grid-template-columns: minmax(0, 1fr); }
+  .viewport-dialog :where(input,select,textarea):not([type=checkbox]):not([type=radio]),
+  .assistant-panel input { font-size: 16px; }
+}
+
+.assistant-panel {
+  position: fixed;
+  top: calc(var(--visible-viewport-top, 0px) + 12px);
+  right: 12px;
+  width: min(500px, calc(100% - 24px));
+  height: min(660px, calc(var(--visible-viewport-height, 100dvh) - 24px));
+  min-width: 0;
+  min-height: 0;
+  overflow-wrap: anywhere;
+}
+.assistant-panel > :not(.assistant-messages) { flex-shrink: 0; }
+.assistant-panel .assistant-messages { min-height: 0; min-width: 0; }
+.assistant-panel :where(.flex, .grid) > :where(div, span, h2) { min-width: 0; }
+.assistant-panel :where(input) { min-width: 0; }
+.assistant-panel :where(button) { flex-shrink: 0; }
+.assistant-panel .assistant-header { flex-wrap: wrap; gap: 8px; }
+.assistant-panel .assistant-header h2 { flex-wrap: wrap; }
+.assistant-panel .assistant-suggestions { min-height: 0; max-height: min(80px, 20%); flex-wrap: wrap; overflow-y: auto; flex-shrink: 1; }
+.assistant-panel .assistant-suggestions button { max-width: 100%; white-space: normal; text-align: left; }
+.assistant-panel .assistant-upload { min-height: 0; max-height: 35%; overflow-y: auto; flex-shrink: 1; }
+@media (min-width: 640px) {
+  .assistant-panel {
+    top: calc(var(--visible-viewport-top, 0px) + max(12px, var(--visible-viewport-height, 100dvh) - 684px));
+    right: 24px;
+    width: min(500px, calc(100% - 48px));
+    height: min(660px, calc(var(--visible-viewport-height, 100dvh) - 36px));
+  }
+}

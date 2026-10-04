@@ -419,9 +419,9 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
       role="dialog"
       aria-modal="true"
       aria-labelledby="import-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[var(--modal-overlay)] backdrop-blur-xs animate-in fade-in duration-150"
+      className="viewport-overlay fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[var(--modal-overlay)] backdrop-blur-xs animate-in fade-in duration-150"
     >
-      <div className="w-full max-w-xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 sm:p-6 shadow-2xl text-[var(--text-primary)] flex flex-col gap-4 max-h-[92vh] overflow-hidden">
+      <div className="viewport-dialog w-full max-w-xl bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-5 sm:p-6 shadow-2xl text-[var(--text-primary)] flex flex-col gap-4 max-h-[92vh] overflow-hidden">
         
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3 shrink-0">

@@ -242,7 +242,7 @@ export default function RoomsPage() {
 
       {/* Filters Bar */}
       <div className="flex flex-wrap items-center gap-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] p-3.5 rounded-xl">
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-0">
           <input
             type="text"
             placeholder="Search building, room #, or features..."
@@ -347,7 +347,7 @@ export default function RoomsPage() {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable academic table">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-[var(--border-color)] bg-[var(--bg-primary)]/50 text-[var(--text-secondary)] text-xs uppercase tracking-wider">
                 <tr>
@@ -425,8 +425,8 @@ export default function RoomsPage() {
 
       {/* Modal: Create or Edit Room */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+        <div className="viewport-overlay fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="viewport-dialog bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)]">
               <h3 className="text-lg font-bold text-[var(--text-primary)]">
                 {editingRoom ? 'Edit Room' : 'Add Physical Room'}

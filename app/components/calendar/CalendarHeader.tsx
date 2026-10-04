@@ -55,7 +55,7 @@ export default function CalendarHeader({
       </div>
 
       {/* CENTER: Navigation Steppers (< Today >) */}
-      <div className="flex items-center gap-2 self-start lg:self-auto">
+      <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
         <div className="flex items-center bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-0.5 text-xs whitespace-nowrap shadow-2xs">
           <button
             type="button"

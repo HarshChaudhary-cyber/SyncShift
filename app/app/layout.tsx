@@ -6,6 +6,8 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import NotificationRegistrar from '@/components/NotificationRegistrar';
 import SyncShiftAssistant from '@/components/assistant/SyncShiftAssistant';
 import { ApplicationBoundary } from '@/components/unified/AppShell';
+import ViewportMetrics from '@/components/ui/ViewportMetrics';
+import '@/components/ui/viewport.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -54,7 +56,8 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="font-sans antialiased min-h-screen overflow-x-hidden">
+      <body className="font-sans antialiased min-h-screen">
+        <ViewportMetrics />
         <AuthProvider>
           <ThemeProvider>
             <NotificationRegistrar />

@@ -776,7 +776,7 @@ export function SettingsContent() {
         style={{
           display: 'flex',
           gap: 12,
-          overflowX: 'auto',
+          flexWrap: 'wrap',
           borderBottom: '1px solid var(--border-color)',
           paddingBottom: 2,
         }}
@@ -1385,7 +1385,7 @@ export function SettingsContent() {
                     background: 'var(--bg-secondary)',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="ws-actions" style={{ justifyContent: 'space-between' }}>
                     <div>
                       <strong style={{ fontSize: 13, display: 'block' }}>Browser Web Push Alerts</strong>
                       <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
@@ -1503,7 +1503,7 @@ export function SettingsContent() {
                     marginTop: 12,
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div className="ws-actions" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
                     <div>
                       <strong style={{ fontSize: 13 }}>Quiet Hours (Do Not Disturb)</strong>
                       <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>

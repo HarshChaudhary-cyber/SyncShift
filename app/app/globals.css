@@ -126,16 +126,19 @@
 }
 
 html {
-  overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  overflow-x: hidden;
   font-family: var(--font-inter), system-ui, sans-serif;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Preserve decorative clipping on public pages, without masking workspace overflow. */
+html:not(:has(.workspace-app)), body:not(:has(.workspace-app)) {
+  overflow-x: hidden;
 }
 
 /* Reusable Theme Utilities */

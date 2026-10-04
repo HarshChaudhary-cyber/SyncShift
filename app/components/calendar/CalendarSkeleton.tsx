@@ -6,13 +6,13 @@ export default function CalendarSkeleton({ daysCount = 7 }: { daysCount?: number
   return (
     <div className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl overflow-hidden shadow-md animate-pulse">
       {/* Legend placeholder */}
-      <div className="px-4 py-3 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex flex-wrap gap-3 items-center justify-between">
         <div className="h-4 w-48 bg-[var(--border-color)] rounded" />
         <div className="h-4 w-32 bg-[var(--border-color)] rounded" />
       </div>
 
       {/* Grid */}
-      <div className="flex divide-x divide-[var(--border-color)]">
+      <div className="calendar-scroll overflow-x-auto" aria-label="Loading weekly calendar"><div className="flex divide-x divide-[var(--border-color)]">
         {/* Time gutter */}
         <div className="w-14 sm:w-16 shrink-0 bg-[var(--bg-card)] p-2 space-y-8">
           <div className="h-8 w-8 bg-[var(--border-color)] rounded mx-auto" />
@@ -36,7 +36,7 @@ export default function CalendarSkeleton({ daysCount = 7 }: { daysCount?: number
             )}
           </div>
         ))}
-      </div>
+      </div></div>
     </div>
   );
 }

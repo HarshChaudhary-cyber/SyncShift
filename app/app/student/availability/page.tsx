@@ -298,7 +298,7 @@ export default function StudentAvailabilityPage() {
                       </button>
 
                       {/* Time Range */}
-                      <div className="flex items-center gap-2">
+                      <div className="availability-time-range">
                         <label className="text-[11px] text-[var(--text-secondary)]">From:</label>
                         <input
                           type="time"
@@ -320,7 +320,7 @@ export default function StudentAvailabilityPage() {
                       </div>
 
                       {/* Note / Label */}
-                      <div className="flex-1 min-w-[140px]">
+                      <div className="flex-1 min-w-0 max-w-full">
                         <input
                           type="text"
                           value={slot.note || ''}

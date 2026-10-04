@@ -550,10 +550,10 @@ function ScopedAssistant() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 20, scale: prefersReducedMotion ? 1 : 0.95 }}
               transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2 }}
-              className="fixed bottom-0 sm:bottom-6 right-0 sm:right-6 z-50 w-full sm:w-[500px] max-h-[92vh] sm:max-h-[90vh] h-[660px] bg-[var(--bg-card)] border border-[var(--border-color)] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden text-[var(--text-primary)]"
+              className="assistant-panel z-50 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden text-[var(--text-primary)]"
             >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3.5 border-b border-[var(--border-color)] bg-[var(--bg-secondary)]">
+            <div className="assistant-header flex items-center justify-between px-4 py-3.5 border-b border-[var(--border-color)] bg-[var(--bg-secondary)]">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-xs">
                   {effectiveRole === 'admin' ? (
@@ -673,7 +673,7 @@ function ScopedAssistant() {
             </AnimatePresence>
 
             {/* Chat Messages Feed */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 text-[var(--text-primary)] custom-scrollbar">
+            <div className="assistant-messages flex-1 overflow-y-auto p-4 space-y-4 text-[var(--text-primary)] custom-scrollbar">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
@@ -957,7 +957,7 @@ function ScopedAssistant() {
             </div>
 
             {/* Quick Starter Suggestion Chips - clicking populates the prompt for review */}
-            <div className="px-3 py-2 bg-[var(--bg-secondary)] border-t border-[var(--border-color)] overflow-x-auto flex items-center gap-1.5 no-scrollbar">
+            <div className="assistant-suggestions px-3 py-2 bg-[var(--bg-secondary)] border-t border-[var(--border-color)] overflow-x-auto flex items-center gap-1.5 no-scrollbar">
               {suggestions.map((chip, idx) => (
                 <button
                   key={idx}
@@ -974,7 +974,7 @@ function ScopedAssistant() {
 
             {/* Timetable upload drawer */}
             {showUpload && (
-              <AssistantTimetableUpload
+              <div className="assistant-upload"><AssistantTimetableUpload
                 onClose={() => setShowUpload(false)}
                 onDone={(text) => {
                   setMessages((prev) => [
@@ -988,7 +988,7 @@ function ScopedAssistant() {
                   ]);
                   setShowUpload(false);
                 }}
-              />
+              /></div>
             )}
 
             {/* Input Bar */}
