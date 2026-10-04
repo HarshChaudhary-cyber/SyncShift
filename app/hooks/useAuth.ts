@@ -10,7 +10,7 @@ export interface UseAuthReturn {
   user: UserProfile | null;
   memberships: ClassSummary[];
   error: string | null;
-  login: (email: string, password: string, captcha?: string) => Promise<void>;
+  login: (emailOrIdentifier: string, password: string, captcha?: string, institutionId?: number) => Promise<void>;
   register: (email: string, password: string, timezone?: string, limit?: number, captcha?: string) => Promise<void>;
   loginWithOAuthData: (data: {token?: string}) => Promise<void>;
   logout: () => void;
@@ -69,7 +69,7 @@ export function useAuth(): UseAuthReturn {
       document.removeEventListener('visibilitychange', refresh);
     };
   }, [verifyToken, logout]);
-  const login = useCallback(async (email: string, password: string, captcha?: string) => establish(await api.login(email, password, captcha)), [establish]);
+  const login = useCallback(async (emailOrIdentifier: string, password: string, captcha?: string, institutionId?: number) => establish(await api.login(emailOrIdentifier, password, captcha, institutionId)), [establish]);
   const register = useCallback(async (email: string, password: string, timezone = 'Europe/London', limit = 20, captcha?: string) => establish(await api.register(email, password, timezone, limit, captcha)), [establish]);
   const refreshUser = useCallback(async () => { await verifyToken(); }, [verifyToken]);
   return {status, user, memberships, error, login, register, loginWithOAuthData: establish, logout, lastVerified, refreshUser, onIdleReturn};

@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useUniversity } from '../layout';
 import AcademicResourcesNav from '@/components/university/AcademicResourcesNav';
 import { api, Department, DepartmentCreatePayload } from '@/lib/api';
+import { BuildingOffice2Icon } from '@heroicons/react/24/outline';
 
 export default function DepartmentsPage() {
   const { institution, isAdmin } = useUniversity();
@@ -164,7 +165,7 @@ export default function DepartmentsPage() {
         </div>
       ) : departments.length === 0 ? (
         <div className="text-center py-16 rounded-2xl bg-[var(--bg-card)] border border-dashed border-[var(--border-color)]">
-          <span className="text-3xl block mb-2">🏢</span>
+          <BuildingOffice2Icon className="w-10 h-10 mx-auto mb-2 text-[var(--text-muted)]" aria-hidden="true" />
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">No departments yet</h3>
           <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-sm mx-auto">
             {isAdmin

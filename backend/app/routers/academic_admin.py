@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import CurrentUser, get_current_user
@@ -182,9 +182,19 @@ def update_academic(institution_id: int, user_id: int, body: AcademicUpdate, use
     values = body.model_dump(exclude_unset=True)
     if set(values) - fields:
         raise HTTPException(422, "Fields do not apply to this role")
-    if values.get("student_number") and db.query(StudentProfile).filter(StudentProfile.institution_id == institution_id,
-        StudentProfile.user_id != user_id,StudentProfile.student_number == values["student_number"],StudentProfile.deleted_at.is_(None)).first():
-        raise HTTPException(409, detail={"code":"student_number_exists","message":"Enrollment number is already assigned"})
+    if "student_number" in values and values["student_number"] is not None:
+        trimmed_sn = str(values["student_number"]).strip()
+        if not trimmed_sn:
+            values["student_number"] = None
+        else:
+            values["student_number"] = trimmed_sn
+            if db.query(StudentProfile).filter(
+                StudentProfile.institution_id == institution_id,
+                StudentProfile.user_id != user_id,
+                func.lower(StudentProfile.student_number) == trimmed_sn.lower(),
+                StudentProfile.deleted_at.is_(None),
+            ).first():
+                raise HTTPException(409, detail={"code": "student_number_exists", "message": "Enrollment number is already assigned"})
     for key, value in values.items():
         setattr(profile, key, value)
     history(db, user.user_id, "academic_profile_changed", f"User {user_id}: {', '.join(values)}", institution_id=institution_id)

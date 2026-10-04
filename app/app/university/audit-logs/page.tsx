@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useUniversity } from '../layout';
 import { api, AuditLogItem } from '@/lib/api';
 import { showErrorToast } from '@/lib/toast';
+import { DocumentTextIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 export default function UniversityAuditLogsPage() {
   const { institution, isAdmin } = useUniversity();
@@ -32,7 +33,7 @@ export default function UniversityAuditLogsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl">📜</span>
+            <DocumentTextIcon className="w-6 h-6 text-emerald-500 flex-shrink-0" aria-hidden="true" />
             <h1 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">Audit Logs</h1>
           </div>
           <p className="text-xs text-[var(--text-secondary)] mt-1">
@@ -41,9 +42,10 @@ export default function UniversityAuditLogsPage() {
         </div>
         <button
           onClick={fetchLogs}
-          className="px-3 py-1.5 bg-[var(--bg-secondary)] hover:bg-[var(--bg-elevated)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-lg text-xs font-semibold transition cursor-pointer self-start sm:self-auto"
+          className="px-3 py-1.5 bg-[var(--bg-secondary)] hover:bg-[var(--bg-elevated)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-lg text-xs font-semibold transition cursor-pointer self-start sm:self-auto flex items-center gap-1.5"
         >
-          ↻ Refresh Logs
+          <ArrowPathIcon className="w-3.5 h-3.5" aria-hidden="true" />
+          <span>Refresh Logs</span>
         </button>
       </div>
 

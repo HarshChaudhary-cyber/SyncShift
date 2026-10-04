@@ -6,6 +6,15 @@ import {
   StudentImpactDetail,
 } from '@/lib/api';
 import CustomSelect from '@/components/ui/CustomSelect';
+import {
+  XMarkIcon,
+  ExclamationTriangleIcon,
+  ExclamationCircleIcon,
+  BuildingOfficeIcon,
+  AcademicCapIcon,
+  UsersIcon,
+  CheckCircleIcon,
+} from '@heroicons/react/24/outline';
 
 interface TimetableImpactModalProps {
   isOpen: boolean;
@@ -114,8 +123,9 @@ export default function TimetableImpactModal({
             onClick={onCancel}
             disabled={isApplying}
             className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            aria-label="Close dialog"
           >
-            ✕
+            <XMarkIcon className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -134,7 +144,8 @@ export default function TimetableImpactModal({
               {staleError && (
                 <div className="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-600/50 rounded-xl text-amber-900 dark:text-amber-200 text-sm space-y-2">
                   <div className="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-300">
-                    <span>⚠️ Timetable Changed Concurrently</span>
+                    <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                    <span>Timetable Changed Concurrently</span>
                   </div>
                   <p>{staleError}</p>
                   {onRefresh && (
@@ -152,7 +163,8 @@ export default function TimetableImpactModal({
               {isBlocked && (
                 <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-600/60 rounded-xl text-rose-900 dark:text-rose-200 text-sm space-y-2">
                   <div className="flex items-center gap-2 font-bold text-rose-900 dark:text-rose-300 text-base">
-                    <span>🚫 Can&apos;t Make This Change</span>
+                    <ExclamationCircleIcon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+                    <span>Can&apos;t Make This Change</span>
                   </div>
                   <p className="text-xs text-rose-800 dark:text-rose-200/90">
                     This proposed timetable change violates official university scheduling constraints:
@@ -180,12 +192,14 @@ export default function TimetableImpactModal({
                     {before?.day_name} • {before?.start_time} – {before?.end_time}
                   </div>
                   <div className="text-xs text-slate-600 dark:text-slate-400 flex flex-col gap-1">
-                    <div>
-                      🏢 <span className="text-slate-800 dark:text-slate-300 font-medium">{before?.room_label || 'No room assigned'}</span>
+                    <div className="flex items-center gap-1.5">
+                      <BuildingOfficeIcon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" aria-hidden="true" />
+                      <span className="text-slate-800 dark:text-slate-300 font-medium">{before?.room_label || 'No room assigned'}</span>
                       {before?.room_capacity && ` (Capacity: ${before.room_capacity})`}
                     </div>
-                    <div>
-                      👨‍🏫 <span className="text-slate-800 dark:text-slate-300 font-medium">{before?.faculty_name || 'No instructor override'}</span>
+                    <div className="flex items-center gap-1.5">
+                      <AcademicCapIcon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" aria-hidden="true" />
+                      <span className="text-slate-800 dark:text-slate-300 font-medium">{before?.faculty_name || 'No instructor override'}</span>
                     </div>
                   </div>
                 </div>
@@ -202,12 +216,14 @@ export default function TimetableImpactModal({
                     {after?.day_name} • {after?.start_time} – {after?.end_time}
                   </div>
                   <div className="text-xs text-slate-600 dark:text-slate-400 flex flex-col gap-1">
-                    <div>
-                      🏢 <span className="text-slate-800 dark:text-slate-300 font-medium">{after?.room_label || 'No room assigned'}</span>
+                    <div className="flex items-center gap-1.5">
+                      <BuildingOfficeIcon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" aria-hidden="true" />
+                      <span className="text-slate-800 dark:text-slate-300 font-medium">{after?.room_label || 'No room assigned'}</span>
                       {after?.room_capacity && ` (Capacity: ${after.room_capacity})`}
                     </div>
-                    <div>
-                      👨‍🏫 <span className="text-slate-800 dark:text-slate-300 font-medium">{after?.faculty_name || 'No instructor override'}</span>
+                    <div className="flex items-center gap-1.5">
+                      <AcademicCapIcon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" aria-hidden="true" />
+                      <span className="text-slate-800 dark:text-slate-300 font-medium">{after?.faculty_name || 'No instructor override'}</span>
                     </div>
                   </div>
                 </div>
@@ -261,33 +277,36 @@ export default function TimetableImpactModal({
                 <div className="flex gap-2">
                   <button
                     onClick={() => setActiveTab('students')}
-                    className={`px-3 py-2 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+                    className={`px-3 py-2 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
                       activeTab === 'students'
                         ? 'border-indigo-600 dark:border-indigo-500 text-indigo-700 dark:text-indigo-300'
                         : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    👥 Affected Students ({students.length})
+                    <UsersIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>Affected Students ({students.length})</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('room')}
-                    className={`px-3 py-2 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+                    className={`px-3 py-2 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
                       activeTab === 'room'
                         ? 'border-indigo-600 dark:border-indigo-500 text-indigo-700 dark:text-indigo-300'
                         : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    🏢 Room Capacity & Details
+                    <BuildingOfficeIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>Room Capacity & Details</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('faculty')}
-                    className={`px-3 py-2 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+                    className={`px-3 py-2 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
                       activeTab === 'faculty'
                         ? 'border-indigo-600 dark:border-indigo-500 text-indigo-700 dark:text-indigo-300'
                         : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    👨‍🏫 Faculty Schedule
+                    <AcademicCapIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>Faculty Schedule</span>
                   </button>
                 </div>
 
@@ -336,8 +355,9 @@ export default function TimetableImpactModal({
                                 Shifted (OK)
                               </span>
                             ) : s.is_resolved_conflict ? (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 font-medium">
-                                ✓ Resolved
+                              <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 font-medium inline-flex items-center gap-1">
+                                <CheckCircleIcon className="w-3 h-3" aria-hidden="true" />
+                                <span>Resolved</span>
                               </span>
                             ) : s.conflict_type === 'work_shift' ? (
                               <span className="px-2 py-0.5 rounded-full text-[10px] bg-orange-50 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-500/30 font-medium">
@@ -380,9 +400,15 @@ export default function TimetableImpactModal({
                         Room Fit:{' '}
                         {after?.room_capacity && before?.section_capacity ? (
                           after.room_capacity >= before.section_capacity ? (
-                            <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✓ Capacity Sufficient</span>
+                            <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                              <CheckCircleIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                              <span>Capacity Sufficient</span>
+                            </span>
                           ) : (
-                            <span className="text-rose-700 dark:text-rose-400 font-semibold">⚠ Undersized Room</span>
+                            <span className="text-rose-700 dark:text-rose-400 font-semibold inline-flex items-center gap-1">
+                              <ExclamationTriangleIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                              <span>Undersized Room</span>
+                            </span>
                           )
                         ) : (
                           <span className="text-slate-500 dark:text-slate-400">Unrestricted</span>
@@ -413,9 +439,15 @@ export default function TimetableImpactModal({
                     <p className="text-slate-600 dark:text-slate-400">
                       Status:{' '}
                       {summary?.faculty_issues.length === 0 ? (
-                        <span className="text-emerald-700 dark:text-emerald-400 font-semibold">✓ No teaching overlap at this time</span>
+                        <span className="text-emerald-700 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                          <CheckCircleIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                          <span>No teaching overlap at this time</span>
+                        </span>
                       ) : (
-                        <span className="text-rose-700 dark:text-rose-400 font-semibold">⚠ Teaching overlap conflict</span>
+                        <span className="text-rose-700 dark:text-rose-400 font-semibold inline-flex items-center gap-1">
+                          <ExclamationTriangleIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                          <span>Teaching overlap conflict</span>
+                        </span>
                       )}
                     </p>
                   </div>

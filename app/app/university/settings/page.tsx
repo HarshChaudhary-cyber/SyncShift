@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useUniversity } from '../layout';
 import { api, InstitutionUpdatePayload } from '@/lib/api';
 import { showSuccessToast, showErrorToast } from '@/lib/toast';
+import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 
 export default function UniversitySettingsPage() {
   const { institution, isAdmin, refresh } = useUniversity();
@@ -59,7 +60,7 @@ export default function UniversitySettingsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl">⚙️</span>
+            <Cog6ToothIcon className="w-6 h-6 text-emerald-500 flex-shrink-0" aria-hidden="true" />
             <h1 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">
               University Settings
             </h1>

@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { EyeIcon, EyeSlashIcon, ExclamationTriangleIcon, CheckCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useAuthContext } from '@/context/AuthContext';
-import { ApiError } from '@/lib/api';
-import { OAuthButtons, OAuthDivider } from '@/components/auth/OAuthButtons';
+import { api, ApiError, PublicInstitution } from '@/lib/api';
 import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 import { safeReturnUrl } from '@/lib/session-policy.mjs';
 
@@ -14,12 +14,24 @@ export default function LoginPage() {
   const router = useRouter();
   const { status, user, login, refreshUser, error: sessionError, logout } = useAuthContext();
 
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedInstitutionId, setSelectedInstitutionId] = useState<number | undefined>(undefined);
+  const [institutions, setInstitutions] = useState<PublicInstitution[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string>('');
+
+  // Password Recovery / Setup Modal State
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryToken, setRecoveryToken] = useState('');
+  const [recoveryNewPassword, setRecoveryNewPassword] = useState('');
+  const [recoveryStep, setRecoveryStep] = useState<'request' | 'reset'>('request');
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [recoverySuccess, setRecoverySuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -31,20 +43,42 @@ export default function LoginPage() {
     }
   }, []);
 
-  // Return only after the profile and class memberships have been verified.
+  // Fetch active institutions for university selector when using enrollment number
+  useEffect(() => {
+    let active = true;
+    api.getPublicInstitutions()
+      .then((data) => {
+        if (active && Array.isArray(data)) {
+          setInstitutions(data);
+          if (data.length === 1) {
+            setSelectedInstitutionId(data[0].id);
+          }
+        }
+      })
+      .catch(() => {
+        // Silently fall back if institutions endpoint is not reachable
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Redirect only after verified authentication
   useEffect(() => {
     if (status === 'authenticated' && user) {
       router.replace(safeReturnUrl(new URLSearchParams(window.location.search).get('returnTo')));
     }
   }, [status, user, router]);
 
+  const isEnrollmentLogin = identifier.trim().length > 0 && !identifier.includes('@');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Client-side validation
-    if (!email.trim()) {
-      setError('Email address is required');
+    const cleanId = identifier.trim();
+    if (!cleanId) {
+      setError('University email or enrollment/roll number is required');
       return;
     }
     if (!password) {
@@ -55,14 +89,16 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email.trim(), password, captchaToken);
+      await login(cleanId, password, captchaToken, isEnrollmentLogin ? selectedInstitutionId : undefined);
       router.replace(safeReturnUrl(new URLSearchParams(window.location.search).get('returnTo')));
     } catch (err: unknown) {
       if (err instanceof ApiError) {
-        if (err.status === 401) {
-          setError('Invalid email or password');
+        if (err.code === 'institution_selection_required') {
+          setError(err.message || 'Multiple universities found with this enrollment number. Please select your university.');
+        } else if (err.status === 401) {
+          setError('Invalid login details');
         } else {
-          setError(err.message || 'Invalid email or password');
+          setError(err.message || 'Invalid login details');
         }
       } else if (err instanceof Error) {
         setError(err.message);
@@ -74,8 +110,80 @@ export default function LoginPage() {
     }
   };
 
-  if (status === 'error') return <div className="min-h-screen flex items-center justify-center p-8"><div role="alert" className="space-y-5 max-w-md"><h1 className="text-xl">Session verification unavailable</h1><p>{sessionError}</p><button onClick={refreshUser} className="underline mr-6">Retry verification</button><button onClick={logout} className="underline">Return to sign in</button></div></div>;
-  // Show spinner while checking session
+  const handleRequestRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecoveryError(null);
+    setRecoverySuccess(null);
+    if (!recoveryEmail.trim()) {
+      setRecoveryError('Please provide your university account email address.');
+      return;
+    }
+
+    setRecoveryLoading(true);
+    try {
+      const res = await api.forgotPassword(recoveryEmail.trim());
+      if (res.reset_token) {
+        setRecoveryToken(res.reset_token);
+        setRecoveryStep('reset');
+        setRecoverySuccess('Password setup authorization generated. Please create your secure password below.');
+      } else {
+        setRecoverySuccess('If an eligible account with that email exists, password instructions have been issued.');
+      }
+    } catch (err: unknown) {
+      setRecoveryError(err instanceof Error ? err.message : 'Unable to request password recovery. Please try again.');
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecoveryError(null);
+    if (!recoveryToken.trim()) {
+      setRecoveryError('Reset authorization token is required.');
+      return;
+    }
+    if (recoveryNewPassword.length < 8) {
+      setRecoveryError('Password must be at least 8 characters long.');
+      return;
+    }
+    if (!/[A-Z]/.test(recoveryNewPassword) || !/\d/.test(recoveryNewPassword)) {
+      setRecoveryError('Password must contain at least one uppercase letter and one number.');
+      return;
+    }
+
+    setRecoveryLoading(true);
+    try {
+      await api.resetPassword(recoveryToken.trim(), recoveryNewPassword);
+      setRecoverySuccess('Your password has been successfully established! You can now sign in.');
+      setTimeout(() => {
+        setRecoveryOpen(false);
+        setRecoveryStep('request');
+        setRecoveryEmail('');
+        setRecoveryToken('');
+        setRecoveryNewPassword('');
+        setRecoverySuccess(null);
+      }, 2000);
+    } catch (err: unknown) {
+      setRecoveryError(err instanceof Error ? err.message : 'Password update failed. The token may be expired or invalid.');
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
+
+  if (status === 'error') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <div role="alert" className="space-y-5 max-w-md">
+          <h1 className="text-xl">Session verification unavailable</h1>
+          <p>{sessionError}</p>
+          <button onClick={refreshUser} className="underline mr-6">Retry verification</button>
+          <button onClick={logout} className="underline">Return to sign in</button>
+        </div>
+      </div>
+    );
+  }
+
   if (status === 'checking') {
     return (
       <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center">
@@ -98,7 +206,7 @@ export default function LoginPage() {
         }}
       />
 
-      <div className="relative z-10 w-full max-w-[400px]">
+      <div className="relative z-10 w-full max-w-[420px]">
         {/* Brand wordmark */}
         <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6">
           <span className="text-2xl sm:text-3xl select-none">⚡</span>
@@ -114,40 +222,75 @@ export default function LoginPage() {
         >
           {/* Header */}
           <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-2 text-center">
-            <h1 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] tracking-tight">Welcome back</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] tracking-tight">University Sign In</h1>
             <p className="text-xs text-[var(--text-secondary)] mt-1">
-              Sign in to your schedule, classes and university workspace
+              Sign in to your university workspace, timetable and academic schedules
             </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-3.5 sm:space-y-4">
-            {/* Email input */}
+            {/* Identifier input */}
             <div className="space-y-1.5">
-              <label htmlFor="email" className="block text-xs font-medium text-[var(--text-secondary)]">
-                Email address
+              <label htmlFor="identifier" className="block text-xs font-medium text-[var(--text-secondary)]">
+                University email or enrollment/roll number
               </label>
               <input
-                id="email"
-                type="email"
-                autoComplete="email"
+                id="identifier"
+                type="text"
+                autoComplete="username"
                 required
-                value={email}
+                value={identifier}
                 onChange={(e) => {
-                  setEmail(e.target.value);
+                  setIdentifier(e.target.value);
                   if (error) setError(null);
                 }}
-                placeholder="student@university.edu"
+                placeholder="student@university.edu or enrollment number"
                 className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg px-3.5 py-2.5 text-base sm:text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition"
               />
             </div>
 
-            {/* Password input */}
+            {/* University selector shown if enrollment/roll number is detected */}
+            {isEnrollmentLogin && institutions.length > 0 && (
+              <div className="space-y-1.5 pt-0.5">
+                <label htmlFor="institution" className="block text-xs font-medium text-[var(--text-secondary)]">
+                  University / Institution
+                </label>
+                <select
+                  id="institution"
+                  value={selectedInstitutionId ?? ''}
+                  onChange={(e) => setSelectedInstitutionId(e.target.value ? Number(e.target.value) : undefined)}
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition"
+                >
+                  <option value="">Choose university (or auto-detect)</option>
+                  {institutions.map((inst) => (
+                    <option key={inst.id} value={inst.id}>
+                      {inst.name} ({inst.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Password input with Heroicons visibility control */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <label htmlFor="password" className="block text-xs font-medium text-[var(--text-secondary)]">
                   Password
                 </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecoveryEmail(identifier.includes('@') ? identifier.trim() : '');
+                    setRecoveryError(null);
+                    setRecoverySuccess(null);
+                    setRecoveryStep('request');
+                    setRecoveryOpen(true);
+                  }}
+                  className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                >
+                  Forgot or set password?
+                </button>
               </div>
               <div className="relative w-full">
                 <input
@@ -166,18 +309,13 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 text-xs transition cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 transition cursor-pointer"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                    </svg>
+                    <EyeSlashIcon className="w-5 h-5" aria-hidden="true" />
                   ) : (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
+                    <EyeIcon className="w-5 h-5" aria-hidden="true" />
                   )}
                 </button>
               </div>
@@ -192,7 +330,7 @@ export default function LoginPage() {
                   exit={{ opacity: 0, height: 0 }}
                   className="flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700/60 rounded-lg px-3.5 py-2.5 break-words"
                 >
-                  <span className="shrink-0 mt-0.5">⚠️</span>
+                  <ExclamationTriangleIcon className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" aria-hidden="true" />
                   <span>{error}</span>
                 </motion.div>
               )}
@@ -218,12 +356,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Divider & OAuth buttons */}
-          <div className="px-5 sm:px-6 pb-5 pt-0">
-            <OAuthDivider text="OR" />
-            <OAuthButtons captchaToken={captchaToken} />
-          </div>
-
           {/* Footer note */}
           <div className="px-5 sm:px-6 pb-4 sm:pb-5 text-center border-t border-[var(--border-color)] pt-3 sm:pt-4">
             <p className="text-xs text-[var(--text-secondary)]">
@@ -245,6 +377,115 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
+
+      {/* Password Setup & Recovery Modal */}
+      {recoveryOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+              <h2 className="text-base font-semibold text-[var(--text-primary)]">
+                {recoveryStep === 'request' ? 'Password Setup & Recovery' : 'Create New Password'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setRecoveryOpen(false)}
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 rounded-lg"
+                aria-label="Close dialog"
+              >
+                <XMarkIcon className="w-5 h-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            {recoveryError && (
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+                <ExclamationTriangleIcon className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                <span>{recoveryError}</span>
+              </div>
+            )}
+
+            {recoverySuccess && (
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+                <CheckCircleIcon className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+                <span>{recoverySuccess}</span>
+              </div>
+            )}
+
+            {recoveryStep === 'request' ? (
+              <form onSubmit={handleRequestRecovery} className="space-y-4">
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                  Enter your university email address. If you previously signed in with Google or Microsoft and need to establish a password, this will create your password credentials.
+                </p>
+                <div>
+                  <label htmlFor="recoveryEmail" className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
+                    University Email
+                  </label>
+                  <input
+                    id="recoveryEmail"
+                    type="email"
+                    required
+                    value={recoveryEmail}
+                    onChange={(e) => setRecoveryEmail(e.target.value)}
+                    placeholder="user@university.edu"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setRecoveryOpen(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={recoveryLoading || !recoveryEmail.trim()}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold disabled:opacity-50"
+                  >
+                    {recoveryLoading ? 'Processing…' : 'Continue'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div>
+                  <label htmlFor="recoveryNewPassword" className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
+                    New Password
+                  </label>
+                  <input
+                    id="recoveryNewPassword"
+                    type="password"
+                    required
+                    value={recoveryNewPassword}
+                    onChange={(e) => setRecoveryNewPassword(e.target.value)}
+                    placeholder="At least 8 chars, 1 uppercase, 1 number"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <span className="text-[11px] text-[var(--text-muted)] mt-1 block">
+                    Must contain at least 8 characters, one uppercase letter, and one number.
+                  </span>
+                </div>
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setRecoveryStep('request')}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={recoveryLoading || !recoveryNewPassword}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold disabled:opacity-50"
+                  >
+                    {recoveryLoading ? 'Saving…' : 'Save New Password'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

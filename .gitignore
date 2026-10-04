@@ -38,6 +38,9 @@ dump.rdb
 .env.local
 .env.*.local
 *.pem
+*demo-credentials*
+*credentials.local*
+*credentials.json
 
 # Logs
 *.log

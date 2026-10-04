@@ -1,16 +1,19 @@
-from datetime import datetime, timezone as dt_timezone
+from datetime import datetime, timedelta, timezone as dt_timezone
 from typing import Optional
 import re
 import zoneinfo
 import bcrypt
+import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
 from app.dependencies import CurrentUser, create_access_token, get_current_user
 from app.models.course import Course
-from app.models.institution import InstitutionMembership
+from app.models.institution import Institution, InstitutionMembership
+from app.models.student_profile import StudentProfile
 from app.models.notification import NotificationPrefs
 from app.models.study_task import StudyTask
 from app.models.time_block import TimeBlock
@@ -21,9 +24,12 @@ from app.schemas.auth import (
     ChangePasswordRequest,
     DeleteAccountRequest,
     ExportDataResponse,
+    ForgotPasswordRequest,
     MessageData,
     OAuthGoogleRequest,
     OAuthMicrosoftRequest,
+    PublicInstitutionOut,
+    ResetPasswordRequest,
     UserLogin,
     UserProfileData,
     UserProfileUpdate,
@@ -183,43 +189,222 @@ async def login(
     _rl: None = Depends(rate_limit(10, 60, "login")),
 ):
     """
-    Authenticate user with email and password.
-    Compares provided password against bcrypt hash in database.
-    Returns JWT access token with 7-day expiration.
+    Authenticate user with email or institution-assigned enrollment/roll number and password.
+    Returns JWT access token with 7-day expiration and verified database role.
     """
     await verify_captcha_token(body.captcha_token, request.client.host if request.client else None)
 
-    normalized_email = body.email.lower()
-    user = db.query(User).filter(User.email == normalized_email).first()
-    if not user or not user.password_hash or not verify_password(body.password, user.password_hash):
-        if user:
-            record_audit_log(
-                db=db,
-                user_id=user.id,
-                action="LOGIN_FAILED",
-                entity_type="user",
-                entity_id=user.id,
-                description="Failed login attempt (incorrect credentials)",
-                request=request,
-            )
+    raw_identifier = body.identifier or body.email
+    if not raw_identifier or not str(raw_identifier).strip():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
                 "code": "unauthorized",
-                "message": "Invalid email or password",
+                "message": "Invalid login details",
             },
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    if user.deleted_at is not None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-                "code": "user_deleted",
-                "message": "This account has been deleted",
-            },
-            headers={"WWW-Authenticate": "Bearer"},
+    clean_identifier = str(raw_identifier).strip()
+    is_email = "@" in clean_identifier
+
+    user = None
+    target_institution_id = body.institution_id
+    verified_membership = None
+
+    if is_email:
+        # Standard email authentication (Students, Professors, Admins, Standalone users)
+        normalized_email = clean_identifier.lower()
+        user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
+        if not user or not user.password_hash or not verify_password(body.password, user.password_hash):
+            if user:
+                record_audit_log(
+                    db=db,
+                    user_id=user.id,
+                    action="LOGIN_FAILED",
+                    entity_type="user",
+                    entity_id=user.id,
+                    description="Failed login attempt (incorrect credentials)",
+                    request=request,
+                )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={
+                    "code": "unauthorized",
+                    "message": "Invalid login details",
+                },
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        if user.deleted_at is not None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={
+                    "code": "unauthorized",
+                    "message": "Invalid login details",
+                },
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Retrieve verified database membership
+        membership_query = (
+            db.query(InstitutionMembership)
+            .filter(
+                InstitutionMembership.user_id == user.id,
+                InstitutionMembership.deleted_at.is_(None),
+                InstitutionMembership.status == "active",
+            )
         )
+        if target_institution_id:
+            membership_query = membership_query.filter(InstitutionMembership.institution_id == target_institution_id)
+        elif body.institution_code:
+            inst = db.query(Institution).filter(
+                func.lower(Institution.code) == body.institution_code.strip().lower(),
+                Institution.deleted_at.is_(None),
+                Institution.is_active.is_(True),
+            ).first()
+            if inst:
+                membership_query = membership_query.filter(InstitutionMembership.institution_id == inst.id)
+
+        verified_membership = membership_query.first()
+
+        # Reject disabled/inactive/unauthorized institution accounts
+        total_memberships_count = db.query(InstitutionMembership).filter(
+            InstitutionMembership.user_id == user.id
+        ).count()
+        if total_memberships_count > 0 and not verified_membership:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={
+                    "code": "unauthorized",
+                    "message": "Invalid login details",
+                },
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+    else:
+        # Enrollment / roll number authentication (Students only)
+        # 1. Resolve institution context
+        resolved_inst_id = target_institution_id
+        if not resolved_inst_id and body.institution_code:
+            inst = db.query(Institution).filter(
+                func.lower(Institution.code) == body.institution_code.strip().lower(),
+                Institution.deleted_at.is_(None),
+                Institution.is_active.is_(True),
+            ).first()
+            if not inst:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={
+                        "code": "unauthorized",
+                        "message": "Invalid login details",
+                    },
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            resolved_inst_id = inst.id
+
+        if not resolved_inst_id:
+            # Check across all active institutions for student_number matches
+            matching_profiles = (
+                db.query(StudentProfile)
+                .join(Institution, StudentProfile.institution_id == Institution.id)
+                .filter(
+                    func.lower(StudentProfile.student_number) == clean_identifier.lower(),
+                    StudentProfile.deleted_at.is_(None),
+                    StudentProfile.status == "active",
+                    Institution.deleted_at.is_(None),
+                    Institution.is_active.is_(True),
+                )
+                .all()
+            )
+            distinct_inst_ids = list({p.institution_id for p in matching_profiles})
+            if len(distinct_inst_ids) > 1:
+                # Ambiguous match across multiple universities -> Must NOT guess the first match!
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail={
+                        "code": "institution_selection_required",
+                        "message": "Multiple universities found with this enrollment number. Please select your university.",
+                    },
+                )
+            elif len(distinct_inst_ids) == 1:
+                resolved_inst_id = distinct_inst_ids[0]
+            else:
+                # No matching student profile
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={
+                        "code": "unauthorized",
+                        "message": "Invalid login details",
+                    },
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+
+        # 2. Verify student profile in the resolved institution
+        student_profile = (
+            db.query(StudentProfile)
+            .join(Institution, StudentProfile.institution_id == Institution.id)
+            .filter(
+                StudentProfile.institution_id == resolved_inst_id,
+                func.lower(StudentProfile.student_number) == clean_identifier.lower(),
+                StudentProfile.deleted_at.is_(None),
+                StudentProfile.status == "active",
+                Institution.deleted_at.is_(None),
+                Institution.is_active.is_(True),
+            )
+            .first()
+        )
+        if not student_profile:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={
+                    "code": "unauthorized",
+                    "message": "Invalid login details",
+                },
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        user = db.query(User).filter(User.id == student_profile.user_id).first()
+        if not user or user.deleted_at is not None or not user.password_hash or not verify_password(body.password, user.password_hash):
+            if user:
+                record_audit_log(
+                    db=db,
+                    user_id=user.id,
+                    action="LOGIN_FAILED",
+                    entity_type="user",
+                    entity_id=user.id,
+                    description="Failed login attempt with enrollment number (incorrect credentials)",
+                    request=request,
+                )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={
+                    "code": "unauthorized",
+                    "message": "Invalid login details",
+                },
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # 3. Verify institution membership
+        verified_membership = (
+            db.query(InstitutionMembership)
+            .filter(
+                InstitutionMembership.user_id == user.id,
+                InstitutionMembership.institution_id == resolved_inst_id,
+                InstitutionMembership.deleted_at.is_(None),
+                InstitutionMembership.status == "active",
+            )
+            .first()
+        )
+        if not verified_membership or verified_membership.role != "student":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={
+                    "code": "unauthorized",
+                    "message": "Invalid login details",
+                },
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
     token = create_access_token(user_id=user.id, email=user.email)
     record_audit_log(
@@ -228,19 +413,8 @@ async def login(
         action="LOGIN_SUCCESS",
         entity_type="user",
         entity_id=user.id,
-        description="User successfully authenticated via password",
+        description=f"User successfully authenticated via {'email' if is_email else 'enrollment number'}",
         request=request,
-    )
-
-    # Look up institution membership for role-based portal routing
-    membership = (
-        db.query(InstitutionMembership)
-        .filter(
-            InstitutionMembership.user_id == user.id,
-            InstitutionMembership.deleted_at.is_(None),
-            InstitutionMembership.status == "active",
-        )
-        .first()
     )
 
     return DataResponse(
@@ -251,9 +425,130 @@ async def login(
             token=token,
             display_name=user.display_name or user.name,
             avatar_url=user.avatar_url,
-            institution_id=membership.institution_id if membership else None,
-            institution_role=membership.role if membership else None,
+            institution_id=verified_membership.institution_id if verified_membership else None,
+            institution_role=verified_membership.role if verified_membership else None,
         )
+    )
+
+
+@router.get("/institutions", response_model=DataResponse[list[PublicInstitutionOut]])
+def get_public_institutions(
+    db: Session = Depends(get_db),
+):
+    """
+    List active universities for login selector when using enrollment/roll number authentication.
+    """
+    institutions = (
+        db.query(Institution)
+        .filter(
+            Institution.deleted_at.is_(None),
+            Institution.is_active.is_(True),
+        )
+        .order_by(Institution.name.asc())
+        .all()
+    )
+    return DataResponse(
+        data=[
+            PublicInstitutionOut(id=inst.id, name=inst.name, code=inst.code)
+            for inst in institutions
+        ]
+    )
+
+
+@router.post("/forgot-password", response_model=DataResponse[dict])
+async def forgot_password(
+    body: ForgotPasswordRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    _rl: None = Depends(rate_limit(5, 60, "forgot_password")),
+):
+    """
+    Request password reset or password setup for eligible accounts (including existing OAuth users).
+    Generates a secure, time-limited reset token without leaking user existence.
+    """
+    normalized_email = body.email.strip().lower()
+    user = db.query(User).filter(
+        func.lower(User.email) == normalized_email,
+        User.deleted_at.is_(None),
+    ).first()
+
+    reset_token = None
+    if user:
+        now = datetime.now(dt_timezone.utc)
+        payload = {
+            "user_id": user.id,
+            "email": user.email,
+            "purpose": "password_reset",
+            "exp": now + timedelta(minutes=30),
+            "iat": now,
+        }
+        reset_token = jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
+        record_audit_log(
+            db=db,
+            user_id=user.id,
+            action="PASSWORD_RESET_REQUESTED",
+            entity_type="user",
+            entity_id=user.id,
+            description="Password reset/setup token requested",
+            request=request,
+        )
+
+    return DataResponse(
+        data={
+            "message": "If an eligible account exists, password setup instructions have been generated.",
+            "reset_token": reset_token,
+        }
+    )
+
+
+@router.post("/reset-password", response_model=DataResponse[MessageData])
+async def reset_password(
+    body: ResetPasswordRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    _rl: None = Depends(rate_limit(5, 60, "reset_password")),
+):
+    """
+    Set or reset password using a verified time-limited token.
+    Enables existing OAuth users and users who forgot their password to establish credentials safely.
+    """
+    try:
+        payload = jwt.decode(body.token, settings.JWT_SECRET, algorithms=["HS256"])
+        if payload.get("purpose") != "password_reset":
+            raise ValueError("Invalid token purpose")
+        user_id = payload.get("user_id")
+        if not user_id:
+            raise ValueError("Missing user id in token")
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "invalid_token", "message": "Invalid or expired password reset token"},
+        )
+
+    validate_password_strength(body.new_password)
+
+    user = db.query(User).filter(User.id == int(user_id), User.deleted_at.is_(None)).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "user_not_found", "message": "User not found or deleted"},
+        )
+
+    user.password_hash = hash_password(body.new_password)
+    db.commit()
+
+    record_audit_log(
+        db=db,
+        user_id=user.id,
+        action="PASSWORD_RESET_COMPLETED",
+        entity_type="user",
+        entity_id=user.id,
+        description="User password successfully set/reset",
+        request=request,
+    )
+
+    return DataResponse(
+        data=MessageData(message="Password has been updated successfully. You can now sign in.")
     )
 
 

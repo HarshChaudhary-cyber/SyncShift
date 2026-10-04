@@ -12,6 +12,7 @@ import {
   Department,
   InstitutionMembership,
 } from '@/lib/api';
+import { UserPlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function FacultyPage() {
   const { institution, isAdmin } = useUniversity();
@@ -292,9 +293,9 @@ export default function FacultyPage() {
             {isAdmin && (
               <button
                 onClick={openCreateModal}
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition"
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition cursor-pointer"
               >
-                <span>+</span>
+                <UserPlusIcon className="w-4 h-4" aria-hidden="true" />
                 <span>Add Faculty Member</span>
               </button>
             )}
@@ -391,9 +392,10 @@ export default function FacultyPage() {
               </h3>
               <button
                 onClick={() => setModalOpen(false)}
-                className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition p-1 rounded-lg hover:bg-[var(--bg-elevated)]"
+                aria-label="Close dialog"
               >
-                ✕
+                <XMarkIcon className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 

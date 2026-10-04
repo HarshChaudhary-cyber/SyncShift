@@ -13,6 +13,7 @@ import {
   FacultyProfile,
   FacultyAssignment,
 } from '@/lib/api';
+import { ClipboardDocumentListIcon, AcademicCapIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function SectionsPage() {
   const { institution, isAdmin } = useUniversity();
@@ -301,7 +302,7 @@ export default function SectionsPage() {
         <div className="p-12 text-center text-[var(--text-secondary)]">Loading sections...</div>
       ) : sections.length === 0 ? (
         <div className="p-12 text-center rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)]">
-          <span className="text-4xl">📑</span>
+          <ClipboardDocumentListIcon className="w-12 h-12 text-[var(--text-muted)] mx-auto" aria-hidden="true" />
           <h3 className="text-lg font-semibold text-[var(--text-primary)] mt-3">No Sections Found</h3>
           <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-md mx-auto">
             {courseFilter !== 'all' || termFilter !== 'all'
@@ -361,7 +362,7 @@ export default function SectionsPage() {
                                 : 'bg-[var(--bg-elevated)] border-[var(--border-color)] text-[var(--text-secondary)]'
                             }`}
                           >
-                            <span>👨‍🏫</span>
+                            <AcademicCapIcon className="w-3.5 h-3.5 text-indigo-400 shrink-0" aria-hidden="true" />
                             <span>{ins.faculty_name}</span>
                             {ins.is_primary && <span className="text-[9px] text-indigo-300 uppercase">(Lead)</span>}
                           </span>
@@ -429,10 +430,12 @@ export default function SectionsPage() {
                 {editingSection ? 'Edit Section' : 'Create Course Section'}
               </h3>
               <button
+                type="button"
                 onClick={() => setModalOpen(false)}
-                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition text-lg"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 rounded-lg transition"
+                aria-label="Close dialog"
               >
-                ✕
+                <XMarkIcon className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
@@ -576,10 +579,12 @@ export default function SectionsPage() {
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => setInstructorModalOpen(false)}
-                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition text-lg"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 rounded-lg transition"
+                aria-label="Close dialog"
               >
-                ✕
+                <XMarkIcon className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 

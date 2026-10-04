@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useUniversity } from '../layout';
 import { api, InstitutionMembership } from '@/lib/api';
 import { showErrorToast, showSuccessToast } from '@/lib/toast';
+import { UsersIcon, AcademicCapIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function UniversityStudentsPage() {
   const { institution, isAdmin } = useUniversity();
@@ -61,7 +62,7 @@ export default function UniversityStudentsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl">👥</span>
+            <UsersIcon className="w-6 h-6 text-emerald-500" aria-hidden="true" />
             <h1 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">Student Roster</h1>
           </div>
           <p className="text-xs text-[var(--text-secondary)] mt-1">
@@ -115,7 +116,7 @@ export default function UniversityStudentsPage() {
           </div>
         ) : students.length === 0 ? (
           <div className="py-12 text-center space-y-3">
-            <span className="text-4xl">🎓</span>
+            <AcademicCapIcon className="w-12 h-12 text-[var(--text-muted)] mx-auto" aria-hidden="true" />
             <p className="text-sm font-medium text-[var(--text-secondary)]">No students enrolled yet.</p>
             {isAdmin && (
               <button
@@ -132,7 +133,7 @@ export default function UniversityStudentsPage() {
               <div key={student.id} className="py-3.5 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 font-bold text-xs shrink-0">
-                    🎓
+                    <AcademicCapIcon className="w-5 h-5 text-emerald-400" aria-hidden="true" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-[var(--text-primary)] truncate">
@@ -160,10 +161,12 @@ export default function UniversityStudentsPage() {
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-[var(--text-primary)]">Enroll Student</h3>
               <button
+                type="button"
                 onClick={() => setModalOpen(false)}
-                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm cursor-pointer"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 rounded-lg"
+                aria-label="Close dialog"
               >
-                ✕
+                <XMarkIcon className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
             <form onSubmit={handleAddStudent} className="space-y-4">

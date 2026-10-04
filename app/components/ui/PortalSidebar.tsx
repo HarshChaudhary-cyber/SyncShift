@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
 import { useThemeContext } from '@/context/ThemeContext';
 import { openSyncShiftAssistant } from '@/components/assistant/SyncShiftAssistant';
+import { BuildingLibraryIcon, BoltIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
 export interface SidebarNavItem {
   label: string;
@@ -166,7 +167,7 @@ export default function PortalSidebar({
         <div className="px-4 pt-5 pb-4">
           <div className="flex items-center gap-2.5">
             <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${accentClasses.brandGradient} flex items-center justify-center shadow-lg`}>
-              <span className="text-white text-sm font-bold">⚡</span>
+              <BoltIcon className="w-4 h-4 text-white" aria-hidden="true" />
             </div>
             {!collapsed && (
               <div className="min-w-0">
@@ -180,8 +181,9 @@ export default function PortalSidebar({
             )}
           </div>
           {!collapsed && institutionName && (
-            <div className={`mt-3 px-2.5 py-1.5 rounded-lg text-[10px] font-medium ${accentClasses.brandBg} ${accentClasses.brandText} border ${accentClasses.brandBorder} truncate`}>
-              🏛️ {institutionName}
+            <div className={`mt-3 px-2.5 py-1.5 rounded-lg text-[10px] font-medium ${accentClasses.brandBg} ${accentClasses.brandText} border ${accentClasses.brandBorder} flex items-center gap-1.5 truncate`}>
+              <BuildingLibraryIcon className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+              <span className="truncate">{institutionName}</span>
             </div>
           )}
         </div>
@@ -231,7 +233,7 @@ export default function PortalSidebar({
               onClick={() => openSyncShiftAssistant()}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-500/25 text-indigo-700 dark:text-indigo-300 hover:text-indigo-950 dark:hover:text-white hover:border-indigo-400 transition cursor-pointer"
             >
-              <span>✨</span>
+              <SparklesIcon className="w-4 h-4 text-indigo-500" aria-hidden="true" />
               <span>Ask SyncShift</span>
             </button>
           )}
@@ -320,7 +322,7 @@ export default function PortalSidebar({
             <MenuIcon />
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-lg">⚡</span>
+            <BoltIcon className="w-4 h-4 text-indigo-500" aria-hidden="true" />
             <span className="text-sm font-bold text-[var(--text-primary)]">SyncShift</span>
             <span className={`text-[10px] font-semibold ${accentClasses.brandText} uppercase`}>
               {portalLabel}

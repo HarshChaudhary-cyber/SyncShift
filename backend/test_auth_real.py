@@ -151,12 +151,12 @@ def test_auth_login_success_and_failures():
     # Failed login: wrong password
     bad_pw_resp = client.post("/api/v1/auth/login", json={"email": email, "password": "WrongPassword999"})
     assert bad_pw_resp.status_code == 401
-    assert "Invalid email or password" in bad_pw_resp.json()["error"]["message"]
+    assert any(m in bad_pw_resp.json()["error"]["message"] for m in ["Invalid login details", "Invalid email or password"])
 
     # Failed login: nonexistent email
     bad_email_resp = client.post("/api/v1/auth/login", json={"email": "nobody@nowhere.com", "password": password})
     assert bad_email_resp.status_code == 401
-    assert "Invalid email or password" in bad_email_resp.json()["error"]["message"]
+    assert any(m in bad_email_resp.json()["error"]["message"] for m in ["Invalid login details", "Invalid email or password"])
 
 
 def test_auth_me_endpoint():
