@@ -7,7 +7,7 @@ import { showSuccessToast, showErrorToast } from '@/lib/toast';
 import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 
 export default function UniversitySettingsPage() {
-  const { institution, isAdmin, refresh } = useUniversity();
+  const { institution, isSuperAdmin, refresh } = useUniversity();
 
   const [form, setForm] = useState<InstitutionUpdatePayload>({
     name: '',
@@ -32,7 +32,7 @@ export default function UniversitySettingsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!institution || !isAdmin) return;
+    if (!institution || !isSuperAdmin) return;
 
     try {
       setSaving(true);
@@ -50,6 +50,14 @@ export default function UniversitySettingsPage() {
     return (
       <div className="py-20 text-center text-xs text-[var(--text-secondary)]">
         No institution loaded.
+      </div>
+    );
+  }
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="py-20 text-center text-xs text-red-500 font-medium">
+        Super Administrator access required.
       </div>
     );
   }

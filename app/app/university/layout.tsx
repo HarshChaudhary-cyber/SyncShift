@@ -32,6 +32,7 @@ interface UniversityContextType {
   institution: Institution | null;
   membership: InstitutionMembership | null;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
 }
 
 const UniversityContext = createContext<UniversityContextType>({
@@ -41,6 +42,7 @@ const UniversityContext = createContext<UniversityContextType>({
   institution: null,
   membership: null,
   isAdmin: false,
+  isSuperAdmin: false,
 });
 
 export function useUniversity() {
@@ -62,8 +64,8 @@ const universityNavItems: SidebarNavItem[] = [
   { label: 'Impact Analysis', href: '/university/impact-analysis', icon: <BoltIcon className="w-5 h-5" aria-hidden="true" /> },
   { label: 'Analytics', href: '/university/analytics', icon: <ChartBarIcon className="w-5 h-5" aria-hidden="true" />, adminOnly: true },
   { label: 'Notifications', href: '/university/notifications', icon: <BellIcon className="w-5 h-5" aria-hidden="true" /> },
-  { label: 'Audit Logs', href: '/university/audit-logs', icon: <DocumentTextIcon className="w-5 h-5" aria-hidden="true" />, adminOnly: true },
-  { label: 'Settings', href: '/university/settings', icon: <Cog6ToothIcon className="w-5 h-5" aria-hidden="true" />, adminOnly: true },
+  { label: 'Audit Logs', href: '/university/audit-logs', icon: <DocumentTextIcon className="w-5 h-5" aria-hidden="true" />, superAdminOnly: true },
+  { label: 'Settings', href: '/university/settings', icon: <Cog6ToothIcon className="w-5 h-5" aria-hidden="true" />, superAdminOnly: true },
 ];
 
 // ── Layout Component ───────────────────────────────────────────────────────
@@ -108,6 +110,7 @@ export default function UniversityLayout({ children }: { children: React.ReactNo
   const institution = status?.institution || null;
   const membership = status?.membership || null;
   const isAdmin = membership?.role === 'admin' || membership?.role === 'super_admin';
+  const isSuperAdmin = membership?.role === 'super_admin';
 
   return (
     <ProtectedRoute>
@@ -120,9 +123,16 @@ export default function UniversityLayout({ children }: { children: React.ReactNo
             institution,
             membership,
             isAdmin,
+            isSuperAdmin,
           }}
         >
-          <AppShell><Link className="ws-link" href="/admin">← University administration</Link>
+          <AppShell>
+            {isSuperAdmin && (
+              <div className="bg-indigo-50 dark:bg-indigo-900/30 border-b border-indigo-100 dark:border-indigo-800/50 px-6 py-2 flex items-center justify-between">
+                <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">Super Admin Mode</span>
+                <Link className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline" href="/admin">Open Legacy Super-Admin Portal →</Link>
+              </div>
+            )}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
               {children}
             </div>
