@@ -30,6 +30,7 @@ class User(Base):
     # Single-use password-reset token tracking: stores JTI of the active reset token.
     # Cleared after consumption to prevent replay attacks.
     password_reset_jti = Column(String(128), nullable=True, default=None)
+    session_version = Column(Integer, nullable=False, default=0, server_default="0")
 
     # OAuth columns
     google_id = Column(String(255), unique=True, index=True, nullable=True)

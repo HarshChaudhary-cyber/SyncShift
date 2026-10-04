@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     SMTP_USER: str | None = os.getenv("SMTP_USER", None)
     SMTP_PASS: str | None = os.getenv("SMTP_PASS", None)
     SMTP_FROM: str = os.getenv("SMTP_FROM", "notifications@syncshift.app")
+    PASSWORD_RESET_PUBLIC_URL: str | None = os.getenv("PASSWORD_RESET_PUBLIC_URL", None)
 
     # CORS
     BACKEND_CORS_ORIGINS: list[str] = [
@@ -80,6 +81,9 @@ class Settings(BaseSettings):
             self.SECRET_KEY = self.JWT_SECRET
         elif (not self.JWT_SECRET or self.JWT_SECRET == DEFAULT_DEV_SECRET) and (self.SECRET_KEY and self.SECRET_KEY != DEFAULT_DEV_SECRET):
             self.JWT_SECRET = self.SECRET_KEY
+
+        if (self.ENV or "").strip().lower() != "test" and self.DATABASE_URL.endswith("syncshift-demo.db") and self.JWT_SECRET == DEFAULT_DEV_SECRET:
+            raise RuntimeError("The isolated demo database requires a unique JWT_SECRET; do not reuse the default development secret")
 
         if (self.ENV or "").strip().lower() == "production":
             jwt_sec = (self.JWT_SECRET or "").strip()

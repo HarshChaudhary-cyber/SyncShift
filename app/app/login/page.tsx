@@ -40,6 +40,13 @@ export default function LoginPage() {
       if (urlError) {
         setError(urlError);
       }
+      const resetToken = params.get('reset_token');
+      if (resetToken) {
+        setRecoveryToken(resetToken);
+        setRecoveryStep('reset');
+        setRecoveryOpen(true);
+        window.history.replaceState({}, '', '/login');
+      }
     }
   }, []);
 
@@ -50,9 +57,6 @@ export default function LoginPage() {
       .then((data) => {
         if (active && Array.isArray(data)) {
           setInstitutions(data);
-          if (data.length === 1) {
-            setSelectedInstitutionId(data[0].id);
-          }
         }
       })
       .catch(() => {
@@ -85,6 +89,10 @@ export default function LoginPage() {
       setError('Password is required');
       return;
     }
+    if (isEnrollmentLogin && !selectedInstitutionId) {
+      setError('Please select your university.');
+      return;
+    }
 
     setLoading(true);
 
@@ -94,7 +102,7 @@ export default function LoginPage() {
     } catch (err: unknown) {
       if (err instanceof ApiError) {
         if (err.code === 'institution_selection_required') {
-          setError(err.message || 'Multiple universities found with this enrollment number. Please select your university.');
+          setError(err.message || 'Please select your university.');
         } else if (err.status === 401) {
           setError('Invalid login details');
         } else {
@@ -122,13 +130,9 @@ export default function LoginPage() {
     setRecoveryLoading(true);
     try {
       await api.forgotPassword(recoveryEmail.trim());
-      // The backend never returns the reset token in the response (security hardening).
-      // In production the token is delivered via email; for dev it is in the server log.
       setRecoverySuccess(
-        'If an eligible account with that email exists, a password reset link has been sent. ' +
-        'Contact your administrator or check server logs (dev) to obtain the token, then paste it below.'
+        'If an eligible account exists, password recovery instructions will arrive by email when delivery is configured. Contact your university administrator if you cannot access your account.'
       );
-      setRecoveryStep('reset');
     } catch (err: unknown) {
       setRecoveryError(err instanceof Error ? err.message : 'Unable to request password recovery. Please try again.');
     } finally {
@@ -251,7 +255,7 @@ export default function LoginPage() {
             </div>
 
             {/* University selector shown if enrollment/roll number is detected */}
-            {isEnrollmentLogin && institutions.length > 0 && (
+            {isEnrollmentLogin && (
               <div className="space-y-1.5 pt-0.5">
                 <label htmlFor="institution" className="block text-xs font-medium text-[var(--text-secondary)]">
                   University / Institution
@@ -262,7 +266,7 @@ export default function LoginPage() {
                   onChange={(e) => setSelectedInstitutionId(e.target.value ? Number(e.target.value) : undefined)}
                   className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-xs sm:text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 transition"
                 >
-                  <option value="">Choose university (or auto-detect)</option>
+                  <option value="">Choose university</option>
                   {institutions.map((inst) => (
                     <option key={inst.id} value={inst.id}>
                       {inst.name} ({inst.code})

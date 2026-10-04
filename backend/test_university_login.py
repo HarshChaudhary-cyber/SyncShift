@@ -355,8 +355,11 @@ def test_role_cannot_be_selected_by_client(auth_test_data):
     assert data["institution_role"] == "student"
 
 
-def test_oauth_transition_forgot_and_reset_password(auth_test_data):
+def test_oauth_transition_forgot_and_reset_password(auth_test_data, monkeypatch):
     """Existing OAuth-only user transitions smoothly by setting a password via recovery flow."""
+    from app.routers import auth
+    monkeypatch.setattr(auth, "delivery_available", lambda: True)
+    monkeypatch.setattr(auth, "send_reset_link", lambda address, token: None)
     oauth_user = auth_test_data["oauth_user"]
 
     # 1. Attempting login without password or with empty password fails
