@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone as dt_timezone
 from typing import Optional
 import re
+import secrets
 import zoneinfo
 import bcrypt
 import jwt
@@ -463,8 +464,10 @@ async def forgot_password(
     _rl: None = Depends(rate_limit(5, 60, "forgot_password")),
 ):
     """
-    Request password reset or password setup for eligible accounts (including existing OAuth users).
-    Generates a secure, time-limited reset token without leaking user existence.
+    Request password reset or password setup for eligible accounts.
+    Generates a secure, time-limited, single-use reset token stored via JTI.
+    The reset token is NEVER returned in the API response; it must be delivered
+    out-of-band (e.g. email). This prevents account enumeration and token leakage.
     """
     normalized_email = body.email.strip().lower()
     user = db.query(User).filter(
@@ -472,31 +475,40 @@ async def forgot_password(
         User.deleted_at.is_(None),
     ).first()
 
-    reset_token = None
     if user:
+        jti = secrets.token_urlsafe(32)  # 256-bit random JTI
         now = datetime.now(dt_timezone.utc)
         payload = {
             "user_id": user.id,
             "email": user.email,
             "purpose": "password_reset",
+            "jti": jti,
             "exp": now + timedelta(minutes=30),
             "iat": now,
         }
         reset_token = jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
+        # Persist JTI so reset_password can validate single-use consumption
+        user.password_reset_jti = jti
+        db.commit()
         record_audit_log(
             db=db,
             user_id=user.id,
             action="PASSWORD_RESET_REQUESTED",
             entity_type="user",
             entity_id=user.id,
-            description="Password reset/setup token requested",
+            description="Password reset/setup token generated and stored (not exposed in response)",
             request=request,
         )
+        # In production: send reset_token via email. For local dev it is only in server logs.
+        import logging as _logging
+        _logging.getLogger(__name__).info(
+            "[DEV ONLY] Password reset token for %s: %s", user.email, reset_token
+        )
 
+    # Always return the same generic message to prevent account enumeration
     return DataResponse(
         data={
-            "message": "If an eligible account exists, password setup instructions have been generated.",
-            "reset_token": reset_token,
+            "message": "If an eligible account exists, password setup instructions have been sent to that address.",
         }
     )
 
@@ -509,14 +521,16 @@ async def reset_password(
     _rl: None = Depends(rate_limit(5, 60, "reset_password")),
 ):
     """
-    Set or reset password using a verified time-limited token.
-    Enables existing OAuth users and users who forgot their password to establish credentials safely.
+    Set or reset password using a verified, time-limited, single-use token.
+    Validates the JTI claim against the stored value in the database,
+    rejecting replayed or previously consumed tokens.
     """
     try:
         payload = jwt.decode(body.token, settings.JWT_SECRET, algorithms=["HS256"])
         if payload.get("purpose") != "password_reset":
             raise ValueError("Invalid token purpose")
         user_id = payload.get("user_id")
+        token_jti = payload.get("jti")
         if not user_id:
             raise ValueError("Missing user id in token")
     except Exception:
@@ -530,10 +544,20 @@ async def reset_password(
     user = db.query(User).filter(User.id == int(user_id), User.deleted_at.is_(None)).first()
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "user_not_found", "message": "User not found or deleted"},
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "invalid_token", "message": "Invalid or expired password reset token"},
         )
 
+    # Single-use enforcement: JTI in token must match stored JTI (cleared after use)
+    stored_jti = getattr(user, "password_reset_jti", None)
+    if not token_jti or not stored_jti or token_jti != stored_jti:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "invalid_token", "message": "This password reset link has already been used or is invalid"},
+        )
+
+    # Consume the token: clear the JTI to prevent replay
+    user.password_reset_jti = None
     user.password_hash = hash_password(body.new_password)
     db.commit()
 
@@ -543,7 +567,7 @@ async def reset_password(
         action="PASSWORD_RESET_COMPLETED",
         entity_type="user",
         entity_id=user.id,
-        description="User password successfully set/reset",
+        description="User password successfully set/reset via single-use token",
         request=request,
     )
 

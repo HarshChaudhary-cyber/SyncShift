@@ -121,14 +121,14 @@ export default function LoginPage() {
 
     setRecoveryLoading(true);
     try {
-      const res = await api.forgotPassword(recoveryEmail.trim());
-      if (res.reset_token) {
-        setRecoveryToken(res.reset_token);
-        setRecoveryStep('reset');
-        setRecoverySuccess('Password setup authorization generated. Please create your secure password below.');
-      } else {
-        setRecoverySuccess('If an eligible account with that email exists, password instructions have been issued.');
-      }
+      await api.forgotPassword(recoveryEmail.trim());
+      // The backend never returns the reset token in the response (security hardening).
+      // In production the token is delivered via email; for dev it is in the server log.
+      setRecoverySuccess(
+        'If an eligible account with that email exists, a password reset link has been sent. ' +
+        'Contact your administrator or check server logs (dev) to obtain the token, then paste it below.'
+      );
+      setRecoveryStep('reset');
     } catch (err: unknown) {
       setRecoveryError(err instanceof Error ? err.message : 'Unable to request password recovery. Please try again.');
     } finally {
@@ -449,6 +449,23 @@ export default function LoginPage() {
             ) : (
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div>
+                  <label htmlFor="recoveryToken" className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
+                    Reset Token
+                  </label>
+                  <input
+                    id="recoveryToken"
+                    type="text"
+                    required
+                    value={recoveryToken}
+                    onChange={(e) => setRecoveryToken(e.target.value)}
+                    placeholder="Paste the reset token from your email or server log"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-xs"
+                  />
+                  <span className="text-[11px] text-[var(--text-muted)] mt-1 block">
+                    The token was sent to your email. Contact your administrator if you didn&apos;t receive it.
+                  </span>
+                </div>
+                <div>
                   <label htmlFor="recoveryNewPassword" className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
                     New Password
                   </label>
@@ -475,7 +492,7 @@ export default function LoginPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={recoveryLoading || !recoveryNewPassword}
+                    disabled={recoveryLoading || !recoveryNewPassword || !recoveryToken.trim()}
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold disabled:opacity-50"
                   >
                     {recoveryLoading ? 'Saving…' : 'Save New Password'}

@@ -83,6 +83,13 @@ def get_current_user(
 
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+        # Reject specialised tokens (e.g. password-reset) that must not act as access tokens
+        if payload.get("purpose") is not None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={"code": "unauthorized", "message": "Token is not a valid access token"},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         user_id_val = payload.get("user_id") or payload.get("sub")
         if user_id_val is None:
             raise HTTPException(

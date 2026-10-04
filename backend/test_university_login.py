@@ -371,8 +371,31 @@ def test_oauth_transition_forgot_and_reset_password(auth_test_data):
         "email": oauth_user.email,
     })
     assert res_forgot.status_code == 200
-    token = res_forgot.json()["data"]["reset_token"]
-    assert token
+    
+    # Retrieve JTI from db to build token
+    from app.database import SessionLocal
+    from app.models.user import User
+    from app.config import settings
+    import jwt, datetime
+    
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == oauth_user.email).first()
+        jti = user.password_reset_jti
+    finally:
+        db.close()
+        
+    assert jti
+    now = datetime.datetime.now(datetime.timezone.utc)
+    token = jwt.encode({
+        "user_id": oauth_user.id,
+        "email": oauth_user.email,
+        "purpose": "password_reset",
+        "jti": jti,
+        "exp": now + datetime.timedelta(minutes=30),
+        "iat": now,
+    }, settings.JWT_SECRET, algorithm="HS256")
+
 
     # 3. Set a new strong password
     res_reset = client.post("/api/v1/auth/reset-password", json={
