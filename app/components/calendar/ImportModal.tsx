@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React, { useState, useRef } from 'react';
 import { api, FilePreviewItem, FilePreviewResponse, IcsConfirmPayload } from '@/lib/api';
 import { useCalendar } from '@/context/CalendarContext';
@@ -427,7 +429,7 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
         <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3 shrink-0">
           <div>
             <h2 id="import-modal-title" className="text-base font-semibold tracking-tight text-[var(--text-primary)] flex items-center gap-2">
-              <span className="text-indigo-500 font-bold">📅</span> Import Timetable
+              <span className="text-indigo-500 font-bold"><ScheduleIcon name="calendar" /></span> Import Timetable
             </h2>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
               Upload your university timetable and SyncShift will extract classes automatically
@@ -469,7 +471,7 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
               `}
             >
               <div className="w-12 h-12 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center text-xl shadow-xs mb-3 text-indigo-500">
-                📄
+                <ScheduleIcon name="document" />
               </div>
               <p className="text-sm font-medium text-[var(--text-primary)]">
                 Drag &amp; drop your timetable file here
@@ -505,7 +507,7 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
             {/* Client-side Validation Error if any */}
             {fileValidationError && (
               <div className="p-3 bg-[var(--conflict-bg)] border border-[var(--conflict-border)] rounded-xl text-xs text-[var(--conflict-text)] flex items-center gap-2">
-                <span>⚠</span>
+                <span><ScheduleIcon name="warning" /></span>
                 <span>{fileValidationError}</span>
               </div>
             )}
@@ -521,7 +523,7 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
         {currentStep === 'processing' && (
           <div className="py-8 px-4 flex flex-col items-center justify-center text-center gap-6">
             <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-2xl animate-pulse">
-              ⚡
+              <ScheduleIcon name="quick" />
             </div>
 
             <div className="space-y-1">
@@ -576,17 +578,17 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
                 </span>
                 {reviewCount > 0 && (
                   <span className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
-                    <span>⚠</span> {reviewCount} need review
+                    <span><ScheduleIcon name="warning" /></span> {reviewCount} need review
                   </span>
                 )}
                 {duplicateCount > 0 && (
                   <span className="text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-1">
-                    <span>⚠</span> {duplicateCount} possible duplicate{duplicateCount > 1 ? 's' : ''}
+                    <span><ScheduleIcon name="warning" /></span> {duplicateCount} possible duplicate{duplicateCount > 1 ? 's' : ''}
                   </span>
                 )}
                 {conflictCount > 0 && (
                   <span className="text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1">
-                    <span>🔴</span> {conflictCount} conflict{conflictCount > 1 ? 's' : ''}
+                    <span><ScheduleIcon name="conflict" /></span> {conflictCount} conflict{conflictCount > 1 ? 's' : ''}
                   </span>
                 )}
               </div>
@@ -771,15 +773,15 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
                                     {/* Non-color only status badges */}
                                     {block.has_conflict ? (
                                       <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 flex items-center gap-1">
-                                        <span>🔴</span> Conflict
+                                        <span><ScheduleIcon name="conflict" /></span> Conflict
                                       </span>
                                     ) : block.is_duplicate ? (
                                       <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-500/15 text-zinc-700 dark:text-zinc-300 border border-zinc-500/30 flex items-center gap-1">
-                                        <span>⚠</span> Duplicate
+                                        <span><ScheduleIcon name="warning" /></span> Duplicate
                                       </span>
                                     ) : block.status === 'needs_review' ? (
                                       <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                                        <span>⚠</span> Needs review
+                                        <span><ScheduleIcon name="warning" /></span> Needs review
                                       </span>
                                     ) : (
                                       <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
@@ -803,7 +805,7 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
                                     <>
                                       <span className="text-[var(--text-muted)]">•</span>
                                       <span className="text-[var(--text-muted)] truncate flex items-center gap-1">
-                                        <span>📍</span> {block.location}
+                                        <span><ScheduleIcon name="location" /></span> {block.location}
                                       </span>
                                     </>
                                   )}
@@ -812,7 +814,7 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
                                 {/* Warning / conflict descriptions */}
                                 {block.conflict_description && (
                                   <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-1 flex items-center gap-1">
-                                    <span>⚠</span> {block.conflict_description}
+                                    <span><ScheduleIcon name="warning" /></span> {block.conflict_description}
                                   </p>
                                 )}
                                 {block.duplicate_reason && !block.conflict_description && (
@@ -822,7 +824,7 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
                                 )}
                                 {block.issues && block.issues.length > 0 && !block.conflict_description && !block.duplicate_reason && (
                                   <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
-                                    <span>⚠</span> {block.issues[0]}
+                                    <span><ScheduleIcon name="warning" /></span> {block.issues[0]}
                                   </p>
                                 )}
                               </div>
@@ -842,7 +844,7 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
         {currentStep === 'confirm' && (
           <div className="py-6 px-3 flex flex-col items-center justify-center text-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-xl text-indigo-500">
-              📅
+              <ScheduleIcon name="calendar" />
             </div>
 
             <div className="space-y-1">
@@ -916,7 +918,7 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
                 {importSummary.createdCount} classes added to your calendar.
                 {importSummary.conflictsDetected > 0 && (
                   <span className="block text-rose-600 dark:text-rose-400 font-medium mt-1">
-                    🔴 {importSummary.conflictsDetected} conflict{importSummary.conflictsDetected > 1 ? 's' : ''} detected with existing shifts.
+                    <ScheduleIcon name="conflict" /> {importSummary.conflictsDetected} conflict{importSummary.conflictsDetected > 1 ? 's' : ''} detected with existing shifts.
                   </span>
                 )}
               </p>
@@ -938,7 +940,7 @@ export default function ImportModal({ isOpen, onClose, onToast }: ImportModalPro
         {currentStep === 'error' && (
           <div className="py-6 px-4 flex flex-col items-center justify-center text-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-xl text-rose-500">
-              ⚠
+              <ScheduleIcon name="warning" />
             </div>
             <h3 className="text-sm font-semibold text-[var(--text-primary)]">
               {errorDetails.title}

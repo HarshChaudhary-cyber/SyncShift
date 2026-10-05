@@ -1,0 +1,62 @@
+[
+  {
+    "client": 352,
+    "emoji": [],
+    "recurrence": [
+      {
+        "label": " WeeklyEvery week",
+        "selected": "true"
+      },
+      {
+        "label": " BiweeklyEvery 2 wks",
+        "selected": "false"
+      },
+      {
+        "label": " One-offSingle event",
+        "selected": "false"
+      }
+    ],
+    "scroll": 352,
+    "width": 360
+  },
+  {
+    "client": 382,
+    "emoji": [],
+    "recurrence": [
+      {
+        "label": " WeeklyEvery week",
+        "selected": "true"
+      },
+      {
+        "label": " BiweeklyEvery 2 wks",
+        "selected": "false"
+      },
+      {
+        "label": " One-offSingle event",
+        "selected": "false"
+      }
+    ],
+    "scroll": 382,
+    "width": 390
+  },
+  {
+    "client": 1357,
+    "emoji": [],
+    "recurrence": [
+      {
+        "label": " WeeklyEvery week",
+        "selected": "true"
+      },
+      {
+        "label": " BiweeklyEvery 2 wks",
+        "selected": "false"
+      },
+      {
+        "label": " One-offSingle event",
+        "selected": "false"
+      }
+    ],
+    "scroll": 1357,
+    "width": 1366
+  }
+]

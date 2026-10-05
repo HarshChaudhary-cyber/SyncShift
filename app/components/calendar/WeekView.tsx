@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React, { useState } from 'react';
 import {
   DndContext,
@@ -247,10 +249,10 @@ export default function WeekView({ onBlockClick, onSlotClick, onReplanStudy }: W
               <div className="flex items-center gap-1.5">
                 <span>
                   {activeDragBlock.type === 'shift'
-                    ? '💼'
+                    ? <ScheduleIcon name="work" />
                     : activeDragBlock.type === 'study'
-                    ? '📖'
-                    : '📚'}
+                    ? <ScheduleIcon name="study" />
+                    : <ScheduleIcon name="study" />}
                 </span>
                 <span>{activeDragBlock.title}</span>
               </div>

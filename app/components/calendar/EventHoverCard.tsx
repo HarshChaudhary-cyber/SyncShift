@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React from 'react';
 import { BlockOut, ConflictItem } from '@/lib/api';
 
@@ -59,7 +61,7 @@ export default function EventHoverCard({
 
       {/* Time & Duration */}
       <div className="mt-2 flex items-center gap-1.5 text-xs text-[var(--text-secondary)] font-mono">
-        <span>🕒</span>
+        <span><ScheduleIcon name="time" /></span>
         <span>
           {block.start_time.slice(0, 5)} – {block.end_time.slice(0, 5)}
         </span>
@@ -69,7 +71,7 @@ export default function EventHoverCard({
       {/* Location */}
       {block.location && (
         <div className="mt-1 flex items-center gap-1.5 text-xs text-[var(--text-muted)] truncate">
-          <span>📍</span>
+          <span><ScheduleIcon name="location" /></span>
           <span className="truncate">{block.location}</span>
         </div>
       )}
@@ -77,7 +79,7 @@ export default function EventHoverCard({
       {/* Earnings if Shift */}
       {estEarnings && (
         <div className="mt-1 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-          <span>💵</span>
+          <span><ScheduleIcon name="earnings" /></span>
           <span>
             ${estEarnings} (${block.hourly_wage?.toFixed(2)}/hr)
           </span>
@@ -90,7 +92,7 @@ export default function EventHoverCard({
           <div className="space-y-1">
             <div className="flex items-center justify-between text-rose-500 font-semibold">
               <span className="flex items-center gap-1">
-                <span>⚠️</span> Schedule Conflict
+                <span><ScheduleIcon name="warning" /></span> Schedule Conflict
               </span>
               <span className="text-[10px] uppercase px-1.5 py-0.2 rounded bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 font-bold">
                 {activeConflict.severity || 'Overlap'}

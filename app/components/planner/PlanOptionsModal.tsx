@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React, { useState } from 'react';
 import { PlanOption, SmartPlanPreviewResponse } from '@/lib/api';
 import { useAuthContext } from '@/context/AuthContext';
@@ -37,7 +39,7 @@ export default function PlanOptionsModal({
         <div className="px-6 py-5 border-b border-[var(--border-color)] flex items-center justify-between bg-gradient-to-r from-purple-950/30 via-transparent to-transparent">
           <div className="space-y-0.5">
             <div className="inline-flex items-center gap-2 text-xs font-semibold text-purple-400 uppercase tracking-wider">
-              <span>🗓️</span>
+              <span><ScheduleIcon name="calendar" /></span>
               <span>Week of {previewData.week_start} to {previewData.week_end}</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">

@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from '@/components/ui/ScheduleIcon';
+
 import React from 'react';
 import { useCalendar } from '@/context/CalendarContext';
 import { useAuthContext } from '@/context/AuthContext';
@@ -96,7 +98,7 @@ export default function WeekSummaryBar() {
       {/* Over Limit Alert Pill */}
       {isOver && (
         <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-[11px] font-bold animate-pulse">
-          <span>⚠️</span>
+          <span><ScheduleIcon name="warning" /></span>
           <span>Visa Limit Exceeded ({totals.shift_hours.toFixed(1)}h / {limit}h)</span>
         </div>
       )}

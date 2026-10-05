@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, PlanOption, PlanPreviewResponse, SmartPlanPreviewResponse, StudyTask } from '@/lib/api';
@@ -166,7 +168,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
       const updated = await api.completeTask(task.id);
       setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
       refreshWeek();
-      showSuccessToast(`Marked "${task.title}" as completed! 🎉`);
+      showSuccessToast(`Marked "${task.title}" as completed!`);
     } catch (err: any) {
       showErrorToast(err?.message || 'Failed to complete task');
     }
@@ -186,7 +188,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
       refreshWeek();
       showSuccessToast(
         isDone
-          ? `Target reached for "${task.title}"! 🎉`
+          ? `Target reached for "${task.title}"!`
           : `Logged +${additionalHours}h progress on "${task.title}"`
       );
     } catch (err: any) {
@@ -278,7 +280,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
         {/* Error state */}
         {error && (
           <div className="p-4 bg-rose-50 dark:bg-red-950/40 border border-rose-200 dark:border-red-800/80 rounded-2xl text-xs text-rose-700 dark:text-red-300 flex items-center justify-between">
-            <span>⚠️ {error}</span>
+            <span><ScheduleIcon name="warning" /> {error}</span>
             <button onClick={() => fetchTasks(false)} className="underline font-semibold cursor-pointer">
               Try again
             </button>
@@ -288,7 +290,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
         {/* Plan generation error state */}
         {planError && (
           <div className="p-4 bg-rose-50 dark:bg-red-950/40 border border-rose-200 dark:border-red-800/80 rounded-2xl text-xs text-rose-700 dark:text-red-300 flex items-center justify-between gap-3">
-            <span>⚠️ We couldn't generate study recommendations right now.</span>
+            <span><ScheduleIcon name="warning" /> We couldn't generate study recommendations right now.</span>
             <button
               onClick={() => {
                 const target = planError;
@@ -319,7 +321,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
 
             {activeTasks.length === 0 ? (
               <div className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-10 text-center space-y-3">
-                <div className="text-4xl">{professor ? '📝' : '📚'}</div>
+                <div className="text-4xl">{professor ? <ScheduleIcon name="task" /> : <ScheduleIcon name="study" />}</div>
                 <h3 className="text-base font-bold text-[var(--text-primary)]">{professor ? 'No preparation tasks yet.' : 'No tasks yet.'}</h3>
                 <p className="text-xs text-[var(--text-secondary)] max-w-sm mx-auto">
                   {professor ? 'Add lecture prep, grading, office hours, or personal work to preview suitable time slots.' : 'Add preparation, grading, study or personal work and preview suitable time slots.'}
@@ -392,7 +394,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
 
                         {task.preferred_duration && (
                           <span className="text-[10px] font-medium text-[var(--text-muted)] bg-[var(--bg-secondary)] px-2 py-0.5 rounded-full border border-[var(--border-color)]">
-                            ⏱️ {task.preferred_duration}m slots
+                            <ScheduleIcon name="time" /> {task.preferred_duration}m slots
                           </span>
                         )}
 
@@ -404,7 +406,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
                               : 'bg-[var(--bg-secondary)] border-[var(--border-color)] text-[var(--text-secondary)]'
                           }`}
                         >
-                          ⏳ {deadlineInfo.text}
+                          <ScheduleIcon name="time" /> {deadlineInfo.text}
                         </span>
                       </div>
 
@@ -460,7 +462,7 @@ export function PlannerContent({ showNavbar = true }: { showNavbar?: boolean }) 
                             disabled={isActionLoading}
                             className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                           >
-                            <span>✨</span>
+                            <span><ScheduleIcon name="assistant" /></span>
                             <span>{isActionLoading ? 'Finding Gaps…' : 'Auto-schedule'}</span>
                           </button>
                         ) : (

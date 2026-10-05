@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React, { useState, useEffect } from 'react';
 import { api, PlanPreviewResponse, PlanSessionSuggested, StudyTask } from '@/lib/api';
 import TimePicker from '@/components/ui/TimePicker';
@@ -110,7 +112,7 @@ export default function PlanPreviewModal({
         <div className="px-6 py-4 border-b border-[var(--border-color)] flex items-center justify-between shrink-0">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xl">✨</span>
+              <span className="text-xl"><ScheduleIcon name="assistant" /></span>
               <h2 className="text-base font-bold text-[var(--text-primary)]">Suggested private plan</h2>
             </div>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
@@ -132,7 +134,7 @@ export default function PlanPreviewModal({
           {/* Error Message */}
           {error && (
             <div className="p-3 bg-rose-50 dark:bg-red-950/40 border border-rose-200 dark:border-red-800/80 rounded-xl text-xs text-rose-700 dark:text-red-300">
-              ⚠️ {error}
+              <ScheduleIcon name="warning" /> {error}
             </div>
           )}
 
@@ -140,7 +142,7 @@ export default function PlanPreviewModal({
           {plan.short_by_hours && plan.short_by_hours > 0 && (
             <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-800 dark:text-amber-200 text-xs space-y-1.5">
               <div className="flex items-center gap-2 font-bold">
-                <span className="text-base shrink-0">⚠️</span>
+                <span className="text-base shrink-0"><ScheduleIcon name="warning" /></span>
                 <span>Not Enough Available Free Time</span>
               </div>
               <p className="leading-relaxed">

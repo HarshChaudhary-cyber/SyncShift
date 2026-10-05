@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { api, BlockOut, TodayViewData, ApiError } from '@/lib/api';
 import { useAuthContext } from '@/context/AuthContext';
@@ -295,7 +297,7 @@ export default function TodayWidget({
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <span className="text-xl">⚠️</span>
+            <span className="text-xl"><ScheduleIcon name="warning" /></span>
             <div>
               <h2 className="text-sm font-semibold text-rose-900 dark:text-rose-200">
                 Couldn&apos;t load today&apos;s schedule
@@ -360,7 +362,7 @@ export default function TodayWidget({
       <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)] gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="h-7 w-7 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0 text-sm">
-            📅
+            <ScheduleIcon name="calendar" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -388,7 +390,7 @@ export default function TodayWidget({
           // Empty state: friendly, encouraging, layout intact
           <div className="py-6 px-4 text-center rounded-lg bg-[var(--bg-secondary)] border border-dashed border-[var(--border-color)] my-1">
             <p className="text-sm font-medium text-[var(--text-primary)]">
-              No classes or shifts today 🎉
+              No classes or shifts today <ScheduleIcon name="complete" />
             </p>
             <p className="text-xs text-[var(--text-secondary)] mt-1">
               Enjoy your free time, relax, or catch up on your studies.
@@ -433,7 +435,7 @@ export default function TodayWidget({
                               : 'bg-blue-500/15 text-blue-500 border border-blue-500/30'
                           }`}
                         >
-                          <span>{isShift ? '💼 Shift' : '🎓 Class'}</span>
+                          <span>{isShift ? <><ScheduleIcon name="work" /> Shift</> : <><ScheduleIcon name="academic" /> Class</>}</span>
                         </span>
 
                         {/* "● Now" indicator */}
@@ -447,7 +449,7 @@ export default function TodayWidget({
                         {/* Conflict tag */}
                         {hasConflict && (
                           <span className="inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-500 border border-rose-500/30">
-                            ⚠️ Conflict
+                            <ScheduleIcon name="warning" /> Conflict
                           </span>
                         )}
                       </div>
@@ -461,7 +463,7 @@ export default function TodayWidget({
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--text-secondary)] mt-0.5">
                         {block.location && (
                           <span className="inline-flex items-center gap-1 truncate">
-                            <span>📍</span>
+                            <span><ScheduleIcon name="location" /></span>
                             <span className="truncate">{block.location}</span>
                           </span>
                         )}

@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
@@ -203,7 +205,7 @@ function StudentCalendarContent() {
                 className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-semibold text-xs transition flex items-center gap-1.5 shrink-0 shadow cursor-pointer self-start sm:self-auto"
                 title="Automatically move study session into an open free gap"
               >
-                <span>🔄 Find another study slot</span>
+                <span><ScheduleIcon name="repeat" /> Find another study slot</span>
               </button>
             ) : null;
           })()}

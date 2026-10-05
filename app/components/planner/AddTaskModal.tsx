@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from '@/components/ui/ScheduleIcon';
+
 import React, { useEffect, useState } from 'react';
 import { api, CourseOut, StudyTask } from '@/lib/api';
 import DatePicker from '@/components/ui/DatePicker';
@@ -102,7 +104,7 @@ export default function AddTaskModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-[var(--border-color)] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xl">{isProfessor ? '📝' : '📖'}</span>
+            <span className="text-xl">{isProfessor ? <ScheduleIcon name="task" /> : <ScheduleIcon name="study" />}</span>
             <h2 className="text-base font-bold text-[var(--text-primary)]">
               {isProfessor ? 'Add preparation or private task' : 'Add private task'}
             </h2>
@@ -120,7 +122,7 @@ export default function AddTaskModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
             <div className="p-3 bg-rose-50 dark:bg-red-950/40 border border-rose-200 dark:border-red-800/80 rounded-xl text-xs text-rose-700 dark:text-red-300">
-              ⚠️ {error}
+              <ScheduleIcon name="warning" /> {error}
             </div>
           )}
 

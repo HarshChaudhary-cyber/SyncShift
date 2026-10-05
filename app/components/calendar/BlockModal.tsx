@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React, { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useCalendar } from '@/context/CalendarContext';
@@ -320,7 +322,7 @@ export default function BlockModal({
   const isStudy = selectedType === 'study';
   const title = isEdit
     ? isStudy
-      ? '📖 Edit Study Block'
+      ? "Edit Study Block"
       : `Edit ${isClass ? 'Class' : 'Shift'}`
     : isClass
     ? '+ Add Class'
@@ -351,7 +353,7 @@ export default function BlockModal({
           {/* Server error */}
           {serverError && (
             <div className="p-3 bg-rose-50 dark:bg-rose-950/70 border border-rose-300 dark:border-rose-600/60 rounded-lg text-xs text-rose-700 dark:text-rose-200 leading-relaxed">
-              ⚠ {serverError}
+              <ScheduleIcon name="warning" /> {serverError}
             </div>
           )}
 
@@ -360,7 +362,7 @@ export default function BlockModal({
             <div className="p-4 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/40 rounded-xl space-y-4">
               <div>
                 <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-bold text-sm">
-                  <span>🔁</span>
+                  <span><ScheduleIcon name="repeat" /></span>
                   <span>{scopeAction === 'edit' ? 'Edit Recurring Event' : 'Delete Recurring Event'}</span>
                 </div>
                 <p className="text-xs text-indigo-900/80 dark:text-indigo-200/80 mt-1">
@@ -438,7 +440,7 @@ export default function BlockModal({
             </div>
           ) : conflictWarning ? (
             <div className="p-4 bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-500/50 rounded-xl text-xs space-y-3">
-              <p className="font-semibold text-amber-800 dark:text-amber-300">⚠ Schedule Conflict</p>
+              <p className="font-semibold text-amber-800 dark:text-amber-300"><ScheduleIcon name="warning" /> Schedule Conflict</p>
               <p className="text-amber-900 dark:text-amber-200 leading-relaxed">{conflictWarning}</p>
               <div className="flex justify-end gap-2 pt-1">
                 <button
@@ -481,7 +483,7 @@ export default function BlockModal({
                         className="sr-only"
                         {...register('type')}
                       />
-                      {t === 'class' ? '🎓 Class' : '💼 Shift'}
+                      {t === 'class' ? <><ScheduleIcon name="academic" /> Class</> : <><ScheduleIcon name="work" /> Shift</>}
                     </label>
                   ))}
                 </div>
@@ -564,7 +566,7 @@ export default function BlockModal({
               </div>
               {isTimeInvalid && (
                 <p className="text-[11px] text-rose-500 -mt-2 flex items-center gap-1">
-                  <span>⚠</span> End time must be after start time
+                  <span><ScheduleIcon name="warning" /></span> End time must be after start time
                 </p>
               )}
 
@@ -575,13 +577,14 @@ export default function BlockModal({
                 </label>
                 <div className="grid grid-cols-3 gap-2 text-xs font-medium">
                   {[
-                    { id: 'weekly', label: '🔁 Weekly', desc: 'Every week' },
-                    { id: 'biweekly', label: '2️⃣ Biweekly', desc: 'Every 2 wks' },
-                    { id: 'none', label: '📅 One-off', desc: 'Single event' },
+                    { id: 'weekly', label: 'Weekly', icon: 'repeat' as const, desc: 'Every week' },
+                    { id: 'biweekly', label: 'Biweekly', icon: 'biweekly' as const, desc: 'Every 2 wks' },
+                    { id: 'none', label: 'One-off', icon: 'calendar' as const, desc: 'Single event' },
                   ].map((item) => (
                     <button
                       key={item.id}
                       type="button"
+                      aria-pressed={watch('recurrence_pattern') === item.id}
                       onClick={() =>
                         setValue('recurrence_pattern', item.id as any, {
                           shouldDirty: true,
@@ -593,7 +596,7 @@ export default function BlockModal({
                           : 'bg-[var(--bg-input)] border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'
                       }`}
                     >
-                      <div className="text-xs font-bold">{item.label}</div>
+                      <div className="text-xs font-bold"><ScheduleIcon name={item.icon} /> {item.label}</div>
                       <div className="text-[10px] text-[var(--text-muted)] mt-0.5">{item.desc}</div>
                     </button>
                   ))}
@@ -626,7 +629,7 @@ export default function BlockModal({
               </div>
               {isDateInvalid && (
                 <p className="text-[11px] text-rose-500 -mt-2 flex items-center gap-1">
-                  <span>⚠</span> End date must be on or after start date
+                  <span><ScheduleIcon name="warning" /></span> End date must be on or after start date
                 </p>
               )}
 
@@ -813,7 +816,7 @@ export default function BlockModal({
                   onClick={handleDelete}
                   className="text-xs text-rose-500 hover:text-rose-600 transition cursor-pointer font-medium"
                 >
-                  🗑 Delete
+                  <ScheduleIcon name="delete" /> Delete
                 </button>
                 <button
                   type="button"
@@ -821,7 +824,7 @@ export default function BlockModal({
                   disabled={saving}
                   className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer font-medium disabled:opacity-50"
                 >
-                  📋 Duplicate
+                  <ScheduleIcon name="duplicate" /> Duplicate
                 </button>
               </div>
             ) : (

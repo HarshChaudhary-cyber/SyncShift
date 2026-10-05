@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React, { useEffect, useId, useReducer, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { TimeBlock, BlockType, BlockStatus } from './CalendarWeekView';
@@ -320,7 +322,7 @@ export function BlockFormModal({
                       : typeAccent[t].inactive
                   }`}
                 >
-                  {t === 'class' ? '🎓 Class' : '💼 Shift'}
+                  {t === 'class' ? <><ScheduleIcon name="academic" /> Class</> : <><ScheduleIcon name="work" /> Shift</>}
                 </button>
               ))}
             </div>
@@ -444,7 +446,7 @@ export function BlockFormModal({
                       onChange={(e) => dispatch({ field: 'isOvernight', value: e.target.checked })}
                       className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
                     />
-                    <span>🌙 Overnight shift</span>
+                    <span><ScheduleIcon name="night" /> Overnight shift</span>
                   </label>
                   <span className="text-[10px] text-slate-500 dark:text-zinc-400 block ml-6">
                     Crosses midnight (+1 day)
