@@ -541,7 +541,7 @@ export default function BlockModal({
                   <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
                     Start Time <span className="text-rose-500">*</span>
                   </label>
-                  <TimePicker
+                  <TimePicker label="Start time"
                     value={startTime}
                     onChange={(val) => setValue('start_time', val, { shouldValidate: true })}
                     error={Boolean(errors.start_time || isTimeInvalid)}
@@ -554,7 +554,7 @@ export default function BlockModal({
                   <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
                     End Time <span className="text-rose-500">*</span>
                   </label>
-                  <TimePicker
+                  <TimePicker label="End time"
                     value={endTime}
                     onChange={(val) => setValue('end_time', val, { shouldValidate: true })}
                     error={Boolean(errors.end_time || isTimeInvalid)}

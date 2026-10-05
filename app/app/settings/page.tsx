@@ -1524,14 +1524,14 @@ export function SettingsContent() {
                     <div className="ws-form-row">
                       <label>
                         <span>Quiet Hours Start</span>
-                        <TimePicker
+                        <TimePicker label="Quiet hours start"
                           value={quietHoursStart}
                           onChange={(v) => setQuietHoursStart(v)}
                         />
                       </label>
                       <label>
                         <span>Quiet Hours End</span>
-                        <TimePicker
+                        <TimePicker label="Quiet hours end"
                           value={quietHoursEnd}
                           onChange={(v) => setQuietHoursEnd(v)}
                         />

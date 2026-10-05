@@ -1,0 +1,50 @@
+[
+  {
+    "documentOverflow": 0,
+    "height": 800,
+    "popup": {
+      "bottom": 691.3730087280273,
+      "left": 19.996675491333008,
+      "right": 323.99157905578613,
+      "top": 109.99556732177734
+    },
+    "popupOverflow": 0,
+    "width": 360
+  },
+  {
+    "documentOverflow": 0,
+    "height": 800,
+    "popup": {
+      "bottom": 691.3730087280273,
+      "left": 19.996675491333008,
+      "right": 323.99157905578613,
+      "top": 109.99556732177734
+    },
+    "popupOverflow": 0,
+    "width": 390
+  },
+  {
+    "documentOverflow": 0,
+    "height": 800,
+    "popup": {
+      "bottom": 691.3730087280273,
+      "left": 449.6066284179687,
+      "right": 753.6015319824219,
+      "top": 109.99556732177734
+    },
+    "popupOverflow": 0,
+    "width": 1366
+  },
+  {
+    "documentOverflow": 0,
+    "height": 400,
+    "popup": {
+      "bottom": 387.9931344985962,
+      "left": 19.996675491333008,
+      "right": 323.99157905578613,
+      "top": 11.995789527893066
+    },
+    "popupScrolls": true,
+    "width": 360
+  }
+]

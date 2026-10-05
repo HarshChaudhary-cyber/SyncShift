@@ -203,13 +203,13 @@ export default function PlanPreviewModal({
                     {/* Right: Editable Time Range Inputs & Individual Add */}
                     <div className="flex items-center gap-2 self-end sm:self-center">
                       <div className="flex items-center gap-1.5 w-44 sm:w-48">
-                        <TimePicker
+                        <TimePicker label="Session start time"
                           value={s.start_time.slice(0, 5)}
                           disabled={!s.selected}
                           onChange={(val) => updateTime(s.temp_id, 'start_time', val)}
                         />
                         <span className="text-[var(--text-muted)] text-xs">–</span>
-                        <TimePicker
+                        <TimePicker label="Session end time"
                           value={s.end_time.slice(0, 5)}
                           disabled={!s.selected}
                           onChange={(val) => updateTime(s.temp_id, 'end_time', val)}

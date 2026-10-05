@@ -405,7 +405,7 @@ export function BlockFormModal({
             {/* ── Time row ─────────────────────────────────────────────── */}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Start time" error={errors.startTime} htmlFor={`${uid}-start`}>
-                <TimePicker
+                <TimePicker label="Start time"
                   id={`${uid}-start`}
                   value={form.startTime}
                   onChange={(val) => dispatch({ field: 'startTime', value: val })}
@@ -413,7 +413,7 @@ export function BlockFormModal({
                 />
               </Field>
               <Field label="End time" error={errors.endTime} htmlFor={`${uid}-end`}>
-                <TimePicker
+                <TimePicker label="End time"
                   id={`${uid}-end`}
                   value={form.endTime}
                   onChange={(val) => dispatch({ field: 'endTime', value: val })}
