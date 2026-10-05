@@ -2,6 +2,14 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
 
+/* The same identity is used on the public campus, account pages, and workspace. */
+.syncshift-brand { display:inline-flex; align-items:center; flex-shrink:0; font-size:24px; font-weight:750; letter-spacing:-1px; line-height:1; color:var(--text-primary); }
+.syncshift-dot { color:var(--brand-accent); }
+.syncshift-mark { display:flex; align-items:center; gap:3px; margin-right:10px; transform:skewY(-12deg); }
+.syncshift-mark i { display:block; width:5px; height:20px; border-radius:1px; background:var(--brand-accent); }
+.syncshift-mark i:nth-child(2) { height:28px; }
+.syncshift-mark i:last-child { height:15px; }
+
 /* LIGHT MODE (default) */
 :root {
   --font-inter: 'Inter', sans-serif;
@@ -205,4 +213,22 @@ html:not(:has(.workspace-app)), body:not(:has(.workspace-app)) {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Shared campus palette. Semantic success, warning and conflict colors stay distinct. */
+:root {
+  --bg-page:#f6f5fa; --bg-primary:#f6f5fa; --bg-secondary:#f0eef6;
+  --bg-card:#ffffff; --bg-elevated:#f0eef6; --bg-input:#faf9fd; --bg-hover:#e9e5f2;
+  --text-primary:#262339; --text-secondary:#686579; --text-muted:#706b83;
+  --border-subtle:#eae7f1; --border-color:#dedbe9; --border-strong:#c8c2dc; --border-hover:#9588b5;
+  --brand-accent:#6954b5; --accent-primary:#6953ce; --accent-hover:#5b45ba;
+  --navbar-bg:#f6f5faf2;
+}
+[data-theme="dark"] {
+  --bg-page:#0e101a; --bg-primary:#0e101a; --bg-secondary:#1d2031;
+  --bg-card:#171a27; --bg-elevated:#202436; --bg-input:#121522; --bg-hover:#292d43;
+  --text-primary:#f1f0f8; --text-secondary:#a5a8be; --text-muted:#9a9db6;
+  --border-subtle:#25283a; --border-color:#2d3043; --border-strong:#45415f; --border-hover:#80749e;
+  --brand-accent:#b5a8ff; --accent-primary:#7662df; --accent-hover:#8774ea;
+  --navbar-bg:#0e101af2;
 }

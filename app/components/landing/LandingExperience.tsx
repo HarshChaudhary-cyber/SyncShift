@@ -1,5 +1,7 @@
 "use client";
 
+import Brand from "@/components/ui/Brand";
+
 import { useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -174,14 +176,7 @@ export default function LandingExperience() {
         Skip to content
       </a>
       <header className="ss-header ss-container">
-        <Link href="/" className="ss-brand" aria-label="SyncShift home">
-          <span className="ss-brand-mark" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-          SyncShift<span className="ss-brand-dot">.</span>
-        </Link>
+        <Brand />
         <nav aria-label="Main navigation">
           <a href="#how-it-connects">How it connects</a>
           <a href="#your-role">Your workspace</a>

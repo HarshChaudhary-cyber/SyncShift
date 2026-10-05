@@ -65,3 +65,14 @@
   .weekly-summary > div { padding: 0; border-right: 0; }
   .class-tile footer { flex-wrap: wrap; gap: 8px; }
 }
+
+/* Continue the campus identity in every authenticated role. */
+.workspace-app .syncshift-brand { font-size:23px; }
+.workspace-sidebar .syncshift-brand { margin:2px 8px 8px; }
+.workspace-app .ws-kicker { color:var(--brand-accent); letter-spacing:.15em; }
+.workspace-app .ws-button.primary { background:var(--accent-primary); border-color:var(--accent-primary); }
+.workspace-sidebar nav a[aria-current=page] { color:var(--text-primary); background:color-mix(in srgb,var(--brand-accent) 10%,transparent); box-shadow:inset 3px 0 var(--brand-accent); }
+.workspace-app :is(.ws-link,.assistant-entry svg) { color:var(--brand-accent); }
+.workspace-content h1 { font-weight:600; letter-spacing:-.04em; }
+.workspace-app .ws-panel { border-radius:14px; }
+.workspace-app :is(button,a,input,select,textarea,summary):focus-visible { outline-color:var(--brand-accent); }

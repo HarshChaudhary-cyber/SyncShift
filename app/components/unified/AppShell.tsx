@@ -9,6 +9,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { openSyncShiftAssistant } from '@/components/assistant/SyncShiftAssistant';
 import { isReducedMotionActive } from '@/lib/preferences';
 import './workspace.css';
+import Brand from '@/components/ui/Brand';
 
 const navigation = [
   ['Dashboard', '/dashboard', Squares2X2Icon], ['Calendar', '/calendar', CalendarDaysIcon],
@@ -44,10 +45,10 @@ export default function AppShell({ children }: {children: React.ReactNode}) {
   const management=user?.institution_role==='super_admin'&&(pathname==='/dashboard'||pathname.startsWith('/admin')||pathname.startsWith('/university'));
   return <ProtectedRoute><MotionConfig reducedMotion={isReduced ? 'always' : 'never'}><div className="workspace-app">
     <a className="skip-link" href="#workspace-content">Skip to content</a>
-    <header className="mobile-bar"><Link href="/dashboard" className="brand">SyncShift<span>●</span></Link><button aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={mobileOpen} onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <XMarkIcon/> : <Bars3Icon/>}</button></header>
+    <header className="mobile-bar"><Brand href="/dashboard" label="SyncShift dashboard" /><button aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={mobileOpen} onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <XMarkIcon/> : <Bars3Icon/>}</button></header>
     {mobileOpen && <button className="nav-scrim" aria-label="Close navigation" onClick={() => setMobileOpen(false)}/>}
     <aside className={`workspace-sidebar ${mobileOpen ? 'is-open' : ''}`}>
-      <Link href="/dashboard" className="brand">SyncShift<span>●</span></Link>
+      <Brand href="/dashboard" label="SyncShift dashboard" />
       <p className="sidebar-caption">{management?'UNIVERSITY MANAGEMENT':'YOUR WORKSPACE'}</p>
       <nav aria-label="Main navigation">{(management?adminNavigation:navigation).map(([name, href, Icon]) => <Link key={href} href={href} aria-current={pathname.startsWith(href) ? 'page' : undefined} onClick={() => setMobileOpen(false)}><Icon/><span>{name}</span></Link>)}</nav>
       {management&&<Link className="ws-button" href="/calendar" onClick={()=>setMobileOpen(false)}>My private workspace</Link>}

@@ -28,28 +28,28 @@ interface TurnstileWidgetProps {
   onError?: () => void;
   onExpire?: () => void;
   className?: string;
+  resetKey?: number;
 }
 
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
+// The backend enforces CAPTCHA policy. Never supply a public test key or mock success implicitly.
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
 
 export function TurnstileWidget({
   onVerify,
   onError,
   onExpire,
   className = '',
+  resetKey = 0,
 }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const callbacks = useRef({ onVerify, onError, onExpire });
+  useEffect(() => { callbacks.current = { onVerify, onError, onExpire }; }, [onVerify, onError, onExpire]);
 
   useEffect(() => {
-    // If no site key is provided in development, automatically pass dev mock token
-    if (!TURNSTILE_SITE_KEY) {
-      const timer = setTimeout(() => {
-        onVerify('mock_captcha_pass_local_dev');
-      }, 200);
-      return () => clearTimeout(timer);
-    }
+    if (!TURNSTILE_SITE_KEY) return;
 
     if (typeof window === 'undefined') return;
 
@@ -59,18 +59,22 @@ export function TurnstileWidget({
     }
 
     const scriptId = 'cf-turnstile-script';
-    if (!document.getElementById(scriptId)) {
-      const script = document.createElement('script');
+    let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+    const created = !script;
+    if (!script) {
+      script = document.createElement('script');
       script.id = scriptId;
       script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
       script.async = true;
       script.defer = true;
-      script.onload = () => setIsScriptLoaded(true);
-      document.head.appendChild(script);
-    } else {
-      setIsScriptLoaded(true);
     }
-  }, [onVerify]);
+    const loaded = () => setIsScriptLoaded(true);
+    const failed = () => { setFailed(true); callbacks.current.onVerify(''); callbacks.current.onError?.(); };
+    script.addEventListener('load', loaded);
+    script.addEventListener('error', failed);
+    if (created) document.head.appendChild(script);
+    return () => { script.removeEventListener('load', loaded); script.removeEventListener('error', failed); };
+  }, []);
 
   useEffect(() => {
     if (!isScriptLoaded || !TURNSTILE_SITE_KEY || !containerRef.current || !window.turnstile) {
@@ -93,18 +97,23 @@ export function TurnstileWidget({
         theme: 'auto',
         size: 'flexible',
         callback: (token: string) => {
-          onVerify(token);
+          setFailed(false);
+          callbacks.current.onVerify(token);
         },
         'error-callback': () => {
-          if (onError) onError();
+          setFailed(true);
+          callbacks.current.onVerify('');
+          callbacks.current.onError?.();
         },
         'expired-callback': () => {
-          if (onExpire) onExpire();
+          callbacks.current.onVerify('');
+          callbacks.current.onExpire?.();
         },
       });
       widgetIdRef.current = id;
     } catch {
-      // ignore
+      setFailed(true);
+      callbacks.current.onVerify('');
     }
 
     return () => {
@@ -117,7 +126,14 @@ export function TurnstileWidget({
         widgetIdRef.current = null;
       }
     };
-  }, [isScriptLoaded, onVerify, onError, onExpire]);
+  }, [isScriptLoaded]);
+
+  useEffect(() => {
+    if (resetKey && widgetIdRef.current !== null && window.turnstile) {
+      callbacks.current.onVerify('');
+      window.turnstile.reset(widgetIdRef.current);
+    }
+  }, [resetKey]);
 
   if (!TURNSTILE_SITE_KEY) {
     // Hidden in local dev when no site key is configured
@@ -125,8 +141,9 @@ export function TurnstileWidget({
   }
 
   return (
-    <div className={`w-full flex justify-center my-2 min-h-[65px] ${className}`}>
-      <div ref={containerRef} className="w-full max-w-[300px]" />
+    <div className={`w-full min-w-0 my-2 ${className}`}>
+      <div ref={containerRef} className="w-full min-w-0" />
+      {failed && <p role="alert" className="text-xs text-rose-500 mt-2">Security verification could not load. Refresh the page and try again.</p>}
     </div>
   );
 }

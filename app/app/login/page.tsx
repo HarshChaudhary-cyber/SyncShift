@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { EyeIcon, EyeSlashIcon, ExclamationTriangleIcon, CheckCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { useAuthContext } from '@/context/AuthContext';
 import { api, ApiError, PublicInstitution } from '@/lib/api';
 import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 import { safeReturnUrl } from '@/lib/session-policy.mjs';
+import AuthFrame from '@/components/auth/AuthFrame';
+import Modal from '@/components/unified/Modal';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,6 +24,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string>('');
+  const [captchaAttempt, setCaptchaAttempt] = useState(0);
 
   // Password Recovery / Setup Modal State
   const [recoveryOpen, setRecoveryOpen] = useState(false);
@@ -100,11 +103,12 @@ export default function LoginPage() {
       await login(cleanId, password, captchaToken, isEnrollmentLogin ? selectedInstitutionId : undefined);
       router.replace(safeReturnUrl(new URLSearchParams(window.location.search).get('returnTo')));
     } catch (err: unknown) {
+      setCaptchaAttempt(value => value + 1);
       if (err instanceof ApiError) {
         if (err.code === 'institution_selection_required') {
           setError(err.message || 'Please select your university.');
         } else if (err.status === 401) {
-          setError('Invalid login details');
+          setError('The email or enrollment number and password did not match. Check your university selection or use password recovery.');
         } else {
           setError(err.message || 'Invalid login details');
         }
@@ -200,26 +204,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col items-center justify-center px-4 py-4 sm:py-8 my-auto overflow-y-auto">
-      {/* Ambient background glow */}
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(99,102,241,0.14) 0%, transparent 70%)',
-        }}
-      />
-
-      <div className="relative z-10 w-full max-w-[420px]">
-        {/* Brand wordmark */}
-        <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6">
-          <span className="text-2xl sm:text-3xl select-none">⚡</span>
-          <span className="text-xl sm:text-2xl font-bold text-[var(--text-primary)] tracking-tight">SyncShift</span>
-        </div>
-
+    <AuthFrame>
         {/* Card */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
           className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden"
@@ -332,6 +320,7 @@ export default function LoginPage() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
+                  role="alert"
                   className="flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700/60 rounded-lg px-3.5 py-2.5 break-words"
                 >
                   <ExclamationTriangleIcon className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" aria-hidden="true" />
@@ -341,7 +330,7 @@ export default function LoginPage() {
             </AnimatePresence>
 
             {/* Bot Protection / Turnstile */}
-            <TurnstileWidget onVerify={(token) => setCaptchaToken(token)} />
+            <TurnstileWidget onVerify={setCaptchaToken} resetKey={captchaAttempt} />
 
             {/* Submit button */}
             <button
@@ -374,32 +363,10 @@ export default function LoginPage() {
           </div>
         </motion.div>
 
-        {/* Back to landing */}
-        <p className="mt-3 sm:mt-4 text-center text-xs text-[var(--text-muted)]">
-          <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">
-            ← Back to home
-          </Link>
-        </p>
-      </div>
-
       {/* Password Setup & Recovery Modal */}
       {recoveryOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
-              <h2 className="text-base font-semibold text-[var(--text-primary)]">
-                {recoveryStep === 'request' ? 'Password Setup & Recovery' : 'Create New Password'}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setRecoveryOpen(false)}
-                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 rounded-lg"
-                aria-label="Close dialog"
-              >
-                <XMarkIcon className="w-5 h-5" aria-hidden="true" />
-              </button>
-            </div>
-
+        <Modal title={recoveryStep === 'request' ? 'Password setup & recovery' : 'Create new password'} onClose={() => setRecoveryOpen(false)}>
+          <div className="space-y-4">
             {recoveryError && (
               <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
                 <ExclamationTriangleIcon className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
@@ -417,7 +384,7 @@ export default function LoginPage() {
             {recoveryStep === 'request' ? (
               <form onSubmit={handleRequestRecovery} className="space-y-4">
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                  Enter your university email address. If you previously signed in with Google or Microsoft and need to establish a password, this will create your password credentials.
+                  Enter your account email address to request a password recovery link. Your university administrator can help if email delivery is unavailable.
                 </p>
                 <div>
                   <label htmlFor="recoveryEmail" className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
@@ -462,7 +429,7 @@ export default function LoginPage() {
                     required
                     value={recoveryToken}
                     onChange={(e) => setRecoveryToken(e.target.value)}
-                    placeholder="Paste the reset token from your email or server log"
+                    placeholder="Paste the reset token from your recovery email"
                     className="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-xs"
                   />
                   <span className="text-[11px] text-[var(--text-muted)] mt-1 block">
@@ -505,9 +472,9 @@ export default function LoginPage() {
               </form>
             )}
           </div>
-        </div>
+        </Modal>
       )}
-    </div>
+    </AuthFrame>
   );
 }
 

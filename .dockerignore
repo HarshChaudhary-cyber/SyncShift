@@ -5,6 +5,11 @@
 **/.dockerignore
 **/.env
 **/.env.*
+**/.demo-secret
+**/.demo-credentials.json
+**/.demo-manifest.json
+**/*credentials.local*
+**/*credentials.json
 **/.git
 **/.gitignore
 **/.project

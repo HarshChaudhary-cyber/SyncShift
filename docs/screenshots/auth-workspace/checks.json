@@ -1,0 +1,326 @@
+[
+  {
+    "label": "login dark",
+    "client": 352,
+    "height": 800,
+    "offenders": [],
+    "path": "/login",
+    "scroll": 352,
+    "theme": "dark",
+    "width": 360
+  },
+  {
+    "label": "login dark",
+    "client": 382,
+    "height": 800,
+    "offenders": [],
+    "path": "/login",
+    "scroll": 382,
+    "theme": "dark",
+    "width": 390
+  },
+  {
+    "label": "login dark",
+    "client": 768,
+    "height": 800,
+    "offenders": [],
+    "path": "/login",
+    "scroll": 768,
+    "theme": "dark",
+    "width": 768
+  },
+  {
+    "label": "login dark",
+    "client": 1016,
+    "height": 800,
+    "offenders": [],
+    "path": "/login",
+    "scroll": 1016,
+    "theme": "dark",
+    "width": 1024
+  },
+  {
+    "label": "login dark",
+    "client": 1357,
+    "height": 800,
+    "offenders": [],
+    "path": "/login",
+    "scroll": 1357,
+    "theme": "dark",
+    "width": 1366
+  },
+  {
+    "label": "login light",
+    "client": 352,
+    "height": 800,
+    "offenders": [],
+    "path": "/login",
+    "scroll": 352,
+    "theme": "light",
+    "width": 360
+  },
+  {
+    "label": "login light",
+    "client": 382,
+    "height": 800,
+    "offenders": [],
+    "path": "/login",
+    "scroll": 382,
+    "theme": "light",
+    "width": 390
+  },
+  {
+    "label": "login light",
+    "client": 768,
+    "height": 800,
+    "offenders": [],
+    "path": "/login",
+    "scroll": 768,
+    "theme": "light",
+    "width": 768
+  },
+  {
+    "label": "login light",
+    "client": 1016,
+    "height": 800,
+    "offenders": [],
+    "path": "/login",
+    "scroll": 1016,
+    "theme": "light",
+    "width": 1024
+  },
+  {
+    "label": "login light",
+    "client": 1357,
+    "height": 800,
+    "offenders": [],
+    "path": "/login",
+    "scroll": 1357,
+    "theme": "light",
+    "width": 1366
+  },
+  {
+    "label": "signup light",
+    "client": 352,
+    "height": 800,
+    "offenders": [],
+    "path": "/signup",
+    "scroll": 352,
+    "theme": "light",
+    "width": 360
+  },
+  {
+    "label": "signup light",
+    "client": 382,
+    "height": 800,
+    "offenders": [],
+    "path": "/signup",
+    "scroll": 382,
+    "theme": "light",
+    "width": 390
+  },
+  {
+    "label": "signup light",
+    "client": 760,
+    "height": 800,
+    "offenders": [],
+    "path": "/signup",
+    "scroll": 760,
+    "theme": "light",
+    "width": 768
+  },
+  {
+    "label": "signup light",
+    "client": 1016,
+    "height": 800,
+    "offenders": [],
+    "path": "/signup",
+    "scroll": 1016,
+    "theme": "light",
+    "width": 1024
+  },
+  {
+    "label": "signup light",
+    "client": 1357,
+    "height": 800,
+    "offenders": [],
+    "path": "/signup",
+    "scroll": 1357,
+    "theme": "light",
+    "width": 1366
+  },
+  {
+    "label": "signup dark mobile",
+    "client": 352,
+    "height": 800,
+    "offenders": [],
+    "path": "/signup",
+    "scroll": 352,
+    "theme": "dark",
+    "width": 360
+  },
+  {
+    "label": "rejected login mobile",
+    "client": 352,
+    "height": 800,
+    "offenders": [],
+    "path": "/login",
+    "scroll": 352,
+    "theme": "dark",
+    "width": 360
+  },
+  {
+    "label": "admin dashboard",
+    "alerts": [],
+    "client": 352,
+    "heading": "Administration",
+    "path": "/dashboard",
+    "scroll": 352,
+    "shells": 1,
+    "theme": "dark",
+    "width": 360
+  },
+  {
+    "label": "admin dashboard",
+    "alerts": [],
+    "client": 760,
+    "heading": "Administration",
+    "path": "/dashboard",
+    "scroll": 760,
+    "shells": 1,
+    "theme": "dark",
+    "width": 768
+  },
+  {
+    "label": "admin dashboard",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Administration",
+    "path": "/dashboard",
+    "scroll": 1357,
+    "shells": 1,
+    "theme": "dark",
+    "width": 1366
+  },
+  {
+    "label": "admin university settings",
+    "alerts": [],
+    "client": 1366,
+    "heading": "University Settings",
+    "path": "/university/settings",
+    "scroll": 1366,
+    "shells": 1,
+    "theme": "dark",
+    "width": 1366
+  },
+  {
+    "label": "student dashboard",
+    "alerts": [],
+    "client": 352,
+    "heading": "Your day, in sync.",
+    "path": "/dashboard",
+    "scroll": 352,
+    "shells": 1,
+    "theme": "dark",
+    "width": 360
+  },
+  {
+    "label": "student dashboard",
+    "alerts": [],
+    "client": 760,
+    "heading": "Your day, in sync.",
+    "path": "/dashboard",
+    "scroll": 760,
+    "shells": 1,
+    "theme": "dark",
+    "width": 768
+  },
+  {
+    "label": "student dashboard",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Your day, in sync.",
+    "path": "/dashboard",
+    "scroll": 1357,
+    "shells": 1,
+    "theme": "dark",
+    "width": 1366
+  },
+  {
+    "label": "student calendar",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Calendar",
+    "path": "/calendar",
+    "scroll": 1357,
+    "shells": 1,
+    "theme": "dark",
+    "width": 1366
+  },
+  {
+    "label": "student dashboard light",
+    "alerts": [],
+    "client": 1366,
+    "heading": "Your day, in sync.",
+    "path": "/dashboard",
+    "scroll": 1366,
+    "shells": 1,
+    "theme": "light",
+    "width": 1366
+  },
+  {
+    "label": "professor dashboard",
+    "alerts": [],
+    "client": 352,
+    "heading": "Your teaching day.",
+    "path": "/dashboard",
+    "scroll": 352,
+    "shells": 1,
+    "theme": "dark",
+    "width": 360
+  },
+  {
+    "label": "professor dashboard",
+    "alerts": [],
+    "client": 760,
+    "heading": "Your teaching day.",
+    "path": "/dashboard",
+    "scroll": 760,
+    "shells": 1,
+    "theme": "dark",
+    "width": 768
+  },
+  {
+    "label": "professor dashboard",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Your teaching day.",
+    "path": "/dashboard",
+    "scroll": 1357,
+    "shells": 1,
+    "theme": "dark",
+    "width": 1366
+  },
+  {
+    "label": "professor classes",
+    "alerts": [],
+    "client": 1366,
+    "heading": "Teaching classes",
+    "path": "/classes",
+    "scroll": 1366,
+    "shells": 1,
+    "theme": "dark",
+    "width": 1366
+  },
+  {
+    "label": "professor planner",
+    "alerts": [],
+    "client": 1366,
+    "heading": "Teaching & personal planner",
+    "path": "/planner",
+    "scroll": 1366,
+    "shells": 1,
+    "theme": "dark",
+    "width": 1366
+  }
+]
