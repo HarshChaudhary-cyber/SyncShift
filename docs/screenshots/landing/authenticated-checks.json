@@ -1,0 +1,256 @@
+[
+  {
+    "role": "super-admin",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Administration",
+    "path": "/dashboard",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "super-admin",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Calendar",
+    "path": "/calendar",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "super-admin",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Teaching classes",
+    "path": "/classes",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "super-admin",
+    "alerts": [],
+    "client": 1357,
+    "heading": "CS101 · Algorithms & Data Structures (CS101-SEC-A)",
+    "path": "/classes/1",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "super-admin",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Profile",
+    "path": "/profile",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "super-admin",
+    "alerts": [],
+    "client": 1366,
+    "heading": "Student planner",
+    "path": "/planner",
+    "scroll": 1366,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "super-admin",
+    "alerts": [
+      "Failed to fetchRetry"
+    ],
+    "client": 1366,
+    "heading": "Notifications",
+    "path": "/notifications",
+    "scroll": 1366,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "super-admin",
+    "alerts": [],
+    "client": 1366,
+    "heading": "University Settings",
+    "path": "/university/settings",
+    "scroll": 1366,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "super-admin",
+    "alerts": [],
+    "client": 1366,
+    "heading": "University Timetables",
+    "path": "/university/timetables",
+    "scroll": 1366,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "super-admin recheck",
+    "alerts": [],
+    "client": 1366,
+    "heading": "Notifications",
+    "path": "/notifications",
+    "scroll": 1366,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "student",
+    "alerts": [
+      "Failed to fetchRetry"
+    ],
+    "client": 1366,
+    "heading": "Your day, in sync.",
+    "path": "/dashboard",
+    "scroll": 1366,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "student",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Calendar",
+    "path": "/calendar",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "student",
+    "alerts": [],
+    "client": 1366,
+    "heading": "Classes & subjects",
+    "path": "/classes",
+    "scroll": 1366,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "student",
+    "alerts": [],
+    "client": 1357,
+    "heading": "CS101 · Algorithms & Data Structures (CS101-SEC-A)",
+    "path": "/classes/1",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "student",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Profile",
+    "path": "/profile",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "student",
+    "alerts": [],
+    "client": 1366,
+    "heading": "Student planner",
+    "path": "/planner",
+    "scroll": 1366,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "student",
+    "alerts": [],
+    "client": 1366,
+    "heading": "Notifications1 unread",
+    "path": "/notifications",
+    "scroll": 1366,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "student dashboard recheck",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Your day, in sync.",
+    "path": "/dashboard",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "professor",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Your teaching day.",
+    "path": "/dashboard",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "professor",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Calendar",
+    "path": "/calendar",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "professor",
+    "alerts": [],
+    "client": 1366,
+    "heading": "Teaching classes",
+    "path": "/classes",
+    "scroll": 1366,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "professor",
+    "alerts": [],
+    "client": 1357,
+    "heading": "CS101 · Algorithms & Data Structures (CS101-SEC-A)",
+    "path": "/classes/1",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "professor",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Profile",
+    "path": "/profile",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "professor",
+    "alerts": [],
+    "client": 1357,
+    "heading": "Teaching & personal planner",
+    "path": "/planner",
+    "scroll": 1357,
+    "shells": 1,
+    "width": 1366
+  },
+  {
+    "role": "professor",
+    "alerts": [],
+    "client": 1366,
+    "heading": "Notifications",
+    "path": "/notifications",
+    "scroll": 1366,
+    "shells": 1,
+    "width": 1366
+  }
+]
