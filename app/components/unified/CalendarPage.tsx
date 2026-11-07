@@ -115,7 +115,7 @@ function StudentCalendarContent() {
       {/* Compact Weekly KPI Summary Bar */}
       <WeekSummaryBar />
 
-      <div className="ws-actions"><span className="ws-badge accent">Shared class · read only here</span><span className="ws-badge">Private · only you</span><Link className="ws-link" href="/classes">Manage class timetables →</Link><Link className="ws-link" href="/student/shifts">Work details</Link><Link className="ws-link" href="/student/conflicts">Conflict details</Link></div>
+      <div className="ws-actions"><span className="ws-badge accent">Shared class · read only here</span><span className="ws-badge">Private · only you</span><Link className="ws-link" href="/student/courses">Manage class timetables →</Link><Link className="ws-link" href="/student/shifts">Work details</Link><Link className="ws-link" href="/student/conflicts">Conflict details</Link></div>
 
       {/* Error banner */}
       {error && (

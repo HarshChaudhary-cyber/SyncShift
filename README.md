@@ -98,7 +98,7 @@ SyncShift implements the following security controls; remaining rollout requirem
 | **Styling & Design** | **Tailwind CSS + CSS Variables** | Curated dark/light themes, accessible tokens, smooth micro-interactions |
 | **State & Fetching** | **React Context + Native Fetch** | Lightweight, responsive client-side caching with optimistic UI |
 | **Backend API** | **FastAPI (Python 3.11+)** | High-performance async REST API with Pydantic v2 validation |
-| **Database ORM** | **SQLAlchemy 2.0 + Alembic** | Strictly typed relational schema with 19 tracked migration revisions |
+| **Database ORM** | **SQLAlchemy 2.0 + Alembic** | Strictly typed relational schema with 24 tracked migration revisions |
 | **Database** | **PostgreSQL / SQLite** | SQLite for rapid local development/testing; PostgreSQL for production |
 | **AI Integration** | **Google Gemini API** | Function-calling LLM architecture integrated with deterministic services |
 | **Testing Suite** | **Pytest + Next.js Build Check** | Automated backend tests + frontend compilation and lint |
@@ -222,7 +222,7 @@ SyncShift/
 ├── start.bat / start.sh           # One-click multi-service launch scripts
 │
 ├── backend/                       # FastAPI Backend
-│   ├── alembic/                   # Alembic database migrations (19 versions)
+│   ├── alembic/                   # Alembic database migrations (24 versions)
 │   ├── seed_demo_data.py          # Northbridge University seed generator
 │   └── app/
 │       ├── config.py              # Environment configuration & settings
