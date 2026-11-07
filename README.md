@@ -167,19 +167,36 @@ Frontend application will be live at `http://localhost:3000`.
 
 ---
 
-## 🎭 Demo Personas & Portfolio Walkthrough
+## 🔐 Demo Login Credentials
 
-The canonical local demo seed (`backend/seed_demo.py`) sets up **SyncShift Demo University (SSDEMO)** and **Riverside Demo University (RIVERDEMO)**. It generates random passwords in the Git-ignored `backend/.demo-credentials.json`. See [demo testing](docs/demo-testing.md) for setup and current scenarios.
-
-| Persona | Email | Password | Role / Details |
+| Role | Name | Email | Password |
 | :--- | :--- | :--- | :--- |
-| **Super admin** | `admin@ssdemo.example` | See local credentials file | University management and private workspace. |
-| **Professor** | `professor.asha@ssdemo.example` | See local credentials file | Teaches two sections attended by Arjun. |
-| **Student** | `student.arjun@ssdemo.example` or `00041001` with SSDEMO selected | See local credentials file | Shared classes and private study tasks. |
+| **University Administrator** | Eleanor Vance | `admin.demo@ssdemo.example` | `SyncAdmin2026!` |
+| **Teacher 1** | Asha Rao | `teacher.one@ssdemo.example` | `SyncTeacher1!2026` |
+| **Teacher 2** | Daniel Carter | `teacher.two@ssdemo.example` | `SyncTeacher2!2026` |
+| **Student 1** | Arjun Mehta | `student.one@ssdemo.example` | `SyncStudent1!2026` |
+| **Student 2** | Meera Shah | `student.two@ssdemo.example` | `SyncStudent2!2026` |
 
-### Demo walkthrough
+> [!WARNING]
+> These credentials are for the public synthetic demo dataset and local testing only. They are not real email inboxes and must never be used in production. Never use these credentials for a real university or real student data.
 
-Sign in as `admin@ssdemo.example` to inspect university management, as `professor.asha@ssdemo.example` to manage assigned classes, and as `student.arjun@ssdemo.example` or `00041001` with SSDEMO selected to view the student calendar. Read `docs/demo-testing.md` for the connected API scenario and refresh behavior.
+### Institutional Details
+- **Demo University:** SyncShift Demo University
+- **Institution code:** `SSDEMO`
+- **Frontend URL:** http://localhost:3000
+- **Backend API:** http://127.0.0.1:8000
+- **API Documentation:** http://127.0.0.1:8000/docs
+
+### Login Instructions
+1. Open the frontend at [http://localhost:3000](http://localhost:3000).
+2. Go to the login page at [http://localhost:3000/login](http://localhost:3000/login).
+3. Enter one of the five email and password combinations from the table above (or enter student enrollment number `00041001` / `00041002` with **SyncShift Demo University** selected).
+4. Verify that the correct role-specific dashboard opens:
+   - **University Administrator (`admin.demo@ssdemo.example`):** Accesses the full university administration portal to manage academic departments, course catalog, sections, room allocations, faculty directory, student directory, timetables, impact analysis simulations, and audit logs.
+   - **Teacher 1 (`teacher.one@ssdemo.example`):** Accesses the Professor Workspace showing assigned Computer Science classes (`CS101`, `CS201`), scheduled lecture sessions, teaching progress, and private lecture preparation tasks.
+   - **Teacher 2 (`teacher.two@ssdemo.example`):** Accesses the Professor Workspace showing assigned Mathematics and Computing classes (`MATH101`, `MATH201`, `CS301`, `EE101`), scheduled labs and lectures, and grading tasks.
+   - **Student 1 (`student.one@ssdemo.example`):** Accesses the Student Portal showing Arjun's synchronized academic calendar (`CS101`, `CS201`, `MATH101`), personal library work shifts, gym sessions, study tasks, and smart planner.
+   - **Student 2 (`student.two@ssdemo.example`):** Accesses the Student Portal showing Meera's synchronized academic calendar (`MATH101`, `MATH201`, `CS301`), personal peer tutoring shifts, and independent course deadlines. Private personal shifts and tasks are strictly isolated between students.
 ---
 
 ## 🧪 Testing & Quality Assurance
@@ -223,7 +240,7 @@ SyncShift/
 │
 ├── backend/                       # FastAPI Backend
 │   ├── alembic/                   # Alembic database migrations (24 versions)
-│   ├── seed_demo_data.py          # Northbridge University seed generator
+│   ├── seed_demo_data.py          # Canonical demo dataset seed generator
 │   └── app/
 │       ├── config.py              # Environment configuration & settings
 │       ├── dependencies.py        # Auth & tenant resolution dependencies

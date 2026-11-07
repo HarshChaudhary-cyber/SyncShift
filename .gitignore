@@ -41,6 +41,7 @@ dump.rdb
 *demo-credentials*
 *.demo-manifest.json
 .demo-manifest.json
+*demo-manifest.json
 .demo-secret
 *credentials.local*
 *credentials.json

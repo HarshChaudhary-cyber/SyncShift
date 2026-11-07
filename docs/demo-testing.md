@@ -26,9 +26,9 @@ $env:NEXT_PUBLIC_API_BASE_URL = 'http://127.0.0.1:8000/api/v1'
 npm run dev
 ```
 
-Open `http://localhost:3000/login`. Use email or a student identifier with the correct university selected. Credentials are generated randomly and stored in Git-ignored `backend/.demo-credentials.json`. No password is printed by the seed command. `--date YYYY-MM-DD` sets the seed date; its default is the university-local date in Europe/London. A second seed run preserves all data and passwords. `--verify` verifies stored credentials. `python seed_demo.py --reset` is allowed only while the isolated database matches its post-seed digest. If any manual changes were made, reset refuses to avoid removing them. It deletes only the tracked seed data through the seed cleanup, without dropping tables.
+Open `http://localhost:3000/login`. Use email or a student identifier with the correct university selected. Demo credentials use fixed testing passwords (`SyncAdmin2026!`, `SyncTeacher1!2026`, `SyncTeacher2!2026`, `SyncStudent1!2026`, `SyncStudent2!2026`) and are stored in Git-ignored `backend/.demo-credentials.json`. `--date YYYY-MM-DD` sets the seed date; its default is the university-local date in Europe/London. A second seed run updates/preserves data and verifies credentials. `--verify` verifies stored credentials. `python seed_demo.py --reset` removes demo records cleanly without dropping tables.
 
-The dataset has SSDEMO and RIVERDEMO, departments, subjects, sections, rooms, terms, published and draft timetables, shared class events, enrolments, professor assignments, study and preparation tasks, appointments, notifications and preferences. Professor Asha teaches two of Arjun's sections. Meera is in another section. Kabir has the same `00041001` identifier in another university.
+The dataset configures SyncShift Demo University (SSDEMO), departments, subjects, sections, rooms, terms, published and draft timetables, shared class events, enrollments, teacher assignments, study and preparation tasks, appointments, notifications and preferences. Teacher 1 (Dr. Asha Rao) teaches Arjun's CS sections. Teacher 2 (Dr. Daniel Carter) teaches Math and Computing sections. Meera shares MATH101 with Arjun, but has separate advanced coursework and independent shifts.
 
 ## Password recovery
 

@@ -82,7 +82,7 @@ class Settings(BaseSettings):
         elif (not self.JWT_SECRET or self.JWT_SECRET == DEFAULT_DEV_SECRET) and (self.SECRET_KEY and self.SECRET_KEY != DEFAULT_DEV_SECRET):
             self.JWT_SECRET = self.SECRET_KEY
 
-        if (self.ENV or "").strip().lower() != "test" and self.DATABASE_URL.endswith("syncshift-demo.db") and self.JWT_SECRET == DEFAULT_DEV_SECRET:
+        if (self.ENV or "").strip().lower() != "test" and ("-demo.db" in self.DATABASE_URL or "_demo.db" in self.DATABASE_URL) and self.JWT_SECRET == DEFAULT_DEV_SECRET:
             raise RuntimeError("The isolated demo database requires a unique JWT_SECRET; do not reuse the default development secret")
 
         if (self.ENV or "").strip().lower() == "production":
