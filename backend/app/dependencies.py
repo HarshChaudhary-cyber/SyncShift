@@ -50,13 +50,14 @@ class CurrentUser:
         return f"<CurrentUser id={self.user_id} email={self.email}>"
 
 
-def create_access_token(user_id: int, email: str) -> str:
+def create_access_token(user_id: int, email: str, session_version: int = 0) -> str:
     """Generate a signed JWT token containing user_id, email, exp (7 days), and iat."""
     now = datetime.now(dt_timezone.utc)
     payload = {
         "user_id": user_id,
         "sub": str(user_id),
         "email": email,
+        "session_version": session_version,
         "exp": now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         "iat": now,
     }
@@ -83,6 +84,13 @@ def get_current_user(
 
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+        # Reject specialised tokens (e.g. password-reset) that must not act as access tokens
+        if payload.get("purpose") is not None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={"code": "unauthorized", "message": "Token is not a valid access token"},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         user_id_val = payload.get("user_id") or payload.get("sub")
         if user_id_val is None:
             raise HTTPException(
@@ -104,6 +112,12 @@ def get_current_user(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail={"code": "user_deleted", "message": "This account has been deleted"},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if payload.get("session_version", 0) != user.session_version:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={"code": "session_revoked", "message": "Session has expired"},
                 headers={"WWW-Authenticate": "Bearer"},
             )
         return CurrentUser(

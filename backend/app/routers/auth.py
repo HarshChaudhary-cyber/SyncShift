@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta, timezone as dt_timezone
 from typing import Optional
 import re
+import secrets
 import zoneinfo
 import bcrypt
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import func
+from sqlalchemy import func, update
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -43,6 +44,7 @@ from app.services.oauth_service import (
     verify_microsoft_token,
 )
 from app.services.rate_limiter import rate_limit
+from app.services.password_recovery import delivery_available, send_reset_link
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -156,7 +158,7 @@ async def register(
     db.commit()
     db.refresh(new_user)
 
-    token = create_access_token(user_id=new_user.id, email=new_user.email)
+    token = create_access_token(user_id=new_user.id, email=new_user.email, session_version=new_user.session_version)
     record_audit_log(
         db=db,
         user_id=new_user.id,
@@ -249,10 +251,13 @@ async def login(
         # Retrieve verified database membership
         membership_query = (
             db.query(InstitutionMembership)
+            .join(Institution, Institution.id == InstitutionMembership.institution_id)
             .filter(
                 InstitutionMembership.user_id == user.id,
                 InstitutionMembership.deleted_at.is_(None),
                 InstitutionMembership.status == "active",
+                Institution.deleted_at.is_(None),
+                Institution.is_active.is_(True),
             )
         )
         if target_institution_id:
@@ -304,41 +309,10 @@ async def login(
             resolved_inst_id = inst.id
 
         if not resolved_inst_id:
-            # Check across all active institutions for student_number matches
-            matching_profiles = (
-                db.query(StudentProfile)
-                .join(Institution, StudentProfile.institution_id == Institution.id)
-                .filter(
-                    func.lower(StudentProfile.student_number) == clean_identifier.lower(),
-                    StudentProfile.deleted_at.is_(None),
-                    StudentProfile.status == "active",
-                    Institution.deleted_at.is_(None),
-                    Institution.is_active.is_(True),
-                )
-                .all()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "institution_selection_required", "message": "Please select your university."},
             )
-            distinct_inst_ids = list({p.institution_id for p in matching_profiles})
-            if len(distinct_inst_ids) > 1:
-                # Ambiguous match across multiple universities -> Must NOT guess the first match!
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail={
-                        "code": "institution_selection_required",
-                        "message": "Multiple universities found with this enrollment number. Please select your university.",
-                    },
-                )
-            elif len(distinct_inst_ids) == 1:
-                resolved_inst_id = distinct_inst_ids[0]
-            else:
-                # No matching student profile
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail={
-                        "code": "unauthorized",
-                        "message": "Invalid login details",
-                    },
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
 
         # 2. Verify student profile in the resolved institution
         student_profile = (
@@ -346,7 +320,7 @@ async def login(
             .join(Institution, StudentProfile.institution_id == Institution.id)
             .filter(
                 StudentProfile.institution_id == resolved_inst_id,
-                func.lower(StudentProfile.student_number) == clean_identifier.lower(),
+                StudentProfile.student_number == clean_identifier,
                 StudentProfile.deleted_at.is_(None),
                 StudentProfile.status == "active",
                 Institution.deleted_at.is_(None),
@@ -406,7 +380,7 @@ async def login(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-    token = create_access_token(user_id=user.id, email=user.email)
+    token = create_access_token(user_id=user.id, email=user.email, session_version=user.session_version)
     record_audit_log(
         db=db,
         user_id=user.id,
@@ -463,8 +437,10 @@ async def forgot_password(
     _rl: None = Depends(rate_limit(5, 60, "forgot_password")),
 ):
     """
-    Request password reset or password setup for eligible accounts (including existing OAuth users).
-    Generates a secure, time-limited reset token without leaking user existence.
+    Request password reset or password setup for eligible accounts.
+    Generates a secure, time-limited, single-use reset token stored via JTI.
+    The reset token is NEVER returned in the API response; it must be delivered
+    out-of-band (e.g. email). This prevents account enumeration and token leakage.
     """
     normalized_email = body.email.strip().lower()
     user = db.query(User).filter(
@@ -472,31 +448,42 @@ async def forgot_password(
         User.deleted_at.is_(None),
     ).first()
 
-    reset_token = None
-    if user:
+    if user and delivery_available():
+        jti = secrets.token_urlsafe(32)  # 256-bit random JTI
         now = datetime.now(dt_timezone.utc)
         payload = {
             "user_id": user.id,
             "email": user.email,
             "purpose": "password_reset",
+            "jti": jti,
             "exp": now + timedelta(minutes=30),
             "iat": now,
         }
         reset_token = jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
+        try:
+            send_reset_link(user.email, reset_token)
+        except Exception:
+            # Keep the public response generic. A failed delivery must not invalidate
+            # a previously delivered link or create a usable, undelivered token.
+            import logging
+            logging.getLogger(__name__).exception("Password recovery delivery failed")
+        else:
+            user.password_reset_jti = jti
+            db.commit()
         record_audit_log(
             db=db,
             user_id=user.id,
             action="PASSWORD_RESET_REQUESTED",
             entity_type="user",
             entity_id=user.id,
-            description="Password reset/setup token requested",
+            description="Password reset/setup token generated and stored (not exposed in response)",
             request=request,
         )
 
+    # Always return the same generic message to prevent account enumeration
     return DataResponse(
         data={
-            "message": "If an eligible account exists, password setup instructions have been generated.",
-            "reset_token": reset_token,
+            "message": "If an eligible account exists, password setup instructions have been sent to that address.",
         }
     )
 
@@ -509,14 +496,16 @@ async def reset_password(
     _rl: None = Depends(rate_limit(5, 60, "reset_password")),
 ):
     """
-    Set or reset password using a verified time-limited token.
-    Enables existing OAuth users and users who forgot their password to establish credentials safely.
+    Set or reset password using a verified, time-limited, single-use token.
+    Validates the JTI claim against the stored value in the database,
+    rejecting replayed or previously consumed tokens.
     """
     try:
         payload = jwt.decode(body.token, settings.JWT_SECRET, algorithms=["HS256"])
         if payload.get("purpose") != "password_reset":
             raise ValueError("Invalid token purpose")
         user_id = payload.get("user_id")
+        token_jti = payload.get("jti")
         if not user_id:
             raise ValueError("Missing user id in token")
     except Exception:
@@ -530,11 +519,36 @@ async def reset_password(
     user = db.query(User).filter(User.id == int(user_id), User.deleted_at.is_(None)).first()
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "user_not_found", "message": "User not found or deleted"},
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "invalid_token", "message": "Invalid or expired password reset token"},
         )
 
-    user.password_hash = hash_password(body.new_password)
+    # Single-use enforcement: JTI in token must match stored JTI (cleared after use)
+    stored_jti = getattr(user, "password_reset_jti", None)
+    if not token_jti or not stored_jti or token_jti != stored_jti:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "invalid_token", "message": "This password reset link has already been used or is invalid"},
+        )
+
+    # Consume with one conditional update so concurrent requests cannot both win.
+    changed = db.execute(
+        update(User).where(
+            User.id == user.id,
+            User.password_reset_jti == token_jti,
+            User.deleted_at.is_(None),
+        ).values(
+            password_reset_jti=None,
+            password_hash=hash_password(body.new_password),
+            session_version=User.session_version + 1,
+        )
+    )
+    if changed.rowcount != 1:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "invalid_token", "message": "Invalid or expired password reset token"},
+        )
     db.commit()
 
     record_audit_log(
@@ -543,7 +557,7 @@ async def reset_password(
         action="PASSWORD_RESET_COMPLETED",
         entity_type="user",
         entity_id=user.id,
-        description="User password successfully set/reset",
+        description="User password successfully set/reset via single-use token",
         request=request,
     )
 
@@ -807,6 +821,7 @@ def change_password(
     validate_password_strength(body.new_password)
 
     user.password_hash = hash_password(body.new_password)
+    user.session_version += 1
     db.commit()
 
     record_audit_log(
@@ -1058,7 +1073,7 @@ async def oauth_google(
         .first()
     )
 
-    token = create_access_token(user_id=user.id, email=user.email)
+    token = create_access_token(user_id=user.id, email=user.email, session_version=user.session_version)
     return DataResponse(
         data=AuthResponseData(
             user_id=user.id,
@@ -1148,7 +1163,7 @@ async def oauth_microsoft(
         .first()
     )
 
-    token = create_access_token(user_id=user.id, email=user.email)
+    token = create_access_token(user_id=user.id, email=user.email, session_version=user.session_version)
     return DataResponse(
         data=AuthResponseData(
             user_id=user.id,

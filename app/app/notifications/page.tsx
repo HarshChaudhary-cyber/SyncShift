@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, NotificationLogItem } from '@/lib/api';
@@ -82,20 +84,20 @@ export default function NotificationCenterPage() {
     if (p === 'URGENT') {
       return (
         <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-500 border border-rose-500/30">
-          ⚠️ URGENT
+          <ScheduleIcon name="warning" /> URGENT
         </span>
       );
     }
     if (p === 'IMPORTANT') {
       return (
         <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30">
-          ⚡ IMPORTANT
+          <ScheduleIcon name="quick" /> IMPORTANT
         </span>
       );
     }
     return (
       <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-        ℹ️ INFO
+        <ScheduleIcon name="info" /> INFO
       </span>
     );
   };
@@ -103,27 +105,27 @@ export default function NotificationCenterPage() {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'SCHEDULE_CONFLICT':
-        return '🚨';
+        return <ScheduleIcon name="conflict" />;
       case 'CLASS_MOVED':
-        return '🔄';
+        return <ScheduleIcon name="repeat" />;
       case 'CLASS_ROOM_CHANGED':
-        return '🏢';
+        return <ScheduleIcon name="building" />;
       case 'CLASS_FACULTY_CHANGED':
-        return '👨‍🏫';
+        return <ScheduleIcon name="professor" />;
       case 'CLASS_ADDED':
-        return '➕';
+        return <ScheduleIcon name="add" />;
       case 'CLASS_REMOVED':
-        return '➖';
+        return <ScheduleIcon name="remove" />;
       case 'TIMETABLE_UPDATE':
-        return '📅';
+        return <ScheduleIcon name="calendar" />;
       case 'shift':
-        return '💼';
+        return <ScheduleIcon name="work" />;
       case 'study':
-        return '📖';
+        return <ScheduleIcon name="study" />;
       case 'deadline':
-        return '⏳';
+        return <ScheduleIcon name="time" />;
       default:
-        return '🔔';
+        return <ScheduleIcon name="notification" />;
     }
   };
 
@@ -174,7 +176,7 @@ export default function NotificationCenterPage() {
               href="/settings?tab=notifications"
               className="px-3 py-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-secondary)] text-xs font-medium text-[var(--text-secondary)] hover:text-indigo-400 transition flex items-center gap-1.5 shadow-xs"
             >
-              <span>⚙️</span>
+              <span><ScheduleIcon name="settings" /></span>
               <span>Preferences</span>
             </Link>
           </div>
@@ -218,7 +220,7 @@ export default function NotificationCenterPage() {
             </div>
           ) : notifications.length === 0 ? (
             <div className="p-12 text-center bg-[var(--bg-card)] rounded-2xl border border-[var(--border-color)] shadow-xs">
-              <span className="block text-4xl mb-3">✨</span>
+              <span className="block text-4xl mb-3"><ScheduleIcon name="assistant" /></span>
               <h3 className="text-base font-bold text-[var(--text-primary)] mb-1">
                 {activeTab === 'unread' ? "You're all caught up!" : 'No notifications yet'}
               </h3>
@@ -231,7 +233,7 @@ export default function NotificationCenterPage() {
                 href="/student/calendar"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition"
               >
-                <span>📅 View My Schedule</span>
+                <span><ScheduleIcon name="calendar" /> View My Schedule</span>
               </Link>
             </div>
           ) : (
@@ -332,7 +334,7 @@ export default function NotificationCenterPage() {
                                   : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs'
                               }`}
                             >
-                              <span>{notif.priority === 'URGENT' ? '⚠️ Review Conflict' : '📅 View My Schedule'}</span>
+                              <span>{notif.priority === 'URGENT' ? <><ScheduleIcon name="warning" /> Review Conflict</> : <><ScheduleIcon name="calendar" /> View My Schedule</>}</span>
                               <span>→</span>
                             </Link>
                           )}

@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React, { useState } from 'react';
 import {
   DndContext,
@@ -181,7 +183,7 @@ export default function WeekView({ onBlockClick, onSlotClick, onReplanStudy }: W
           </div>
 
           {/* Horizontal scroll container on mobile/tablet */}
-          <div className="overflow-x-auto min-w-full">
+          <div className="calendar-scroll overflow-x-auto w-full min-w-0" tabIndex={0} role="region" aria-label="Weekly calendar, scroll horizontally for more days">
             <div
               style={{
                 minWidth: viewMode === '5day' ? '680px' : '900px',
@@ -247,10 +249,10 @@ export default function WeekView({ onBlockClick, onSlotClick, onReplanStudy }: W
               <div className="flex items-center gap-1.5">
                 <span>
                   {activeDragBlock.type === 'shift'
-                    ? '💼'
+                    ? <ScheduleIcon name="work" />
                     : activeDragBlock.type === 'study'
-                    ? '📖'
-                    : '📚'}
+                    ? <ScheduleIcon name="study" />
+                    : <ScheduleIcon name="study" />}
                 </span>
                 <span>{activeDragBlock.title}</span>
               </div>

@@ -47,4 +47,4 @@ Skipped checks: 15 Redis-dependent tests (Redis unavailable), 2 Docker OCR tests
 
 The frontend runs only on **http://localhost:3000**. The backend on port 8000 uses an isolated ignored `backend/unified-preview.db`, migrated and seeded with the repository's demo data. Existing application databases were not changed.
 
-Demo email login: `alex.taylor@student.northbridge.edu` or `jordan.lee@student.northbridge.edu`, password `Student2026!`. Alex teaches the preview Design Studio class; Jordan joined it as a learner. Both retain their original academic enrollments. These are local demo credentials only.
+The historical Northbridge preview is preserved only in existing databases. For current SSDEMO accounts and generated local credentials, follow [local demo testing](demo-testing.md).

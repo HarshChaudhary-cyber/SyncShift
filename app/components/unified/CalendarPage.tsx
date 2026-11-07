@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
@@ -113,7 +115,7 @@ function StudentCalendarContent() {
       {/* Compact Weekly KPI Summary Bar */}
       <WeekSummaryBar />
 
-      <div className="ws-actions"><span className="ws-badge accent">Shared class · read only here</span><span className="ws-badge">Private · only you</span><Link className="ws-link" href="/classes">Manage class timetables →</Link><Link className="ws-link" href="/student/shifts">Work details</Link><Link className="ws-link" href="/student/conflicts">Conflict details</Link></div>
+      <div className="ws-actions"><span className="ws-badge accent">Shared class · read only here</span><span className="ws-badge">Private · only you</span><Link className="ws-link" href="/student/courses">Manage class timetables →</Link><Link className="ws-link" href="/student/shifts">Work details</Link><Link className="ws-link" href="/student/conflicts">Conflict details</Link></div>
 
       {/* Error banner */}
       {error && (
@@ -203,7 +205,7 @@ function StudentCalendarContent() {
                 className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-semibold text-xs transition flex items-center gap-1.5 shrink-0 shadow cursor-pointer self-start sm:self-auto"
                 title="Automatically move study session into an open free gap"
               >
-                <span>🔄 Find another study slot</span>
+                <span><ScheduleIcon name="repeat" /> Find another study slot</span>
               </button>
             ) : null;
           })()}

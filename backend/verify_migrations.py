@@ -24,11 +24,14 @@ def main():
         subprocess.run([sys.executable, "-m", "alembic", "upgrade", "0019"], cwd=cwd, env=env, check=True)
         subprocess.run([sys.executable, "-c", '''
 from datetime import date, time
+from types import SimpleNamespace
+from sqlalchemy import text
 from app.database import SessionLocal, engine
 from app.models import User, Institution, Department, AcademicTerm, AcademicCourse, AcademicSection, SectionEnrollment, Timetable, TimetableVersion, CourseMeeting
 from app.models.time_block import TimeBlock
 with SessionLocal() as db:
-    user = User(email='legacy@example.test', name='Existing learner'); db.add(user); db.flush()
+    db.execute(text("INSERT INTO users (email, name) VALUES ('legacy@example.test', 'Existing learner')"))
+    user = SimpleNamespace(id=db.execute(text('SELECT last_insert_rowid()')).scalar())
     institution = Institution(name='Existing university', code='OLD'); db.add(institution); db.flush()
     department = Department(institution_id=institution.id,name='Design',code='DES'); db.add(department); db.flush()
     term = AcademicTerm(institution_id=institution.id,name='Fall',academic_year='2026-2027',start_date=date(2026,9,1),end_date=date(2026,12,31)); db.add(term); db.flush()
@@ -62,7 +65,7 @@ from app.database import engine
 from sqlalchemy import text
 import json, os
 with engine.connect() as connection:
-    assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0022"
+    assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0024"
     with open(os.environ['MIGRATION_COUNTS_PATH']) as f: counts = json.load(f)
     for table, count in counts.items():
         assert connection.execute(text('SELECT COUNT(*) FROM '+table)).scalar() == count

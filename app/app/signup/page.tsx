@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthContext } from '@/context/AuthContext';
 import { ApiError } from '@/lib/api';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import AuthFrame from '@/components/auth/AuthFrame';
 import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 import { safeReturnUrl } from '@/lib/session-policy.mjs';
 import CustomSelect from '@/components/ui/CustomSelect';
@@ -169,26 +170,10 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col items-center justify-center px-4 py-3 sm:py-6 my-auto overflow-y-auto">
-      {/* Background glow */}
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(99,102,241,0.14) 0%, transparent 70%)',
-        }}
-      />
-
-      <div className="relative z-10 w-full max-w-[420px]">
-        {/* Brand wordmark */}
-        <div className="flex items-center justify-center gap-2 mb-2 sm:mb-3">
-          <span className="text-2xl select-none">⚡</span>
-          <span className="text-xl font-bold text-[var(--text-primary)] tracking-tight">SyncShift</span>
-        </div>
-
+    <AuthFrame>
         {/* Card */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
           className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl overflow-hidden"
@@ -197,7 +182,7 @@ export default function SignupPage() {
           <div className="px-5 sm:px-6 pt-4 sm:pt-5 pb-1.5 text-center">
             <h1 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] tracking-tight">Create your account</h1>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-              Start balancing your university timetable and work shifts
+              Create your personal workspace. University access and roles are assigned separately.
             </p>
           </div>
 
@@ -451,7 +436,7 @@ export default function SignupPage() {
             </AnimatePresence>
 
             {/* Bot Protection / Turnstile */}
-            <TurnstileWidget onVerify={(token) => setCaptchaToken(token)} />
+            <TurnstileWidget onVerify={setCaptchaToken} />
 
             {/* Submit button */}
             <button
@@ -484,14 +469,7 @@ export default function SignupPage() {
           </div>
         </motion.div>
 
-        {/* Back to landing */}
-        <p className="mt-2.5 sm:mt-3 text-center text-xs text-[var(--text-muted)]">
-          <Link href="/" className="hover:text-[var(--text-primary)] transition-colors">
-            ← Back to home
-          </Link>
-        </p>
-      </div>
-    </div>
+    </AuthFrame>
   );
 }
 

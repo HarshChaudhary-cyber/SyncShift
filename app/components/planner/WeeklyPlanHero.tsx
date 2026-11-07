@@ -29,8 +29,8 @@ export default function WeeklyPlanHero({
 
 
 
-      <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div className="space-y-3 max-w-2xl">
+      <div className="planner-hero relative z-10 flex flex-col justify-between gap-6">
+        <div className="space-y-3 max-w-2xl min-w-0">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 text-purple-700 dark:text-purple-300 text-xs font-semibold">
 
             <span>Smart Weekly Planning</span>

@@ -3,12 +3,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { MotionConfig } from 'framer-motion';
-import { Squares2X2Icon, CalendarDaysIcon, AcademicCapIcon, ClipboardDocumentListIcon, BellIcon, SparklesIcon, Bars3Icon, XMarkIcon, ChevronDownIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { Squares2X2Icon, CalendarDaysIcon, AcademicCapIcon, ClipboardDocumentListIcon, BellIcon, SparklesIcon, Bars3Icon, XMarkIcon, ChevronDownIcon, Cog6ToothIcon, UsersIcon, BuildingOfficeIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { useAuthContext } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { openSyncShiftAssistant } from '@/components/assistant/SyncShiftAssistant';
 import { isReducedMotionActive } from '@/lib/preferences';
 import './workspace.css';
+import Brand from '@/components/ui/Brand';
 
 const navigation = [
   ['Dashboard', '/dashboard', Squares2X2Icon], ['Calendar', '/calendar', CalendarDaysIcon],
@@ -18,8 +19,9 @@ const navigation = [
 const adminNavigation = [
   ['Overview & users','/admin',Squares2X2Icon],['Subjects','/university/courses',AcademicCapIcon],
   ['Sections & assignments','/university/sections',ClipboardDocumentListIcon],['Timetables','/university/timetables',CalendarDaysIcon],
+  ['Faculty','/university/faculty',UsersIcon],['Rooms','/university/rooms',BuildingOfficeIcon],
   ['Departments','/university/departments',AcademicCapIcon],['Academic terms','/university/terms',CalendarDaysIcon],
-  ['Settings', '/settings', Cog6ToothIcon],
+  ['Institutional settings', '/university/settings', Cog6ToothIcon],['Audit history','/university/audit-logs',DocumentTextIcon],
 ] as const;
 
 export default function AppShell({ children }: {children: React.ReactNode}) {
@@ -43,10 +45,10 @@ export default function AppShell({ children }: {children: React.ReactNode}) {
   const management=user?.institution_role==='super_admin'&&(pathname==='/dashboard'||pathname.startsWith('/admin')||pathname.startsWith('/university'));
   return <ProtectedRoute><MotionConfig reducedMotion={isReduced ? 'always' : 'never'}><div className="workspace-app">
     <a className="skip-link" href="#workspace-content">Skip to content</a>
-    <header className="mobile-bar"><Link href="/dashboard" className="brand">SyncShift<span>●</span></Link><button aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={mobileOpen} onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <XMarkIcon/> : <Bars3Icon/>}</button></header>
+    <header className="mobile-bar"><Brand href="/dashboard" label="SyncShift dashboard" /><button aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={mobileOpen} onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <XMarkIcon/> : <Bars3Icon/>}</button></header>
     {mobileOpen && <button className="nav-scrim" aria-label="Close navigation" onClick={() => setMobileOpen(false)}/>}
     <aside className={`workspace-sidebar ${mobileOpen ? 'is-open' : ''}`}>
-      <Link href="/dashboard" className="brand">SyncShift<span>●</span></Link>
+      <Brand href="/dashboard" label="SyncShift dashboard" />
       <p className="sidebar-caption">{management?'UNIVERSITY MANAGEMENT':'YOUR WORKSPACE'}</p>
       <nav aria-label="Main navigation">{(management?adminNavigation:navigation).map(([name, href, Icon]) => <Link key={href} href={href} aria-current={pathname.startsWith(href) ? 'page' : undefined} onClick={() => setMobileOpen(false)}><Icon/><span>{name}</span></Link>)}</nav>
       {management&&<Link className="ws-button" href="/calendar" onClick={()=>setMobileOpen(false)}>My private workspace</Link>}

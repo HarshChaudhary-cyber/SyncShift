@@ -27,6 +27,10 @@ class User(Base):
     theme = Column(String(10), nullable=True, default="dark")
     minimum_transition_minutes = Column(Integer, nullable=False, default=15)
     deleted_at = Column(DateTime(timezone=True), nullable=True, default=None)
+    # Single-use password-reset token tracking: stores JTI of the active reset token.
+    # Cleared after consumption to prevent replay attacks.
+    password_reset_jti = Column(String(128), nullable=True, default=None)
+    session_version = Column(Integer, nullable=False, default=0, server_default="0")
 
     # OAuth columns
     google_id = Column(String(255), unique=True, index=True, nullable=True)

@@ -7,7 +7,7 @@ import { showErrorToast } from '@/lib/toast';
 import { DocumentTextIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 export default function UniversityAuditLogsPage() {
-  const { institution, isAdmin } = useUniversity();
+  const { institution, isSuperAdmin } = useUniversity();
   const [logs, setLogs] = useState<AuditLogItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,6 +26,14 @@ export default function UniversityAuditLogsPage() {
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="py-20 text-center text-xs text-red-500 font-medium">
+        Super Administrator access required.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

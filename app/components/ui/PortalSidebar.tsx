@@ -14,6 +14,8 @@ export interface SidebarNavItem {
   icon: React.ReactNode;
   /** If true, this item is only shown to admin/super_admin */
   adminOnly?: boolean;
+  /** If true, this item is only shown to super_admin */
+  superAdminOnly?: boolean;
 }
 
 interface PortalSidebarProps {
@@ -127,7 +129,10 @@ export default function PortalSidebar({
   }, [mobileOpen]);
 
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
-  const filteredNavItems = navItems.filter((item) => !item.adminOnly || isAdmin);
+  const isSuperAdmin = userRole === 'super_admin';
+  const filteredNavItems = navItems.filter((item) => 
+    (!item.adminOnly || isAdmin) && (!item.superAdminOnly || isSuperAdmin)
+  );
 
   const accentClasses = {
     indigo: {

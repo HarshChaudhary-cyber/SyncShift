@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ClockIcon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export interface TimePickerProps {
-  value?: string; // "HH:MM"
+  value?: string; // HH:MM, in 24-hour time
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
@@ -13,304 +15,205 @@ export interface TimePickerProps {
   name?: string;
   min?: string;
   max?: string;
+  label?: string;
 }
 
-// Quick-select slots in 30-minute increments from 00:00 to 23:30
-const ALL_SLOTS: string[] = [];
-for (let h = 0; h < 24; h++) {
-  const hh = String(h).padStart(2, '0');
-  ALL_SLOTS.push(`${hh}:00`);
-  ALL_SLOTS.push(`${hh}:30`);
-}
-
-// Daytime primary range: 08:00 to 22:30 as specified
-const DAYTIME_SLOTS = ALL_SLOTS.filter((time) => {
-  const h = parseInt(time.split(':')[0], 10);
-  return h >= 8 && (h < 22 || (h === 22 && time.endsWith(':30')));
-});
+const isTime = (time: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
+const pad = (number: number) => String(number).padStart(2, '0');
+const control = 'min-h-11 rounded-lg px-3 border border-[var(--border-color)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-accent)]';
+const active = 'bg-[var(--accent-primary)] text-white';
 
 export default function TimePicker({
-  value = '',
-  onChange,
-  placeholder = 'Select time',
-  disabled = false,
-  error = false,
-  className = '',
-  id,
+  value = '', onChange, placeholder = 'Select time', disabled = false,
+  error = false, className = '', id, name, min, max, label = 'Time',
 }: TimePickerProps) {
+  const popupId = useId();
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'daytime' | 'all'>('daytime');
-  const [customTime, setCustomTime] = useState(value || '');
-  const [customError, setCustomError] = useState<string | null>(null);
+  const [draft, setDraft] = useState('09:00');
+  const [mode, setMode] = useState<'hour' | 'minute'>('hour');
+  const [message, setMessage] = useState('');
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const hourRef = useRef<HTMLButtonElement>(null);
+  const minuteRef = useRef<HTMLButtonElement>(null);
+  const [bounds, setBounds] = useState({ left: 12, top: 12, width: 304, maxHeight: 480 });
+  const [hour, minute] = (isTime(draft) ? draft : '09:00').split(':').map(Number);
+  const hour12 = hour % 12 || 12;
+  const selected = mode === 'hour' ? hour12 % 12 : minute / 5;
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-
-  const [prevValue, setPrevValue] = useState(value);
-  if (value !== prevValue) {
-    setPrevValue(value);
-    setCustomTime(value || '');
+  function close() {
+    setIsOpen(false);
+    triggerRef.current?.focus({ preventScroll: true });
   }
 
-  // Handle outside click & escape key
+  function apply() {
+    const time = draft.trim();
+    if (!isTime(time)) {
+      setMessage('Enter a time from 00:00 to 23:59.');
+      return;
+    }
+    // Like a native time input, a range crossing midnight allows either side.
+    const outside = min && max && min > max
+      ? time < min && time > max
+      : (min && time < min) || (max && time > max);
+    if (outside) {
+      setMessage(`Choose a time ${min ? `from ${min}` : ''}${max ? ` up to ${max}` : ''}.`);
+      return;
+    }
+    onChange(time);
+    close();
+  }
+
+  function select(number: number) {
+    setDraft(mode === 'hour'
+      ? `${pad(number % 12 + (hour >= 12 ? 12 : 0))}:${pad(minute)}`
+      : `${pad(hour)}:${pad(number * 5)}`);
+    setMessage('');
+    if (mode === 'hour') {
+      setMode('minute');
+      minuteRef.current?.focus({ preventScroll: true });
+    }
+  }
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const update = () => {
+      const anchor = triggerRef.current?.getBoundingClientRect();
+      if (!anchor) return;
+      const viewport = window.visualViewport;
+      const left = viewport?.offsetLeft ?? 0;
+      const top = viewport?.offsetTop ?? 0;
+      const width = viewport?.width ?? document.documentElement.clientWidth;
+      const height = viewport?.height ?? window.innerHeight;
+      const popupWidth = Math.min(304, width - 24);
+      const maxHeight = Math.max(0, height - 24);
+      const popupHeight = Math.min(popupRef.current?.scrollHeight ?? 480, maxHeight);
+      const below = anchor.bottom + 6;
+      const above = anchor.top - popupHeight - 6;
+      setBounds({
+        left: Math.max(left + 12, Math.min(anchor.left, left + width - popupWidth - 12)),
+        top: below + popupHeight <= top + height - 12 ? below
+          : above >= top + 12 ? above : top + Math.max(12, (height - popupHeight) / 2),
+        width: popupWidth,
+        maxHeight,
+      });
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    window.visualViewport?.addEventListener('resize', update);
+    window.visualViewport?.addEventListener('scroll', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+      window.visualViewport?.removeEventListener('resize', update);
+      window.visualViewport?.removeEventListener('scroll', update);
+    };
+  }, [isOpen, message]);
+
   useEffect(() => {
     if (!isOpen) return;
-
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
+    hourRef.current?.focus({ preventScroll: true });
+    const outside = (event: PointerEvent) => {
+      if (!popupRef.current?.contains(event.target as Node) && !triggerRef.current?.contains(event.target as Node)) {
         setIsOpen(false);
       }
-    }
-
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
+    };
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
         setIsOpen(false);
+        triggerRef.current?.focus({ preventScroll: true });
       }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
+      if (event.key === 'Tab') {
+        const items = popupRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled)');
+        if (!items?.length) return;
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault(); last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault(); first.focus();
+        }
+      }
+    };
+    document.addEventListener('pointerdown', outside);
+    window.addEventListener('keydown', keydown, true);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('pointerdown', outside);
+      window.removeEventListener('keydown', keydown, true);
     };
   }, [isOpen]);
 
-  // Scroll active item into view when opening
-  useEffect(() => {
-    if (isOpen && value) {
-      const timer = setTimeout(() => {
-        const activeBtn = dropdownRef.current?.querySelector(
-          `[data-time="${value}"]`
-        );
-        if (activeBtn) {
-          activeBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        }
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, value]);
-
-  const handleSelectSlot = (slot: string) => {
-    onChange(slot);
-    setCustomTime(slot);
-    setCustomError(null);
-    setIsOpen(false);
-  };
-
-  const handleCustomApply = () => {
-    const trimmed = customTime.trim();
-    // Validate HH:MM (24-hour format)
-    const match = trimmed.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
-    if (!match) {
-      setCustomError('Use HH:MM (00:00 - 23:59)');
-      return;
-    }
-    setCustomError(null);
-    onChange(trimmed);
-    setIsOpen(false);
-  };
-
-  const displayedTime = value ? value.slice(0, 5) : '';
-
-  const slotsToDisplay = activeTab === 'daytime' ? DAYTIME_SLOTS : ALL_SLOTS;
-
   return (
-    <div ref={containerRef} className={`relative inline-block w-full ${className}`}>
-      {/* Trigger Button: Opens visual picker on click, never software keyboard */}
+    <div className={`min-w-0 w-full ${className}`}>
       <button
-        id={id}
-        type="button"
-        disabled={disabled}
-        onClick={() => !disabled && setIsOpen((prev) => !prev)}
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-        className={`
-          w-full flex items-center justify-between gap-2 px-3 py-2 sm:py-2 min-h-[44px] sm:min-h-[38px]
-          bg-[var(--bg-input)] border rounded-lg text-sm text-left transition-all select-none cursor-pointer
-          ${disabled ? 'opacity-50 cursor-not-allowed bg-[var(--bg-secondary)]' : 'hover:border-[var(--border-hover)]'}
-          ${
-            error
-              ? 'border-rose-500/80 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30'
-              : isOpen
-              ? 'border-blue-500 ring-1 ring-blue-500/30'
-              : 'border-[var(--border-color)]'
-          }
-        `}
+        ref={triggerRef} id={id} type="button" disabled={disabled}
+        aria-label={`${label}: ${value.slice(0, 5) || placeholder}`}
+        aria-haspopup="dialog" aria-expanded={isOpen} aria-controls={isOpen ? popupId : undefined}
+        aria-describedby={error ? `${popupId}-field-error` : undefined}
+        onClick={() => {
+          if (isOpen) { close(); return; }
+          setDraft(isTime(value.slice(0, 5)) ? value.slice(0, 5) : '09:00');
+          setMode('hour'); setMessage(''); setIsOpen(true);
+        }}
+        className={`${control} flex w-full min-w-0 items-center justify-between gap-2 bg-[var(--bg-input)] py-2 text-sm text-[var(--text-primary)] disabled:opacity-50 ${error ? '!border-rose-500' : ''}`}
       >
-        <span className={displayedTime ? 'text-[var(--text-primary)] font-mono font-medium' : 'text-[var(--text-muted)]'}>
-          {displayedTime || placeholder}
+        <span className={value ? 'font-mono font-medium' : 'text-[var(--text-muted)]'}>{value.slice(0, 5) || placeholder}</span>
+        <span className="flex shrink-0 items-center gap-1.5 text-[var(--text-muted)]">
+          <ClockIcon className="h-5 w-5" aria-hidden="true" />
+          <ChevronDownIcon className="h-3.5 w-3.5" aria-hidden="true" />
         </span>
-        <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <svg
-            className={`w-3.5 h-3.5 text-[var(--text-muted)] transition-transform ${isOpen ? 'rotate-180 text-blue-500' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
       </button>
-
-      {/* Hidden native time input for mobile touch fallback if triggered programmatically */}
-      <input
-        type="time"
-        tabIndex={-1}
-        aria-hidden="true"
-        value={value ? value.slice(0, 5) : ''}
-        onChange={(e) => onChange(e.target.value)}
-        className="sr-only pointer-events-none"
-      />
-
-      {/* Dropdown Popup */}
-      {isOpen && (
-        <div
-          ref={dropdownRef}
-          role="dialog"
-          aria-label="Time picker popup"
-          className="
-            absolute z-50 mt-1.5 left-0 right-0 sm:left-auto sm:right-auto sm:w-72
-            bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl shadow-black/30
-            p-3.5 text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md
-          "
-          style={{ minWidth: '280px' }}
+      {error && <span id={`${popupId}-field-error`} className="sr-only">Please choose a valid time.</span>}
+      {name && <input type="hidden" name={name} value={value} disabled={disabled} />}
+      {isOpen && createPortal(
+        <div ref={popupRef} id={popupId} role="dialog" aria-label={`${label} clock picker`}
+          className="fixed z-[150] overflow-y-auto overscroll-contain rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] p-4 text-[var(--text-primary)] shadow-2xl"
+          style={bounds}
+          onClick={(event) => event.stopPropagation()}
         >
-          {/* Header with Custom Manual Typing */}
-          <div className="mb-3 pb-2.5 border-b border-[var(--border-color)]">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-semibold text-[var(--text-secondary)]">Custom Time</span>
-              <span className="text-[10px] text-[var(--text-muted)]">24-hour format (HH:MM)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                maxLength={5}
-                placeholder="09:00"
-                value={customTime}
-                onChange={(e) => {
-                  setCustomTime(e.target.value);
-                  setCustomError(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleCustomApply();
-                  }
-                }}
-                className="
-                  flex-1 px-3 py-1.5 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-lg
-                  text-sm font-mono text-[var(--text-primary)] placeholder-[var(--text-muted)]
-                  focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/40
-                "
-              />
-              <button
-                type="button"
-                onClick={handleCustomApply}
-                className="
-                  px-3 py-1.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700
-                  text-xs font-semibold text-white rounded-lg transition-colors cursor-pointer min-h-[36px]
-                "
-              >
-                Set
-              </button>
-            </div>
-            {customError && (
-              <p className="text-[11px] text-rose-500 dark:text-rose-400 mt-1">{customError}</p>
-            )}
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2 text-sm font-semibold"><ClockIcon className="h-5 w-5" aria-hidden="true" />{label}</span>
+            <button type="button" aria-label="Close time picker" onClick={close} className={`${control} !px-2`}><XMarkIcon className="h-5 w-5" aria-hidden="true" /></button>
           </div>
-
-          {/* Tab Selector: Daytime (08:00 - 22:30) vs 24 Hours */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex rounded-lg bg-[var(--bg-secondary)] p-0.5 border border-[var(--border-color)] text-[11px] font-medium">
-              <button
-                type="button"
-                onClick={() => setActiveTab('daytime')}
-                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                  activeTab === 'daytime'
-                    ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-xs font-semibold'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                08:00 – 22:30
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('all')}
-                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                  activeTab === 'all'
-                    ? 'bg-[var(--bg-card)] text-[var(--text-primary)] shadow-xs font-semibold'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                Full 24h
-              </button>
+          <div className="mt-2 flex items-center justify-center gap-2">
+            <button ref={hourRef} type="button" aria-label="Select hour" aria-pressed={mode === 'hour'} onClick={() => setMode('hour')} className={`${control} font-mono text-2xl ${mode === 'hour' ? active : ''}`}>{pad(hour12)}</button>
+            <span aria-hidden="true">:</span>
+            <button ref={minuteRef} type="button" aria-label="Select minute" aria-pressed={mode === 'minute'} onClick={() => setMode('minute')} className={`${control} font-mono text-2xl ${mode === 'minute' ? active : ''}`}>{pad(minute)}</button>
+            <div className="flex flex-col gap-1">
+              {['AM', 'PM'].map((period, index) => <button key={period} type="button" aria-pressed={Math.floor(hour / 12) === index} onClick={() => { setDraft(`${pad(hour % 12 + index * 12)}:${pad(minute)}`); setMessage(''); }} className={`min-h-11 rounded-md px-3 py-1 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-[var(--brand-accent)] ${Math.floor(hour / 12) === index ? active : 'bg-[var(--bg-input)]'}`}>{period}</button>)}
             </div>
-            <span className="text-[10px] text-[var(--text-muted)]">30 min step</span>
           </div>
-
-          {/* Quick-Select Grid */}
-          <div
-            ref={listRef}
-            className="grid grid-cols-3 sm:grid-cols-3 gap-1.5 max-h-56 overflow-y-auto pr-1 py-1"
-          >
-            {slotsToDisplay.map((slot) => {
-              const isSelected = value?.slice(0, 5) === slot;
-              return (
-                <button
-                  key={slot}
-                  type="button"
-                  data-time={slot}
-                  onClick={() => handleSelectSlot(slot)}
-                  className={`
-                    px-2 py-2 min-h-[44px] sm:min-h-[38px] rounded-lg text-xs font-mono font-medium transition-all
-                    flex items-center justify-center cursor-pointer select-none
-                    ${
-                      isSelected
-                        ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/30 scale-[1.02]'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-color)] hover:border-[var(--border-hover)] hover:text-[var(--text-primary)]'
-                    }
-                  `}
-                >
-                  {slot}
-                </button>
-              );
+          <p className="my-2 text-center text-xs text-[var(--text-muted)]" aria-live="polite">Choose {mode === 'hour' ? 'an hour' : 'minutes'}</p>
+          <div role="group" aria-label={mode === 'hour' ? 'Hours' : 'Minutes'} className="relative mx-auto h-60 w-60 max-w-full rounded-full bg-[var(--bg-input)]">
+            <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-0.5 w-[38%] origin-left bg-[var(--brand-accent)]" style={{ transform: `rotate(${selected * 30 - 90}deg)` }} />
+            <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--brand-accent)]" />
+            {Array.from({ length: 12 }, (_, index) => {
+              const angle = index * Math.PI / 6;
+              const number = mode === 'hour' ? index || 12 : index * 5;
+              return <button key={`${mode}-${index}`} type="button" aria-label={`${mode === 'hour' ? 'Hour' : 'Minute'} ${number}`} aria-pressed={selected === index}
+                onClick={() => select(index)}
+                className={`absolute flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-accent)] ${selected === index ? active : 'hover:bg-[var(--bg-card)]'}`}
+                style={{ left: `${50 + Math.sin(angle) * 39}%`, top: `${50 - Math.cos(angle) * 39}%` }}
+              >{mode === 'minute' ? pad(number) : number}</button>;
             })}
           </div>
-
-          {/* Mobile Native Option / Clear */}
-          <div className="mt-3 pt-2.5 border-t border-[var(--border-color)] flex items-center justify-between text-xs">
-            <button
-              type="button"
-              onClick={() => {
-                onChange('');
-                setIsOpen(false);
-              }}
-              className="text-[11px] text-[var(--text-muted)] hover:text-rose-500 transition-colors cursor-pointer"
-            >
-              Clear time
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
-            >
-              Close
-            </button>
+          <label className="mt-3 block text-xs text-[var(--text-secondary)]">
+            Exact time (24-hour HH:MM)
+            <input type="text" value={draft} maxLength={5} placeholder="09:00" aria-invalid={!!message} aria-describedby={message ? `${popupId}-error` : undefined}
+              onChange={(event) => { setDraft(event.target.value); setMessage(''); }}
+              onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); apply(); } }}
+              className={`${control} mt-1 w-full min-w-0 bg-[var(--bg-input)] font-mono text-base text-[var(--text-primary)]`}
+            />
+          </label>
+          {message && <p id={`${popupId}-error`} role="alert" className="mt-2 text-xs text-rose-500">{message}</p>}
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <button type="button" onClick={() => { onChange(''); close(); }} className={`${control} text-sm`}>Clear time</button>
+            <button type="button" onClick={apply} className={`${control} ${active} text-sm font-semibold`}>Set time</button>
           </div>
-        </div>
+        </div>, document.body,
       )}
     </div>
   );

@@ -39,7 +39,7 @@ app = FastAPI(
 )
 
 
-EXPECTED_ALEMBIC_HEAD = "0022"
+EXPECTED_ALEMBIC_HEAD = "0024"
 
 
 def check_db_migrated() -> None:

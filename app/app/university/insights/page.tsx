@@ -618,7 +618,7 @@ export default function UniversityInsightsPage() {
                   </Link>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable academic table">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-[var(--border-color)] text-[var(--text-secondary)] font-semibold">
@@ -789,7 +789,7 @@ export default function UniversityInsightsPage() {
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable academic table">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-[var(--border-color)] text-[var(--text-secondary)] font-semibold">
@@ -967,7 +967,7 @@ export default function UniversityInsightsPage() {
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable academic table">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
                       <tr className="border-b border-[var(--border-color)] text-[var(--text-secondary)] font-semibold">
@@ -1047,7 +1047,7 @@ export default function UniversityInsightsPage() {
                 </Link>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Scrollable academic table">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-[var(--border-color)] text-[var(--text-secondary)] font-semibold">

@@ -194,7 +194,7 @@ export default function CoursesPage() {
 
       {/* Filters Bar */}
       <div className="flex flex-wrap items-center gap-3 bg-[var(--bg-secondary)] border border-[var(--border-color)] p-3.5 rounded-xl">
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-0">
           <input
             type="text"
             placeholder="Search code or title..."
@@ -350,8 +350,8 @@ export default function CoursesPage() {
 
       {/* Add / Edit Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-lg rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+        <div className="viewport-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="viewport-dialog w-full max-w-lg rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
               <h3 className="text-lg font-bold text-[var(--text-primary)]">
                 {editingCourse ? 'Edit Course' : 'Create New Course'}

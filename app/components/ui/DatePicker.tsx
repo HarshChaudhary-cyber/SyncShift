@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { format } from 'date-fns';
 
 export interface DatePickerProps {
@@ -68,6 +69,47 @@ export default function DatePicker({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
+  const [popupBounds, setPopupBounds] = useState({ left: 12, top: 12, width: 320, maxHeight: 400 });
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const update = (event?: Event) => {
+      if (event?.target instanceof Node && popupRef.current?.contains(event.target)) return;
+      const anchor = containerRef.current?.getBoundingClientRect();
+      if (!anchor) return;
+      const viewport = window.visualViewport;
+      const viewportTop = viewport?.offsetTop ?? 0;
+      const viewportLeft = viewport?.offsetLeft ?? 0;
+      const viewportWidth = viewport?.width ?? document.documentElement.clientWidth;
+      const viewportHeight = viewport?.height ?? window.innerHeight;
+      const width = Math.min(320, viewportWidth - 24);
+      const below = viewportTop + viewportHeight - anchor.bottom - 18;
+      const above = anchor.top - viewportTop - 18;
+      const placeBelow = below >= above;
+      const maxHeight = Math.max(0, Math.min(viewportHeight - 24, placeBelow ? below : above));
+      const height = Math.min(popupRef.current?.scrollHeight ?? 400, maxHeight);
+      setPopupBounds({
+        left: Math.max(viewportLeft + 12, Math.min(anchor.left, viewportLeft + viewportWidth - width - 12)),
+        top: Math.max(viewportTop + 12, Math.min(
+          placeBelow ? anchor.bottom + 6 : anchor.top - height - 6,
+          viewportTop + viewportHeight - height - 12,
+        )),
+        width,
+        maxHeight,
+      });
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    window.visualViewport?.addEventListener('resize', update);
+    window.visualViewport?.addEventListener('scroll', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+      window.visualViewport?.removeEventListener('resize', update);
+      window.visualViewport?.removeEventListener('scroll', update);
+    };
+  }, [isOpen]);
 
   const [prevValue, setPrevValue] = useState(value);
   if (value !== prevValue) {
@@ -88,7 +130,8 @@ export default function DatePicker({
     function handleClickOutside(e: MouseEvent) {
       if (
         containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
+        !containerRef.current.contains(e.target as Node) &&
+        !popupRef.current?.contains(e.target as Node)
       ) {
         setIsOpen(false);
       }
@@ -216,17 +259,17 @@ export default function DatePicker({
       </button>
 
       {/* Calendar Popup */}
-      {isOpen && (
+      {isOpen && createPortal(
         <div
           ref={popupRef}
           role="dialog"
           aria-label="Date picker calendar"
           className="
-            absolute z-50 mt-1.5 left-0 right-0 sm:left-auto sm:right-auto sm:w-80
+            date-picker-popup fixed z-[100] overflow-y-auto
             bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl shadow-black/30
             p-4 text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md
           "
-          style={{ minWidth: '290px' }}
+          style={popupBounds}
         >
           {/* Header Month / Year & Prev/Next Navigation */}
           <div className="flex items-center justify-between mb-3.5 pb-2 border-b border-[var(--border-color)]">
@@ -360,7 +403,7 @@ export default function DatePicker({
               Close
             </button>
           </div>
-        </div>
+        </div>, document.body
       )}
     </div>
   );

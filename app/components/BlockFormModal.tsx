@@ -1,5 +1,7 @@
 'use client';
 
+import ScheduleIcon from "@/components/ui/ScheduleIcon";
+
 import React, { useEffect, useId, useReducer, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { TimeBlock, BlockType, BlockStatus } from './CalendarWeekView';
@@ -320,7 +322,7 @@ export function BlockFormModal({
                       : typeAccent[t].inactive
                   }`}
                 >
-                  {t === 'class' ? '🎓 Class' : '💼 Shift'}
+                  {t === 'class' ? <><ScheduleIcon name="academic" /> Class</> : <><ScheduleIcon name="work" /> Shift</>}
                 </button>
               ))}
             </div>
@@ -403,7 +405,7 @@ export function BlockFormModal({
             {/* ── Time row ─────────────────────────────────────────────── */}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Start time" error={errors.startTime} htmlFor={`${uid}-start`}>
-                <TimePicker
+                <TimePicker label="Start time"
                   id={`${uid}-start`}
                   value={form.startTime}
                   onChange={(val) => dispatch({ field: 'startTime', value: val })}
@@ -411,7 +413,7 @@ export function BlockFormModal({
                 />
               </Field>
               <Field label="End time" error={errors.endTime} htmlFor={`${uid}-end`}>
-                <TimePicker
+                <TimePicker label="End time"
                   id={`${uid}-end`}
                   value={form.endTime}
                   onChange={(val) => dispatch({ field: 'endTime', value: val })}
@@ -444,7 +446,7 @@ export function BlockFormModal({
                       onChange={(e) => dispatch({ field: 'isOvernight', value: e.target.checked })}
                       className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
                     />
-                    <span>🌙 Overnight shift</span>
+                    <span><ScheduleIcon name="night" /> Overnight shift</span>
                   </label>
                   <span className="text-[10px] text-slate-500 dark:text-zinc-400 block ml-6">
                     Crosses midnight (+1 day)

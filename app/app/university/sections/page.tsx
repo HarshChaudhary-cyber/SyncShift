@@ -423,8 +423,8 @@ export default function SectionsPage() {
 
       {/* Add / Edit Section Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-lg rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 shadow-2xl space-y-5">
+        <div className="viewport-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="viewport-dialog w-full max-w-lg rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
               <h3 className="text-lg font-bold text-[var(--text-primary)]">
                 {editingSection ? 'Edit Section' : 'Create Course Section'}
@@ -567,8 +567,8 @@ export default function SectionsPage() {
 
       {/* Manage Instructors Modal */}
       {instructorModalOpen && managingSection && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-lg rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 shadow-2xl space-y-5">
+        <div className="viewport-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="viewport-dialog w-full max-w-lg rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 shadow-2xl space-y-5">
             <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3">
               <div>
                 <h3 className="text-lg font-bold text-[var(--text-primary)]">
